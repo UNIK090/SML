@@ -1,0 +1,325 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@import 'shadcn/tailwind.css';
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-foreground: var(--foreground);
+  --color-background: var(--background);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+/*
+ * Palette: warm ivory paper with a muted gold accent.
+ * Deliberately low-chroma — a jewellery counter should feel calm and expensive,
+ * not like a dashboard. Gold is used sparingly, for emphasis only.
+ */
+:root {
+  color-scheme: light;
+  --background: oklch(0.985 0.006 85);      /* warm ivory */
+  --foreground: oklch(0.24 0.014 60);       /* soft near-black brown */
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.24 0.014 60);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.24 0.014 60);
+  --primary: oklch(0.32 0.022 60);          /* deep espresso for solid buttons */
+  --primary-foreground: oklch(0.985 0.008 85);
+  --secondary: oklch(0.955 0.011 85);
+  --secondary-foreground: oklch(0.32 0.022 60);
+  --muted: oklch(0.955 0.011 85);
+  --muted-foreground: oklch(0.53 0.018 70);
+  --accent: oklch(0.93 0.035 85);           /* pale gold wash */
+  --accent-foreground: oklch(0.42 0.06 70);
+  --destructive: oklch(0.55 0.17 27);
+  --border: oklch(0.9 0.014 85);
+  --input: oklch(0.91 0.013 85);
+  --ring: oklch(0.72 0.09 78);              /* gold focus ring */
+  --chart-1: oklch(0.72 0.09 78);
+  --chart-2: oklch(0.62 0.07 150);
+  --chart-3: oklch(0.58 0.05 250);
+  --chart-4: oklch(0.7 0.06 40);
+  --chart-5: oklch(0.5 0.03 70);
+  --radius: 0.75rem;
+  --sidebar: oklch(0.975 0.009 85);
+  --sidebar-foreground: oklch(0.3 0.018 60);
+  --sidebar-primary: oklch(0.32 0.022 60);
+  --sidebar-primary-foreground: oklch(0.985 0.008 85);
+  --sidebar-accent: oklch(0.93 0.035 85);
+  --sidebar-accent-foreground: oklch(0.42 0.06 70);
+  --sidebar-border: oklch(0.9 0.014 85);
+  --sidebar-ring: oklch(0.72 0.09 78);
+}
+
+/* Reusable accents the components lean on. */
+:root {
+  --gold: oklch(0.72 0.09 78);
+  --gold-soft: oklch(0.94 0.04 85);
+  --gold-deep: oklch(0.5 0.08 70);
+  --success: oklch(0.52 0.11 155);
+  --success-soft: oklch(0.95 0.03 155);
+  --warn: oklch(0.62 0.12 70);
+  --warn-soft: oklch(0.96 0.035 80);
+  --shadow-sm: 0 1px 2px oklch(0.5 0.03 70 / 6%), 0 1px 1px oklch(0.5 0.03 70 / 4%);
+  --shadow-md: 0 4px 14px oklch(0.5 0.03 70 / 8%), 0 1px 3px oklch(0.5 0.03 70 / 5%);
+  --shadow-lg: 0 18px 40px oklch(0.4 0.03 70 / 12%), 0 2px 8px oklch(0.4 0.03 70 / 6%);
+}
+
+@theme inline {
+  --color-gold: var(--gold);
+  --color-gold-soft: var(--gold-soft);
+  --color-gold-deep: var(--gold-deep);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+}
+
+/*
+ * Dark theme: deep charcoal with the same muted gold. Bound to the data-theme
+ * attribute that PreferencesProvider writes, plus a .dark class for the
+ * shadcn-compatible classes.
+ */
+.dark,
+[data-theme='dark'] {
+  color-scheme: dark;
+  --background: oklch(0.19 0.008 70);
+  --foreground: oklch(0.95 0.006 85);
+  --card: oklch(0.235 0.009 70);
+  --card-foreground: oklch(0.95 0.006 85);
+  --popover: oklch(0.235 0.009 70);
+  --popover-foreground: oklch(0.95 0.006 85);
+  --primary: oklch(0.93 0.02 85);
+  --primary-foreground: oklch(0.22 0.012 70);
+  --secondary: oklch(0.28 0.01 70);
+  --secondary-foreground: oklch(0.95 0.006 85);
+  --muted: oklch(0.28 0.01 70);
+  --muted-foreground: oklch(0.72 0.012 80);
+  --accent: oklch(0.32 0.035 80);
+  --accent-foreground: oklch(0.88 0.05 82);
+  --destructive: oklch(0.7 0.16 25);
+  --border: oklch(1 0 0 / 12%);
+  --input: oklch(1 0 0 / 16%);
+  --ring: oklch(0.75 0.09 78);
+  --chart-1: oklch(0.75 0.09 78);
+  --chart-2: oklch(0.7 0.09 155);
+  --chart-3: oklch(0.68 0.07 250);
+  --chart-4: oklch(0.75 0.08 45);
+  --chart-5: oklch(0.6 0.03 80);
+  --sidebar: oklch(0.165 0.008 70);
+  --sidebar-foreground: oklch(0.92 0.006 85);
+  --sidebar-primary: oklch(0.93 0.02 85);
+  --sidebar-primary-foreground: oklch(0.22 0.012 70);
+  --sidebar-accent: oklch(0.32 0.035 80);
+  --sidebar-accent-foreground: oklch(0.88 0.05 82);
+  --sidebar-border: oklch(1 0 0 / 12%);
+  --sidebar-ring: oklch(0.75 0.09 78);
+  --gold: oklch(0.78 0.1 78);
+  --gold-soft: oklch(0.32 0.04 80);
+  --gold-deep: oklch(0.86 0.07 82);
+  --success: oklch(0.72 0.12 155);
+  --success-soft: oklch(0.3 0.05 155);
+  --warn: oklch(0.8 0.11 75);
+  --warn-soft: oklch(0.32 0.05 75);
+  --shadow-sm: 0 1px 2px oklch(0 0 0 / 30%);
+  --shadow-md: 0 4px 14px oklch(0 0 0 / 35%);
+  --shadow-lg: 0 18px 40px oklch(0 0 0 / 45%);
+}
+
+/* The success dialog and its tick animation. */
+@keyframes tick-draw {
+  from { stroke-dashoffset: 48; }
+  to { stroke-dashoffset: 0; }
+}
+
+@keyframes ring-pop {
+  0% { transform: scale(0.7); opacity: 0; }
+  60% { transform: scale(1.04); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes ripple-out {
+  0% { transform: scale(0.8); opacity: 0.5; }
+  100% { transform: scale(1.6); opacity: 0; }
+}
+
+@keyframes rise-in {
+  from { transform: translateY(12px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.animate-ring-pop { animation: ring-pop 420ms cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+.animate-ripple { animation: ripple-out 900ms ease-out 1 forwards; }
+.animate-rise-in { animation: rise-in 320ms ease-out both; }
+.animate-tick { stroke-dasharray: 48; animation: tick-draw 420ms 220ms ease-out both; }
+
+/* Respect users who have asked the OS to reduce motion. */
+@media (prefers-reduced-motion: reduce) {
+  .animate-ring-pop,
+  .animate-ripple,
+  .animate-rise-in,
+  .animate-tick,
+  .animate-section,
+  .top-progress,
+  .animate-slide-in,
+  .stagger > * {
+    animation: none;
+  }
+  .animate-tick { stroke-dashoffset: 0; }
+  .top-progress { opacity: 0; }
+  * { transition-duration: 0.01ms !important; }
+}
+
+/* Section switch: content eases in rather than snapping. */
+@keyframes section-enter {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-section { animation: section-enter 260ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+/* Indeterminate top progress bar shown during any background revalidation. */
+@keyframes progress-slide {
+  0% { transform: translateX(-100%) scaleX(0.35); }
+  50% { transform: translateX(0) scaleX(0.5); }
+  100% { transform: translateX(100%) scaleX(0.35); }
+}
+
+.top-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 60;
+  height: 2px;
+  width: 100%;
+  transform-origin: left;
+  background: linear-gradient(90deg, transparent, var(--gold), transparent);
+  animation: progress-slide 1.1s ease-in-out infinite;
+}
+
+/* Mobile drawer slides in from the edge. */
+@keyframes slide-in-left {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(0); }
+}
+
+.animate-slide-in { animation: slide-in-left 240ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+/* Staggered list entrance: rows appear one after another. */
+.stagger > * {
+  animation: section-enter 300ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.stagger > *:nth-child(1) { animation-delay: 0ms; }
+.stagger > *:nth-child(2) { animation-delay: 35ms; }
+.stagger > *:nth-child(3) { animation-delay: 70ms; }
+.stagger > *:nth-child(4) { animation-delay: 105ms; }
+.stagger > *:nth-child(5) { animation-delay: 140ms; }
+.stagger > *:nth-child(6) { animation-delay: 175ms; }
+.stagger > *:nth-child(n + 7) { animation-delay: 210ms; }
+
+/* Skeleton shimmer for loading states. */
+@keyframes shimmer {
+  100% { transform: translateX(100%); }
+}
+
+.shimmer {
+  position: relative;
+  overflow: hidden;
+}
+
+.shimmer::after {
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background-image: linear-gradient(90deg, transparent, oklch(1 0 0 / 18%), transparent);
+  animation: shimmer 1.4s infinite;
+  content: '';
+}
+
+/*
+ * The OS colour-scheme preference is intentionally NOT auto-applied: the shop
+ * chooses light or dark with the in-app toggle, and that choice is stored.
+ * Auto-switching would fight the toggle for anyone whose OS is in dark mode.
+ */
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+    -webkit-font-smoothing: antialiased;
+  }
+  /* Tabular figures keep money columns aligned in tables and totals. */
+  .tnum {
+    font-variant-numeric: tabular-nums;
+  }
+  input,
+  select,
+  textarea {
+    @apply bg-card;
+  }
+  input:focus,
+  select:focus,
+  textarea:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px oklch(0.72 0.09 78 / 22%);
+    border-color: var(--gold);
+  }
+}
+
+@layer utilities {
+  /* Soft hairline used instead of heavy borders throughout the app. */
+  .hairline {
+    border-color: oklch(0.9 0.014 85);
+  }
+  .card-shadow {
+    box-shadow: var(--shadow-md);
+  }
+  .card-shadow-lg {
+    box-shadow: var(--shadow-lg);
+  }
+}
+
+@media print {
+  /* Printing happens from the invoice modal; drop the app chrome entirely. */
+  body {
+    background: white;
+  }
+}

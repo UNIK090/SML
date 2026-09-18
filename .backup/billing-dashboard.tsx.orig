@@ -1,0 +1,326 @@
+'use client'
+
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { BadgeIndianRupee, Banknote, CircleCheck, Clock3, Download, FileText, LogOut, Minus, PackagePlus, Pencil, Plus, ReceiptText, Search, Send, Sparkles, Trash2, TrendingUp, X } from 'lucide-react'
+
+type Item = { id: number; code: number; name: string; category: string; price: string }
+type Transaction = { invoiceNumber: string; itemName: string; totalAmount: string; paymentStatus: string; createdAt: string; businessDay: string; customerName: string | null; customerPhone: string | null; discount: string; quantity: number }
+type InvoiceLine = { id: number; itemCode: number; itemName: string; category: string; unitPrice: string; quantity: number; lineTotal: string }
+type Invoice = Transaction & { lines: InvoiceLine[] }
+type CartLine = { code: number; name: string; category: string; cataloguePrice: number; unitPrice: number; quantity: number }
+type DailyRow = { businessDay: string; total: number; count: number }
+type Shop = { name: string; address: string | null; phone: string | null; email: string | null; gstin: string | null }
+type Dashboard = {
+  today: string; todayTotal: number; todayCount: number
+  allTotal: number; allCount: number
+  rangeTotal: number; rangeCount: number
+  pendingTotal: number; pendingCount: number
+  recent: Transaction[]; daily: DailyRow[]
+}
+
+const money = (value: number) => `₹${value.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+const readJson = async <T,>(response: Response): Promise<T> => { const text = await response.text(); if (!text) throw new Error('The server returned an empty response.'); try { return JSON.parse(text) as T } catch { throw new Error('The server returned an invalid response.') } }
+const todayIso = () => new Date().toISOString().slice(0, 10)
+const firstOfMonthIso = () => { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1).toISOString().slice(0, 10) }
+// Postgres date columns come back as "2026-09-17"; render without a timezone shift.
+const formatDay = (value: string) => new Date(`${value}T00:00:00`).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
+
+export default function BillingDashboard() {
+  const [search, setSearch] = useState(''); const [matches, setMatches] = useState<Item[]>([]); const [searching, setSearching] = useState(false)
+  const [cart, setCart] = useState<CartLine[]>([]); const [discount, setDiscount] = useState('')
+  const [customerName, setCustomerName] = useState(''); const [customerPhone, setCustomerPhone] = useState('')
+  const [paymentStatus, setPaymentStatus] = useState('PAID')
+  const [dashboard, setDashboard] = useState<Dashboard | null>(null); const [items, setItems] = useState<Item[]>([])
+  const [message, setMessage] = useState(''); const [error, setError] = useState('')
+  const [isAdding, setIsAdding] = useState(false); const [editing, setEditing] = useState<Item | null>(null)
+  const [selectedBill, setSelectedBill] = useState<Invoice | null>(null)
+  const [shop, setShop] = useState<Shop | null>(null)
+  const [from, setFrom] = useState(firstOfMonthIso()); const [to, setTo] = useState(todayIso())
+  const [newItem, setNewItem] = useState({ code: '', name: '', category: '', price: '' })
+  const [adminEmail, setAdminEmail] = useState(''); const [signingOut, setSigningOut] = useState(false)
+  // The invoice renders the shop logo. The upload UI lives outside this screen;
+  // this only needs to know whether an image exists so it can render the header.
+  const [logoVersion, setLogoVersion] = useState(0); const [hasLogo, setHasLogo] = useState(false)
+  // Invoice delivery. `sendPhone` lets a corrected number be used without editing the bill.
+  const [sendPhone, setSendPhone] = useState(''); const [sending, setSending] = useState(false)
+  const [sendNote, setSendNote] = useState(''); const [autoSend, setAutoSend] = useState(false)
+
+  const loadLogo = useCallback(async () => {
+    try {
+      const response = await fetch('/api/logo')
+      setHasLogo(response.ok)
+      setLogoVersion(v => v + 1)
+    } catch { setHasLogo(false) }
+  }, [])
+
+  useEffect(() => { loadLogo() }, [loadLogo])
+  useEffect(() => { fetch('/api/auth/session').then(r => r.ok ? r.json() : null).then(s => setAdminEmail(s?.email ?? '')).catch(() => {}) }, [])
+  useEffect(() => { fetch('/api/shop').then(r => r.ok ? r.json() : null).then(setShop).catch(() => {}) }, [])
+
+  const signOut = async () => { setSigningOut(true); try { await fetch('/api/auth/logout', { method: 'POST' }) } finally { window.location.href = '/admin-login' } }
+
+  /**
+   * Delivers an invoice to the customer.
+   * With the default WhatsApp-link provider the server returns a wa.me URL, which
+   * is opened in a new tab — WhatsApp requires a human to press Send, so the
+   * record is QUEUED rather than SENT and the label says so plainly.
+   */
+  const sendInvoiceToCustomer = async (invoiceNumber: string, channel: 'whatsapp' | 'sms', phone: string) => {
+    setSending(true); setSendNote('')
+    try {
+      const response = await fetch('/api/invoice/send', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ invoiceNumber, channel, phone }),
+      })
+      const result = await readJson<{ error?: string; status?: string; link?: string; detail?: string; provider?: string }>(response)
+      if (!response.ok) { setSendNote(result.error ?? 'Could not send the invoice.'); return }
+
+      if (result.link) {
+        window.open(result.link, '_blank', 'noopener')
+        setSendNote(`WhatsApp opened for this customer — press Send there to deliver. Provider: ${result.provider}.`)
+      } else if (result.status === 'SENT') {
+        setSendNote(`Invoice delivered by ${result.provider}.`)
+      } else {
+        setSendNote(result.detail ?? 'The invoice could not be delivered.')
+      }
+      refresh()
+    } catch { setSendNote('Could not send the invoice.') }
+    finally { setSending(false) }
+  }
+
+  const refresh = useCallback(async () => {
+    const [a, b] = await Promise.all([fetch(`/api/dashboard?from=${from}&to=${to}`), fetch('/api/items')])
+    setDashboard(await readJson<Dashboard>(a)); setItems(await readJson<Item[]>(b))
+  }, [from, to])
+  useEffect(() => { refresh() }, [refresh])
+
+  // Debounced free-text search across name, category and code.
+  useEffect(() => {
+    const term = search.trim()
+    if (!term) { setMatches([]); setSearching(false); return }
+    setSearching(true)
+    const timer = setTimeout(async () => {
+      try { setMatches(await readJson<Item[]>(await fetch(`/api/items?q=${encodeURIComponent(term)}`))) }
+      catch { setMatches([]) } finally { setSearching(false) }
+    }, 250)
+    return () => clearTimeout(timer)
+  }, [search])
+
+  const addToCart = (item: Item) => {
+    setMessage(''); setError('')
+    setCart(prev => {
+      const existing = prev.find(line => line.code === item.code)
+      // Re-adding the same code bumps the quantity instead of duplicating the row.
+      if (existing) return prev.map(line => line.code === item.code ? { ...line, quantity: line.quantity + 1 } : line)
+      return [...prev, { code: item.code, name: item.name, category: item.category, cataloguePrice: Number(item.price), unitPrice: Number(item.price), quantity: 1 }]
+    })
+    setSearch(''); setMatches([])
+  }
+
+  const updateLine = (code: number, patch: Partial<CartLine>) => setCart(prev => prev.map(line => line.code === code ? { ...line, ...patch } : line))
+  const removeLine = (code: number) => setCart(prev => prev.filter(line => line.code !== code))
+  const clearCart = () => { setCart([]); setDiscount(''); setCustomerName(''); setCustomerPhone(''); setPaymentStatus('PAID') }
+
+  const subtotal = useMemo(() => cart.reduce((sum, line) => sum + line.unitPrice * line.quantity, 0), [cart])
+  const discountValue = Math.max(0, Number(discount) || 0)
+  const total = Math.max(0, subtotal - discountValue)
+
+  const createBill = async () => {
+    setMessage(''); setError('')
+    if (cart.length === 0) return setError('Add at least one item to the bill.')
+    if (discountValue > subtotal) return setError('The discount cannot be more than the subtotal.')
+    try {
+      const response = await fetch('/api/transactions', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          items: cart.map(line => ({ code: line.code, quantity: line.quantity, billedPrice: line.unitPrice })),
+          discount: discountValue, paymentStatus, customerName, customerPhone,
+        }),
+      })
+      const result = await readJson<{ error?: string; invoiceNumber?: string; sendStatus?: string; sendLink?: string; sendDetail?: string }>(response)
+      if (!response.ok) return setError(result.error ?? 'Could not save the bill.')
+
+      let note = `Invoice ${result.invoiceNumber} saved — ${money(total)} for ${cart.length} item${cart.length > 1 ? 's' : ''}.`
+      // Auto-send runs server-side once a real provider is configured; the link
+      // provider cannot send on its own, so the server reports that back.
+      if (result.sendStatus === 'SENT') note += ' Invoice sent to the customer.'
+      else if (result.sendStatus === 'QUEUED' && result.sendLink) { window.open(result.sendLink, '_blank', 'noopener'); note += ' WhatsApp opened to send the invoice.' }
+      else if (result.sendStatus === 'FAILED') note += ` Sending failed: ${result.sendDetail ?? 'unknown error'}.`
+
+      setMessage(note)
+      clearCart(); refresh()
+    } catch (e) { setError(e instanceof Error ? e.message : 'Could not save the bill.') }
+  }
+
+  const saveItem = async (event: React.FormEvent) => {
+    event.preventDefault(); setMessage(''); setError('')
+    const data = editing ? { ...newItem, id: editing.id, code: Number(newItem.code), price: Number(newItem.price) } : { ...newItem, code: Number(newItem.code), price: Number(newItem.price) }
+    const response = await fetch('/api/items', { method: editing ? 'PATCH' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) })
+    const result = await readJson<{ error?: string; name?: string }>(response)
+    if (!response.ok) return setError(result.error ?? 'Could not save the catalogue item.')
+    setMessage(`${result.name ?? newItem.name} ${editing ? 'updated' : 'added'} to the catalogue.`)
+    setNewItem({ code: '', name: '', category: '', price: '' }); setEditing(null); setIsAdding(false); refresh()
+  }
+
+  const deleteItem = async (id: number) => {
+    if (!window.confirm('Delete this catalogue item? Existing bills will remain saved.')) return
+    const response = await fetch(`/api/items?id=${id}`, { method: 'DELETE' })
+    const result = await readJson<{ error?: string }>(response)
+    setError(''); setMessage(response.ok ? 'Catalogue item deleted.' : (result.error ?? 'Could not delete item.'))
+    refresh()
+  }
+
+  const startEdit = (i: Item) => { setEditing(i); setIsAdding(true); setNewItem({ code: String(i.code), name: i.name, category: i.category, price: i.price }) }
+
+  // Loads the full line items before showing the invoice.
+  const openInvoice = async (invoiceNumber: string) => {
+    setError(''); setSendNote(''); setSendPhone('')
+    try {
+      const invoice = await readJson<Invoice>(await fetch(`/api/invoice?invoiceNumber=${encodeURIComponent(invoiceNumber)}`))
+      setSelectedBill(invoice)
+      // Pre-fill with the number saved on the bill, if any.
+      setSendPhone(invoice.customerPhone ?? '')
+    } catch { setError('Could not open that invoice.') }
+  }
+
+  const printableLines = selectedBill?.lines ?? []
+  const hasShopDetails = Boolean(shop?.address || shop?.phone || shop?.email || shop?.gstin)
+
+  return <main className="min-h-screen bg-[#f7f8fa] text-slate-950">
+    <style>{`@media print { body * { visibility: hidden; } .receipt-modal, .receipt-modal * { visibility: visible; } .receipt-modal { position: absolute; inset: 0; display: block; background: white; }`}</style>
+
+    <header className="border-b border-slate-200 bg-white print:hidden"><div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-6 py-5"><div className="flex items-center gap-3"><div className="flex size-10 items-center justify-center rounded-xl bg-slate-950 text-white"><Sparkles className="size-5" /></div><div><p className="text-lg font-semibold tracking-tight">{(shop?.name ?? 'SRI MAHA LAXMI JEWELLERS').toUpperCase()}</p><p className="text-xs text-slate-500">Jewellery billing desk</p></div></div><div className="flex items-center gap-3 text-sm text-slate-500"><Clock3 className="size-4" /><span className="hidden sm:inline">Business day closes at 12:00 AM</span><span className="flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-700"><CircleCheck className="size-3.5" /> Live database</span>{adminEmail && <span className="hidden max-w-[16rem] truncate rounded-full bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-600 lg:inline" title={adminEmail}>{adminEmail}</span>}<button onClick={signOut} disabled={signingOut} title="Sign out" className="flex items-center gap-1.5 rounded-full border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-slate-50 hover:text-slate-900 disabled:opacity-60"><LogOut className="size-3.5" />{signingOut ? 'Signing out…' : 'Sign out'}</button></div></div></header>
+
+    <div className="mx-auto max-w-7xl px-6 py-8 print:hidden">
+      <div className="mb-8"><p className="mb-2 text-sm font-medium text-amber-700">{dashboard?.today ?? 'Today'}</p><h1 className="text-3xl font-semibold tracking-tight">Good morning, let&apos;s balance the books.</h1><p className="mt-2 text-slate-500">Search the catalogue by name or code, add items to the bill, then save the invoice.</p></div>
+
+      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <Stat icon={BadgeIndianRupee} label="Today&apos;s earnings" value={money(dashboard?.todayTotal ?? 0)} hint={`${dashboard?.todayCount ?? 0} bills recorded`} />
+        <Stat icon={TrendingUp} label="Total earnings" value={money(dashboard?.allTotal ?? 0)} hint={`${dashboard?.allCount ?? 0} bills all time`} />
+        <Stat icon={ReceiptText} label="Selected range" value={money(dashboard?.rangeTotal ?? 0)} hint={`${dashboard?.rangeCount ?? 0} bills in range`} />
+        <Stat icon={Banknote} label="Payment pending" value={money(dashboard?.pendingTotal ?? 0)} hint={`${dashboard?.pendingCount ?? 0} unpaid bills`} />
+      </section>
+
+      {message && <p className="mt-5 rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{message}</p>}
+      {error && <p role="alert" className="mt-5 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>}
+
+      <div className="mt-6 grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
+        <section className="rounded-2xl border-slate-200 bg-white p-6 shadow-sm">
+          <div className="mb-6 flex items-start justify-between"><div><h2 className="text-lg font-semibold">New bill</h2><p className="mt-1 text-sm text-slate-500">Search by item name, category, or code — then add each item.</p></div><div className="rounded-lg bg-amber-50 p-2 text-amber-700"><FileText className="size-5" /></div></div>
+
+          <div className="relative">
+            <Search className="absolute left-3 top-3 size-4 text-slate-400" />
+            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search e.g. chain, gold, or 1" className="h-11 w-full rounded-lg border-slate-200 pl-10 pr-3 text-sm outline-none focus:ring-2 focus:ring-amber-500" />
+            {searching && <span className="absolute right-3 top-3 text-xs text-slate-400">searching…</span>}
+          </div>
+
+          {matches.length > 0 && <div className="mt-2 max-h-64 overflow-y-auto rounded-xl border-slate-200">{matches.map(m => <button key={m.id} onClick={() => addToCart(m)} className="flex w-full items-center justify-between border-b border-slate-100 px-3 py-3 text-left last:border-0 hover:bg-amber-50"><span className="flex items-center gap-3"><span className="flex size-8 items-center justify-center rounded-lg bg-slate-100 text-xs font-semibold">{m.code}</span><span><span className="block text-sm font-medium">{m.name}</span><span className="block text-xs text-slate-500">{m.category} · {money(Number(m.price))}</span></span></span><Plus className="size-4 text-amber-600" /></button>)}</div>}
+          {search.trim() && !searching && matches.length === 0 && <p className="mt-2 rounded-lg bg-slate-50 px-3 py-3 text-sm text-slate-500">No items match this search.</p>}
+
+          <div className="mt-6">
+            <div className="mb-3 flex items-center justify-between"><h3 className="text-sm font-semibold">Bill items ({cart.length})</h3>{cart.length > 0 && <button onClick={clearCart} className="flex items-center gap-1 text-xs font-medium text-slate-500 hover:text-red-600"><Trash2 className="size-3.5" /> Clear bill</button>}</div>
+            {cart.length === 0 ? <p className="rounded-xl border-dashed border-slate-200 px-4 py-8 text-center text-sm text-slate-500">No items yet. Search above to add the first item.</p> : <div className="flex flex-col gap-2">{cart.map(line => <div key={line.code} className="rounded-xl border-slate-200 p-3">
+              <div className="flex items-start justify-between gap-3"><div><p className="text-sm font-medium">{line.name}</p><p className="text-xs text-slate-500">Code {line.code} · {line.category} · catalogue {money(line.cataloguePrice)}</p></div><button aria-label={`Remove ${line.name}`} onClick={() => removeLine(line.code)}><X className="size-4 text-slate-400 hover:text-red-600" /></button></div>
+              <div className="mt-3 grid gap-3 sm:grid-cols-3">
+                <label className="text-xs font-medium text-slate-600">Quantity<span className="mt-1 flex items-center gap-1"><button aria-label="Decrease quantity" onClick={() => updateLine(line.code, { quantity: Math.max(1, line.quantity - 1) })} className="flex size-10 items-center justify-center rounded-lg border-slate-200"><Minus className="size-3.5" /></button><input type="number" min="1" value={line.quantity} onChange={e => updateLine(line.code, { quantity: Math.max(1, Number(e.target.value) || 1) })} className="h-10 w-full rounded-lg border-slate-200 px-2 text-center text-sm" /><button aria-label="Increase quantity" onClick={() => updateLine(line.code, { quantity: line.quantity + 1 })} className="flex size-10 items-center justify-center rounded-lg border-slate-200"><Plus className="size-3.5" /></button></span></label>
+                <label className="text-xs font-medium text-slate-600">Customer price<input type="number" min="0.01" step="0.01" value={line.unitPrice} onChange={e => updateLine(line.code, { unitPrice: Number(e.target.value) })} className="mt-1 h-10 w-full rounded-lg border-slate-200 px-3 text-sm" /></label>
+                <div className="text-xs font-medium text-slate-600">Line total<p className="mt-1 flex h-10 items-center text-sm font-semibold">{money(line.unitPrice * line.quantity)}</p></div>
+              </div>
+            </div>)}</div>}
+          </div>
+
+          {cart.length > 0 && <div className="mt-6 border-t border-slate-200 pt-5">
+            <div className="grid gap-3 sm:grid-cols-3">
+              <label className="text-xs font-medium text-slate-600">Customer name (optional)<input value={customerName} onChange={e => setCustomerName(e.target.value)} placeholder="Walk-in" className="mt-1 h-10 w-full rounded-lg border-slate-200 px-3 text-sm" /></label>
+              <label className="text-xs font-medium text-slate-600">Phone (optional)<input value={customerPhone} onChange={e => setCustomerPhone(e.target.value)} placeholder="Optional" className="mt-1 h-10 w-full rounded-lg border-slate-200 px-3 text-sm" /></label>
+              <label className="text-xs font-medium text-slate-600">Payment<select value={paymentStatus} onChange={e => setPaymentStatus(e.target.value)} className="mt-1 h-10 w-full rounded-lg border-slate-200 bg-white px-3 text-sm"><option value="PAID">PAID</option><option value="PENDING">PENDING</option></select></label>
+            </div>
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              <label className="text-xs font-medium text-slate-600">Discount (optional)<input type="number" min="0" step="0.01" value={discount} onChange={e => setDiscount(e.target.value)} placeholder="0.00" className="mt-1 h-10 w-full rounded-lg border-slate-200 px-3 text-sm" /></label>
+              <div className="flex flex-col justify-end text-sm"><div className="flex justify-between text-slate-500"><span>Subtotal</span><span>{money(subtotal)}</span></div>{discountValue > 0 && <div className="flex justify-between text-slate-500"><span>Discount</span><span>− {money(discountValue)}</span></div>}<div className="mt-1 flex justify-between border-t border-slate-200 pt-1 text-base font-semibold"><span>Total</span><span>{money(total)}</span></div></div>
+            </div>
+            <button onClick={createBill} className="mt-5 flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-slate-950 text-sm font-medium text-white transition hover:bg-slate-800"><ReceiptText className="size-4" /> Save invoice</button>
+          </div>}
+        </section>
+
+        <section className="rounded-2xl border-slate-200 bg-white p-6 shadow-sm">
+          <div className="mb-5 flex items-start justify-between"><div><h2 className="text-lg font-semibold">Item catalogue</h2><p className="mt-1 text-sm text-slate-500">Edit prices, or add to the current bill.</p></div><button onClick={() => { setEditing(null); setIsAdding(!isAdding) }} className="flex items-center gap-1.5 rounded-lg border-slate-200 px-3 py-2 text-xs font-medium"><Plus className="size-3.5" /> Add item</button></div>
+          {isAdding && <form onSubmit={saveItem} className="mb-5 grid gap-2 rounded-xl bg-slate-50 p-3">
+            <input required placeholder="Code" value={newItem.code} onChange={e => setNewItem({ ...newItem, code: e.target.value })} className="h-9 rounded-md border px-3 text-sm" />
+            <input required placeholder="Item name" value={newItem.name} onChange={e => setNewItem({ ...newItem, name: e.target.value })} className="h-9 rounded-md border px-3 text-sm" />
+            <input required placeholder="Category" value={newItem.category} onChange={e => setNewItem({ ...newItem, category: e.target.value })} className="h-9 rounded-md border px-3 text-sm" />
+            <input required type="number" min="0" step="0.01" placeholder="Actual price" value={newItem.price} onChange={e => setNewItem({ ...newItem, price: e.target.value })} className="h-9 rounded-md border px-3 text-sm" />
+            <div className="flex gap-2"><button className="h-9 flex-1 rounded-md bg-slate-950 text-sm font-medium text-white">{editing ? 'Update item' : 'Save catalogue item'}</button>{editing && <button type="button" onClick={() => { setEditing(null); setIsAdding(false); setNewItem({ code: '', name: '', category: '', price: '' }) }} className="h-9 rounded-md border px-3 text-sm">Cancel</button>}</div>
+          </form>}
+          {items.length === 0 ? <p className="rounded-xl border-dashed border-slate-200 px-4 py-8 text-center text-sm text-slate-500">No catalogue items yet. Add your first item above.</p> : <div className="flex max-h-[28rem] flex-col gap-2 overflow-y-auto pr-1">{items.map(i => <div key={i.id} className="flex items-center justify-between rounded-lg border-slate-100 px-3 py-3"><div className="flex items-center gap-3"><span className="flex size-8 items-center justify-center rounded-lg bg-slate-100 text-xs font-semibold">{i.code}</span><div><p className="text-sm font-medium">{i.name}</p><p className="text-xs text-slate-500">{i.category} · {money(Number(i.price))}</p></div></div><div className="flex gap-1"><button aria-label={`Add ${i.name} to bill`} onClick={() => addToCart(i)} title="Add to bill" className="flex size-8 items-center justify-center rounded-lg text-slate-400 hover:bg-amber-50 hover:text-amber-700"><PackagePlus className="size-4" /></button><button aria-label={`Edit ${i.name}`} onClick={() => startEdit(i)} className="flex size-8 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100"><Pencil className="size-3.5" /></button><button aria-label={`Delete ${i.name}`} onClick={() => deleteItem(i.id)} className="flex size-8 items-center justify-center rounded-lg text-slate-400 hover:bg-red-50 hover:text-red-600"><Trash2 className="size-3.5" /></button></div></div>)}</div>}
+        </section>
+      </div>
+
+      <section className="mt-6 rounded-2xl border-slate-200 bg-white p-6 shadow-sm">
+        <div className="mb-5 flex-wrap items-end justify-between gap-4"><div><h2 className="text-lg font-semibold">Sales report</h2><p className="mt-1 text-sm text-slate-500">Pick a date range to see earnings per day. Click any bill to open the invoice.</p></div>
+          <div className="flex flex-wrap items-end gap-3">
+            <label className="text-xs font-medium text-slate-600">From<input type="date" value={from} onChange={e => setFrom(e.target.value)} className="mt-1 block h-9 rounded-lg border-slate-200 px-3 text-sm" /></label>
+            <label className="text-xs font-medium text-slate-600">To<input type="date" value={to} onChange={e => setTo(e.target.value)} className="mt-1 block h-9 rounded-lg border-slate-200 px-3 text-sm" /></label>
+            <button onClick={() => { setFrom(todayIso()); setTo(todayIso()) }} className="h-9 rounded-lg border-slate-200 px-3 text-xs font-medium">Today</button>
+            <button onClick={() => { setFrom(firstOfMonthIso()); setTo(todayIso()) }} className="h-9 rounded-lg border-slate-200 px-3 text-xs font-medium">This month</button>
+            <span className="rounded-full bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-600">{dashboard?.allCount ?? 0} bills total</span>
+          </div>
+        </div>
+
+        {!dashboard?.daily?.length ? <p className="py-6 text-center text-sm text-slate-500">No bills in the selected range.</p> : <div className="mb-6 overflow-x-auto rounded-xl border-slate-100"><table className="w-full text-left text-sm"><thead className="bg-slate-50 text-xs uppercase tracking-wider text-slate-400"><tr><th className="px-3 py-2 font-medium">Day</th><th className="px-3 py-2 font-medium">Bills</th><th className="px-3 py-2 text-right font-medium">Earnings</th></tr></thead><tbody>{dashboard.daily.map(row => <tr key={row.businessDay} className="border-t border-slate-100"><td className="px-3 py-2">{formatDay(row.businessDay)}</td><td className="px-3 py-2 text-slate-500">{row.count}</td><td className="px-3 py-2 text-right font-semibold">{money(row.total)}</td></tr>)}</tbody><tfoot><tr className="border-t border-slate-200 bg-slate-50 font-semibold"><td className="px-3 py-2" colSpan={2}>Range total</td><td className="px-3 py-2 text-right">{money(dashboard.rangeTotal)}</td></tr></tfoot></table></div>}
+
+        {!dashboard?.recent?.length ? <p className="py-8 text-center text-sm text-slate-500">No bills recorded yet.</p> : <div className="overflow-x-auto"><table className="w-full text-left text-sm"><thead className="border-b border-slate-100 text-xs uppercase tracking-wider text-slate-400"><tr><th className="pb-3 font-medium">Invoice</th><th className="pb-3 font-medium">Item</th><th className="pb-3 font-medium">Customer</th><th className="pb-3 font-medium">Time</th><th className="pb-3 font-medium">Payment</th><th className="pb-3 text-right font-medium">Amount</th></tr></thead><tbody>{dashboard.recent.map(t => <tr key={t.invoiceNumber} onClick={() => openInvoice(t.invoiceNumber)} className="cursor-pointer border-b border-slate-50 last:border-0 hover:bg-slate-50"><td className="py-3 font-medium">{t.invoiceNumber}</td><td className="py-3">{t.itemName}{t.quantity > 1 && <span className="ml-2 text-xs text-slate-400">× {t.quantity}</span>}</td><td className="py-3 text-xs text-slate-500">{t.customerName || 'Walk-in'}</td><td className="py-3 text-xs text-slate-500">{new Date(t.createdAt).toLocaleString('en-IN')}</td><td className="py-3"><span className={`rounded-full px-2 py-1 text-xs font-medium ${t.paymentStatus === 'PAID' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}>{t.paymentStatus}</span></td><td className="py-3 text-right font-semibold">{money(Number(t.totalAmount))}</td></tr>)}</tbody></table></div>}
+      </section>
+    </div>
+
+    {selectedBill && <div className="receipt-modal fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-950/40 p-4 py-10">
+      <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl">
+        <div className="flex items-start justify-between print:hidden"><p className="text-xs uppercase tracking-widest text-slate-500">Tax invoice</p><button aria-label="Close invoice" onClick={() => setSelectedBill(null)}><X className="size-5 text-slate-500" /></button></div>
+
+        <div className="mt-4 border-b border-slate-200 pb-4 text-center">
+          {hasLogo && <img src={`/api/logo?v=${logoVersion}`} alt="" className="mx-auto mb-3 max-h-20 object-contain" />}
+          <h2 className="text-xl font-semibold tracking-tight">{(shop?.name ?? 'SRI MAHA LAXMI JEWELLERS').toUpperCase()}</h2>
+          {shop?.address && <p className="mt-1 text-xs text-slate-600">{shop.address}</p>}
+          {(shop?.phone || shop?.email) && <p className="mt-0.5 text-xs text-slate-600">{[shop?.phone, shop?.email].filter(Boolean).join(' · ')}</p>}
+          {shop?.gstin && <p className="mt-0.5 text-xs text-slate-600">GSTIN: {shop.gstin}</p>}
+          {!hasShopDetails && <p className="mt-1 text-xs text-slate-400">Add your address, phone and GSTIN to .env.local to print them here.</p>}
+        </div>
+
+        <div className="mt-4 grid gap-1 text-xs sm:grid-cols-2">
+          <p><span className="text-slate-500">Invoice no.</span> <span className="font-medium">{selectedBill.invoiceNumber}</span></p>
+          <p className="sm:text-right"><span className="text-slate-500">Date</span> <span className="font-medium">{formatDay(selectedBill.businessDay)}</span></p>
+          <p><span className="text-slate-500">Customer</span> <span className="font-medium">{selectedBill.customerName || 'Walk-in customer'}</span></p>
+          {selectedBill.customerPhone && <p className="sm:text-right"><span className="text-slate-500">Phone</span> <span className="font-medium">{selectedBill.customerPhone}</span></p>}
+          <p><span className="text-slate-500">Payment</span> <span className="font-medium">{selectedBill.paymentStatus}</span></p>
+          <p className="sm:text-right"><span className="text-slate-500">Time</span> <span className="font-medium">{new Date(selectedBill.createdAt).toLocaleTimeString('en-IN')}</span></p>
+        </div>
+
+        <table className="mt-4 w-full text-left text-xs"><thead className="border-y border-slate-200 text-slate-500"><tr><th className="py-2 font-medium">Item</th><th className="py-2 text-center font-medium">Qty</th><th className="py-2 text-right font-medium">Rate</th><th className="py-2 text-right font-medium">Amount</th></tr></thead>
+          <tbody>{printableLines.map(line => <tr key={line.id} className="border-b border-slate-100"><td className="py-2"><span className="font-medium">{line.itemName}</span><span className="ml-1 text-slate-400">({line.category})</span></td><td className="py-2 text-center">{line.quantity}</td><td className="py-2 text-right">{money(Number(line.unitPrice))}</td><td className="py-2 text-right font-medium">{money(Number(line.lineTotal))}</td></tr>)}</tbody>
+        </table>
+
+        <div className="mt-3 flex-col items-end gap-1 text-sm">{(() => { const sub = printableLines.reduce((s, l) => s + Number(l.lineTotal), 0); const disc = Number(selectedBill.discount || 0); return <><div className="flex w-full max-w-xs justify-between text-slate-500"><span>Subtotal</span><span>{money(sub)}</span></div>{disc > 0 && <div className="flex w-full max-w-xs justify-between text-slate-500"><span>Discount</span><span>− {money(disc)}</span></div>}<div className="flex w-full max-w-xs justify-between border-t border-slate-200 pt-1 text-base font-semibold"><span>Total</span><span>{money(Number(selectedBill.totalAmount))}</span></div></> })()}</div>
+
+        <p className="mt-4 text-center text-xs text-slate-400">Thank you for your business.</p>
+
+        <div className="mt-5 rounded-xl bg-slate-50 p-4 print:hidden">
+          <p className="text-sm font-semibold">Send this invoice</p>
+          <p className="mt-1 text-xs text-slate-500">The bill text is pre-filled and sent from your own WhatsApp or SMS.</p>
+          <label className="mt-3 block text-xs font-medium text-slate-600">Customer mobile number
+            <input value={sendPhone} onChange={e => setSendPhone(e.target.value)} placeholder="10-digit mobile, e.g. 9876543210" inputMode="numeric" className="mt-1 h-10 w-full rounded-lg border-slate-200 px-3 text-sm" />
+          </label>
+          {!sendPhone.trim() && !selectedBill.customerPhone && <p className="mt-1 text-xs text-amber-700">No number saved on this bill — enter one to send.</p>}
+          <div className="mt-3 flex gap-2">
+            <button onClick={() => sendInvoiceToCustomer(selectedBill.invoiceNumber, 'whatsapp', sendPhone || selectedBill.customerPhone || '')} disabled={sending} className="flex h-10 flex-1 items-center justify-center gap-2 rounded-lg bg-emerald-600 text-sm font-medium text-white transition hover:bg-emerald-700 disabled:opacity-60"><Send className="size-3.5" />{sending ? 'Sending…' : 'Send on WhatsApp'}</button>
+            <button onClick={() => sendInvoiceToCustomer(selectedBill.invoiceNumber, 'sms', sendPhone || selectedBill.customerPhone || '')} disabled={sending} className="flex h-10 items-center justify-center gap-2 rounded-lg border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:opacity-60"><Send className="size-3.5" /> SMS</button>
+          </div>
+          {sendNote && <p className="mt-2 rounded-lg bg-white px-3 py-2 text-xs leading-5 text-slate-600">{sendNote}</p>}
+        </div>
+
+        <button onClick={() => window.print()} className="mt-4 flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-slate-950 text-sm font-medium text-white print:hidden"><Download className="size-4" /> Print / Save as PDF</button>
+      </div>
+    </div>}
+ </main>
+}
+
+function Stat({ icon: Icon, label, value, hint }: { icon: typeof TrendingUp; label: string; value: string; hint: string }) { return <div className="rounded-2xl border-slate-200 bg-white p-5 shadow-sm"><div className="mb-4 flex items-center justify-between"><p className="text-sm text-slate-500">{label}</p><Icon className="size-4 text-slate-400" /></div><p className="text-2xl font-semibold tracking-tight">{value}</p><p className="mt-1 text-xs text-slate-500">{hint}</p></div> }

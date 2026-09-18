@@ -1,0 +1,94 @@
+'use client'
+
+import { useRouter, useSearchParams } from 'next/navigation'
+import { Suspense, useState } from 'react'
+import { ArrowRight, Eye, EyeOff, KeyRound, Loader2, ShieldCheck, Sparkles } from 'lucide-react'
+
+function AdminLoginForm() {
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const [email, setEmail] = useState(''); const [password, setPassword] = useState(''); const [message, setMessage] = useState('')
+  const [showPassword, setShowPassword] = useState(false); const [busy, setBusy] = useState(false)
+
+  // Only ever follow a same-site relative path, so a crafted ?next= cannot
+  // bounce the admin off to another origin after signing in.
+  const requested = searchParams.get('next') ?? '/'
+  const destination = requested.startsWith('/') && !requested.startsWith('//') ? requested : '/'
+
+  const submit = async (event: React.FormEvent) => {
+    event.preventDefault()
+    if (busy) return
+    setBusy(true); setMessage('')
+    try {
+      const response = await fetch('/api/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password }) })
+      const text = await response.text()
+      const result = text ? (JSON.parse(text) as { error?: string }) : {}
+      if (!response.ok) { setMessage(result.error ?? 'Could not sign you in.'); setPassword(''); return }
+      // Refresh so the middleware picks up the new session cookie before navigation.
+      router.replace(destination)
+      router.refresh()
+    } catch {
+      setMessage('Could not reach the server. Please try again.')
+    } finally {
+      setBusy(false)
+    }
+  }
+  return (
+    <main className="flex min-h-screen items-center justify-center bg-[#f5f1eb] px-6 py-12 text-slate-950">
+      <div className="grid w-full max-w-4xl overflow-hidden rounded-3xl border-slate-200 bg-white shadow-xl md:grid-cols-2">
+        <div className="flex flex-col justify-between bg-slate-950 p-10 text-white">
+          <div>
+            <div className="mb-10 flex size-12 items-center justify-center rounded-2xl bg-amber-400 text-slate-950">
+              <Sparkles className="size-6" />
+            </div>
+            <p className="text-sm font-medium uppercase tracking-[0.24em] text-amber-300">Sri Maha Laxmi Jewellery</p>
+            <h1 className="mt-5 text-4xl font-semibold leading-tight">Your billing desk, secured.</h1>
+            <p className="mt-5 max-w-sm text-sm leading-6 text-slate-300">
+              Sign in to manage your catalogue, create customer receipts, and review daily earnings.
+            </p>
+          </div>
+          <div className="mt-16 flex items-center gap-3 text-sm text-slate-400">
+            <ShieldCheck className="size-5 text-amber-300" /> Admin access only
+          </div>
+        </div>
+        <div className="p-10">
+          <div className="mb-8">
+            <div className="mb-4 flex size-11 items-center justify-center rounded-xl bg-amber-50 text-amber-700">
+              <KeyRound className="size-5" />
+            </div>
+            <h2 className="text-2xl font-semibold">Welcome back</h2>
+            <p className="mt-2 text-sm text-slate-500">Enter your admin credentials to continue.</p>
+          </div>
+          <form onSubmit={submit} className="flex flex-col gap-5">
+            <label className="flex flex-col gap-2 text-sm font-medium">
+              Email address
+              <input required type="email" autoComplete="username" disabled={busy} value={email} onChange={e => setEmail(e.target.value)} placeholder="admin@yourstore.com" className="h-11 rounded-lg border-slate-200 px-3 font-normal outline-none focus:ring-2 focus:ring-amber-500 disabled:bg-slate-50" />
+            </label>
+            <label className="flex flex-col gap-2 text-sm font-medium">
+              Password
+              <span className="relative">
+                <input required type={showPassword ? 'text' : 'password'} autoComplete="current-password" disabled={busy} value={password} onChange={e => setPassword(e.target.value)} placeholder="Enter your password" className="h-11 w-full rounded-lg border-slate-200 px-3 pr-11 font-normal outline-none focus:ring-2 focus:ring-amber-500 disabled:bg-slate-50" />
+                <button type="button" onClick={() => setShowPassword(v => !v)} aria-label={showPassword ? 'Hide password' : 'Show password'} className="absolute right-3 top-3 text-slate-400 hover:text-slate-700">
+                  {showPassword ? <EyeOff className="size-5" /> : <Eye className="size-5" />}
+                </button>
+              </span>
+            </label>
+            <button type="submit" disabled={busy} className="flex h-11 items-center justify-center gap-2 rounded-lg bg-slate-950 text-sm font-medium text-white transition hover:bg-slate-800 disabled:opacity-60">
+              {busy ? <><Loader2 className="size-4 animate-spin" /> Signing in…</> : <>Sign in <ArrowRight className="size-4" /></>}
+            </button>
+          </form>
+          {message && <p role="alert" className="mt-5 rounded-lg bg-red-50 p-3 text-xs leading-5 text-red-700">{message}</p>}
+          <p className="mt-8 text-center text-xs text-slate-400">Protected jewellery business workspace</p>
+        </div>
+      </div>
+    </main>
+  )
+}
+
+export default function AdminLoginPage() {
+  return (
+    <Suspense fallback={<main className="min-h-screen bg-[#f5f1eb]" />}>
+      <AdminLoginForm />
+    </Suspense>
+  )
+}

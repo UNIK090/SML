@@ -1,0 +1,256 @@
+'use client'
+
+// Application shell: collapsible sidebar for the three working sections, plus
+// the header with theme, language and sign-out controls.
+
+import { useState, type ReactNode } from 'react'
+import { Check, CircleCheck, Clock3, Gem, Globe, LogOut, Menu, Moon, PanelLeftClose, PanelLeftOpen, ReceiptText, Settings, Sparkles, Sun, Wallet, X } from 'lucide-react'
+import { usePreferences } from '@/components/preferences'
+import { LANGUAGES } from '@/lib/i18n'
+import type { TranslationKey } from '@/lib/i18n'
+
+export type SectionKey = 'billing' | 'payments' | 'items' | 'profile'
+
+const SECTIONS: { key: SectionKey; labelKey: TranslationKey; hintKey: TranslationKey; icon: typeof ReceiptText }[] = [
+  { key: 'billing', labelKey: 'nav.billing', hintKey: 'nav.billing.hint', icon: ReceiptText },
+  { key: 'payments', labelKey: 'nav.payments', hintKey: 'nav.payments.hint', icon: Wallet },
+  { key: 'items', labelKey: 'nav.items', hintKey: 'nav.items.hint', icon: Gem },
+  { key: 'profile', labelKey: 'nav.profile', hintKey: 'nav.profile.hint', icon: Settings },
+]
+
+export default function AppShell({
+  section,
+  onSectionChange,
+  shopName,
+  adminEmail,
+  children,
+}: {
+  section: SectionKey
+  onSectionChange: (next: SectionKey) => void
+  shopName: string
+  adminEmail: string
+  children: ReactNode
+}) {
+  const { theme, language, sidebarCollapsed, toggleTheme, setLanguage, toggleSidebar, t } = usePreferences()
+  const [signingOut, setSigningOut] = useState(false)
+  const [langOpen, setLangOpen] = useState(false)
+  const [drawerOpen, setDrawerOpen] = useState(false)
+
+  const signOut = async () => {
+    setSigningOut(true)
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' })
+    } finally {
+      window.location.href = '/admin-login'
+    }
+  }
+
+  const current = SECTIONS.find((entry) => entry.key === section)
+
+  return (
+    <div className="min-h-screen bg-background">
+      <div className="mx-auto flex min-h-screen max-w-[1500px] flex-col lg:flex-row">
+        {/* Sidebar. Collapses to icons on desktop, stays a horizontal strip on mobile. */}
+        <aside
+          className={`hidden shrink-0 border-hairline bg-sidebar lg:sticky lg:top-0 lg:flex lg:h-screen lg:self-start lg:flex-col lg:overflow-y-auto lg:border-r lg:py-5 ${
+            sidebarCollapsed ? 'lg:w-[4.75rem] lg:px-3' : 'lg:w-72 lg:px-5'
+          } transition-[width] duration-200`}
+        >
+          <div className={`flex items-center gap-3 ${sidebarCollapsed ? 'lg:mb-6 lg:justify-center' : 'lg:mb-8'}`}>
+            <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground">
+              <Sparkles className="size-5" />
+            </span>
+            {!sidebarCollapsed && (
+              <div className="min-w-0 lg:block">
+                <p className="text-[13px] leading-tight font-semibold tracking-tight">{shopName.toUpperCase()}</p>
+                <p className="mt-0.5 text-xs text-muted-foreground">{t('brand.desk')}</p>
+              </div>
+            )}
+            {/* Collapse control lives on desktop only; mobile shows the strip nav. */}
+            <button
+              onClick={toggleSidebar}
+              aria-label={sidebarCollapsed ? t('nav.expand') : t('nav.collapse')}
+              title={sidebarCollapsed ? t('nav.expand') : t('nav.collapse')}
+              className="ml-auto hidden size-8 items-center justify-center rounded-lg text-muted-foreground transition hover:bg-card hover:text-foreground lg:flex"
+            >
+              {sidebarCollapsed ? <PanelLeftOpen className="size-4" /> : <PanelLeftClose className="size-4" />}
+            </button>
+          </div>
+
+          <nav className="flex gap-2 overflow-x-auto lg:flex-col lg:gap-1 lg:overflow-visible">
+            {SECTIONS.map(({ key, labelKey, hintKey, icon: Icon }) => {
+              const active = key === section
+              return (
+                <button
+                  key={key}
+                  onClick={() => {
+                    onSectionChange(key)
+                    setDrawerOpen(false)
+                  }}
+                  aria-current={active ? 'page' : undefined}
+                  title={sidebarCollapsed ? t(labelKey) : undefined}
+                  className={`flex shrink-0 items-center gap-3 rounded-xl py-2.5 whitespace-nowrap transition lg:w-full ${
+                    sidebarCollapsed ? 'px-3 lg:justify-center' : 'px-3'
+                  } ${active ? 'card-shadow bg-card text-foreground' : 'text-muted-foreground hover:bg-card/60 hover:text-foreground'}`}
+                >
+                  <Icon className={`size-4 shrink-0 ${active ? 'text-gold-deep' : ''}`} />
+                  {!sidebarCollapsed && (
+                    <span className="min-w-0 lg:block">
+                      <span className="block text-sm font-medium">{t(labelKey)}</span>
+                      <span className="hidden text-xs text-muted-foreground lg:block">{t(hintKey)}</span>
+                    </span>
+                  )}
+                </button>
+              )
+            })}
+          </nav>
+
+          <div className={`mt-6 hidden border-t border-hairline pt-5 lg:block ${sidebarCollapsed ? 'text-center' : ''}`}>
+            <div className={`flex items-center gap-2 text-xs text-muted-foreground ${sidebarCollapsed ? 'justify-center' : ''}`}>
+              <Clock3 className="size-3.5 shrink-0" />
+              {!sidebarCollapsed && <span>12:00 AM</span>}
+            </div>
+            <div className={`mt-2 flex items-center gap-2 text-xs text-success ${sidebarCollapsed ? 'justify-center' : ''}`}>
+              <CircleCheck className="size-3.5 shrink-0" />
+              {!sidebarCollapsed && <span>Live database</span>}
+            </div>
+          </div>
+        </aside>
+
+        {/* Content */}
+        <div className="min-w-0 flex-1">
+          <header className="sticky top-0 z-30 border-b border-hairline bg-card/80 px-6 py-4 backdrop-blur print:hidden">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex min-w-0 items-center gap-3">
+                {/* Hamburger: opens the drawer on small screens, where the rail is hidden. */}
+                <button
+                  onClick={() => setDrawerOpen(true)}
+                  aria-label={t('nav.expand')}
+                  className="flex size-9 shrink-0 items-center justify-center rounded-xl border-hairline text-muted-foreground transition hover:bg-secondary hover:text-foreground lg:hidden"
+                >
+                  <Menu className="size-4" />
+                </button>
+                <div className="min-w-0">
+                <h1 className="truncate text-lg font-semibold tracking-tight">{current ? t(current.labelKey) : ''}</h1>
+                <p className="truncate text-xs text-muted-foreground">{current ? t(current.hintKey) : ''}</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                {/* Theme toggle */}
+                <button
+                  onClick={toggleTheme}
+                  aria-label={t('nav.theme')}
+                  title={t('nav.theme')}
+                  className="flex size-9 items-center justify-center rounded-full border-hairline text-muted-foreground transition hover:bg-secondary hover:text-foreground"
+                >
+                  {theme === 'dark' ? <Sun className="size-4" /> : <Moon className="size-4" />}
+                </button>
+
+                {/* Language switcher */}
+                <div className="relative">
+                  <button
+                    onClick={() => setLangOpen((value) => !value)}
+                    aria-label={t('nav.language')}
+                    aria-expanded={langOpen}
+                    className="flex h-9 items-center gap-1.5 rounded-full border-hairline px-3 text-xs font-medium text-muted-foreground transition hover:bg-secondary hover:text-foreground"
+                  >
+                    <Globe className="size-4" />
+                    {LANGUAGES.find((entry) => entry.value === language)?.native}
+                  </button>
+                  {langOpen && (
+                    <>
+                      {/* Click-away layer so the menu closes without a global listener. */}
+                      <button className="fixed inset-0 z-40 cursor-default" aria-hidden onClick={() => setLangOpen(false)} />
+                      <div className="card-shadow-lg absolute right-0 z-50 mt-2 w-44 overflow-hidden rounded-xl border-hairline bg-card py-1">
+                        {LANGUAGES.map((entry) => (
+                          <button
+                            key={entry.value}
+                            onClick={() => {
+                              setLanguage(entry.value)
+                              setLangOpen(false)
+                            }}
+                            className="flex w-full items-center justify-between px-3 py-2 text-left text-sm transition hover:bg-secondary"
+                          >
+                            <span>
+                              <span className="block">{entry.native}</span>
+                              <span className="block text-xs text-muted-foreground">{entry.label}</span>
+                            </span>
+                            {language === entry.value && <Check className="size-4 text-gold-deep" />}
+                          </button>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                {adminEmail && (
+                  <span className="hidden max-w-[14rem] truncate rounded-full bg-secondary px-3 py-1.5 text-xs text-muted-foreground xl:inline" title={adminEmail}>
+                    {adminEmail}
+                  </span>
+                )}
+
+                <button
+                  onClick={signOut}
+                  disabled={signingOut}
+                  className="flex h-9 items-center gap-1.5 rounded-full border-hairline px-3 text-xs font-medium text-muted-foreground transition hover:bg-secondary hover:text-foreground disabled:opacity-60"
+                >
+                  <LogOut className="size-3.5" />
+                  <span className="hidden sm:inline">{signingOut ? t('login.signingOut') : t('login.signOut')}</span>
+                </button>
+              </div>
+            </div>
+          </header>
+
+          <main className="px-4 py-6 sm:px-6 sm:py-7">{children}</main>
+        </div>
+      </div>
+
+      {/* Mobile navigation drawer. Slides in from the left and traps nothing —
+          a click on the backdrop closes it. */}
+      {drawerOpen && (
+        <div className="fixed inset-0 z-50 lg:hidden" role="dialog" aria-modal="true" aria-label={t('nav.expand')}>
+          <button className="absolute inset-0 bg-primary/45 backdrop-blur-sm" aria-hidden onClick={() => setDrawerOpen(false)} />
+          <nav className="animate-slide-in absolute inset-y-0 left-0 flex w-72 flex-col border-r border-hairline bg-sidebar px-4 py-5">
+            <div className="mb-7 flex items-center gap-3">
+              <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground">
+                <Sparkles className="size-5" />
+              </span>
+              <div className="min-w-0">
+                <p className="truncate text-[13px] leading-tight font-semibold tracking-tight">{shopName.toUpperCase()}</p>
+                <p className="mt-0.5 text-xs text-muted-foreground">{t('brand.desk')}</p>
+              </div>
+              <button onClick={() => setDrawerOpen(false)} aria-label={t('common.close')} className="ml-auto flex size-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-card hover:text-foreground">
+                <X className="size-4" />
+              </button>
+            </div>
+            <div className="flex flex-col gap-1">
+              {SECTIONS.map(({ key, labelKey, hintKey, icon: Icon }) => {
+                const active = key === section
+                return (
+                  <button
+                    key={key}
+                    onClick={() => {
+                      onSectionChange(key)
+                      setDrawerOpen(false)
+                    }}
+                    aria-current={active ? 'page' : undefined}
+                    className={`flex items-center gap-3 rounded-xl px-3 py-3 text-left transition ${
+                      active ? 'card-shadow bg-card text-foreground' : 'text-muted-foreground hover:bg-card/60 hover:text-foreground'
+                    }`}
+                  >
+                    <Icon className={`size-4 shrink-0 ${active ? 'text-gold-deep' : ''}`} />
+                    <span className="min-w-0">
+                      <span className="block text-sm font-medium">{t(labelKey)}</span>
+                      <span className="block text-xs text-muted-foreground">{t(hintKey)}</span>
+                    </span>
+                  </button>
+                )
+              })}
+            </div>
+          </nav>
+        </div>
+      )}
+    </div>
+  )
+}
