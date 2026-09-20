@@ -6,8 +6,9 @@
 // shell owns navigation and the sign-out control.
 
 import { useEffect, useMemo, useState } from 'react'
-import { FileText, Loader2, Minus, Plus, ReceiptText, Search, Send, ShoppingBag, Trash2, X } from 'lucide-react'
-import { Badge, Button, Card, EmptyState, Field, Input, Notice, SectionHeading, Skeleton, SkeletonRows, Select, money } from '@/components/ui'
+import { FileText, Loader2, Minus, Plus, ReceiptText, Search, ShoppingBag, Trash2, X } from 'lucide-react'
+import { Badge, Button, Card, EmptyState, Field, Input, Notice, SectionHeading, Skeleton, SkeletonRows, Select, WorkspaceHero, money } from '@/components/ui'
+import BarcodeScanner from '@/components/barcode-scanner'
 import { usePreferences } from '@/components/preferences'
 import type { CartLine, Dashboard, Item, Shop } from '@/lib/types'
 
@@ -52,29 +53,33 @@ export default function BillingSection({
       return
     }
     setSearching(true)
+    let cancelled = false
     const timer = setTimeout(async () => {
       try {
         const response = await fetch(`/api/items?q=${encodeURIComponent(term)}`)
-        setMatches(response.ok ? await response.json() : [])
+        if (!cancelled) setMatches(response.ok ? await response.json() : [])
       } catch {
-        setMatches([])
+        if (!cancelled) setMatches([])
       } finally {
-        setSearching(false)
+        if (!cancelled) setSearching(false)
       }
     }, 250)
-    return () => clearTimeout(timer)
+    return () => { cancelled = true; clearTimeout(timer) }
   }, [search])
 
-  const addToCart = (item: Item) => {
+  // `customerPrice` lets the barcode scanner hand back an operator-entered price;
+  // when omitted the catalogue price is used, which is the search/quick-add path.
+  const addToCart = (item: Item, customerPrice?: number) => {
     setMessage('')
     setError('')
+    const unitPrice = customerPrice !== undefined && Number.isFinite(customerPrice) && customerPrice >= 0 ? customerPrice : Number(item.price)
     setCart((prev) => {
       const existing = prev.find((line) => line.code === item.code)
       // Re-adding the same code bumps quantity instead of duplicating the row.
-      if (existing) return prev.map((line) => (line.code === item.code ? { ...line, quantity: line.quantity + 1 } : line))
+      if (existing) return prev.map((line) => (line.code === item.code ? { ...line, quantity: line.quantity + 1, unitPrice } : line))
       return [
         ...prev,
-        { code: item.code, name: item.name, category: item.category, cataloguePrice: Number(item.price), unitPrice: Number(item.price), quantity: 1 },
+        { code: item.code, name: item.name, category: item.category, cataloguePrice: Number(item.price), unitPrice, quantity: 1 },
       ]
     })
     setSearch('')
@@ -120,7 +125,8 @@ export default function BillingSection({
       if (!response.ok) return setError(result.error ?? 'Could not save the bill.')
 
       let note = `Invoice ${result.invoiceNumber} saved — ${money(total)} for ${cart.length} item${cart.length > 1 ? 's' : ''}.`
-      if (result.sendStatus === 'SENT') note += ' Invoice sent to the customer.'
+      if (result.sendStatus === 'SCHEDULED') note += ` ${result.sendDetail ?? 'Invoice delivery is being sent in the background.'}`
+      else if (result.sendStatus === 'SENT') note += ' Invoice sent to the customer.'
       else if (result.sendStatus === 'QUEUED' && result.sendLink) {
         window.open(result.sendLink, '_blank', 'noopener')
         note += ' WhatsApp opened to send the invoice.'
@@ -140,8 +146,35 @@ export default function BillingSection({
   }
 
   return (
-    <div className="grid gap-6 xl:grid-cols-[1.25fr_0.75fr]">
-      <Card>
+    <div className="flex flex-col gap-6">
+      <WorkspaceHero
+        eyebrow="Sales operations"
+        title="Billing command centre"
+        description="Build accurate invoices, manage customer details, and keep revenue flowing from one focused workspace."
+        action={
+          <span className="inline-flex items-center gap-2 rounded-xl border border-white/15 bg-white/10 px-3 py-2 text-xs font-medium text-slate-100 backdrop-blur">
+            <span className="size-2 rounded-full bg-emerald-400 shadow-[0_0_0_4px_rgb(52_211_153_/_15%)]" /> Live business day
+          </span>
+        }
+      >
+        <div className="grid gap-3 sm:grid-cols-3">
+          <div className="business-hero-metric rounded-2xl p-3.5">
+            <p className="text-[10px] font-semibold tracking-[0.1em] text-slate-300 uppercase">Sales today</p>
+            <p className="tnum mt-1 text-xl font-semibold text-white">{money(dashboard?.todayTotal ?? 0)}</p>
+          </div>
+          <div className="business-hero-metric rounded-2xl p-3.5">
+            <p className="text-[10px] font-semibold tracking-[0.1em] text-slate-300 uppercase">Invoices today</p>
+            <p className="mt-1 text-xl font-semibold text-white">{dashboard?.todayCount ?? 0}</p>
+          </div>
+          <div className="business-hero-metric rounded-2xl p-3.5">
+            <p className="text-[10px] font-semibold tracking-[0.1em] text-slate-300 uppercase">Pending collection</p>
+            <p className="tnum mt-1 text-xl font-semibold text-white">{money(dashboard?.pendingTotal ?? 0)}</p>
+          </div>
+        </div>
+      </WorkspaceHero>
+
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.3fr)_minmax(21rem,0.7fr)]">
+      <Card className="business-primary-card">
         <SectionHeading
           title={t('billing.new')}
           description={t('billing.new.hint')}
@@ -152,20 +185,24 @@ export default function BillingSection({
           }
         />
 
-        <div className="relative">
-          <Search className="pointer-events-none absolute top-3.5 left-3.5 size-4 text-muted-foreground" />
+        <div className="mb-4">
+          <BarcodeScanner onAdd={(item, price) => addToCart(item, price)} />
+        </div>
+
+        <div className="catalogue-search relative">
+          <Search className="pointer-events-none absolute top-3.5 left-3.5 size-4 text-gold-deep" />
           <Input
             value={search}
             onChange={(event) => setSearch(event.target.value)}
             placeholder={t('billing.searchPlaceholder')}
-            className="pl-10"
+            className="!border-gold/70 !pl-10 font-medium"
             aria-label={t('common.search')}
           />
           {searching && <span className="absolute top-3.5 right-3.5 text-xs text-muted-foreground">{t('billing.searching')}</span>}
         </div>
 
         {matches.length > 0 && (
-          <div className="card-shadow mt-2 max-h-72 overflow-y-auto rounded-xl border-hairline bg-card">
+          <div className="card-shadow mt-2 max-h-72 overflow-y-auto rounded-2xl border-hairline bg-card">
             {matches.map((item) => (
               <button
                 key={item.id}
@@ -206,7 +243,7 @@ export default function BillingSection({
           ) : (
             <div className="flex flex-col gap-3">
               {cart.map((line) => (
-                <div key={line.code} className="rounded-xl border-hairline bg-background/60 p-4">
+                <div key={line.code} className="business-list-row rounded-2xl p-4">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <p className="truncate text-sm font-medium">{line.name}</p>
@@ -308,7 +345,7 @@ export default function BillingSection({
       </Card>
 
       <div className="flex flex-col gap-6">
-        <Card>
+        <Card className="business-side-card">
           <SectionHeading title={t('billing.quickAdd')} description={t('billing.quickAdd.hint')} />
           {itemsLoading ? (
             <SkeletonRows rows={5} />
@@ -320,7 +357,7 @@ export default function BillingSection({
                 <button
                   key={item.id}
                   onClick={() => addToCart(item)}
-                  className="flex items-center justify-between rounded-xl border-hairline px-3 py-2.5 text-left transition hover:bg-gold-soft/40"
+                  className="business-list-row flex items-center justify-between rounded-2xl px-3 py-2.5 text-left"
                 >
                   <span className="flex min-w-0 items-center gap-3">
                     <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-secondary text-xs font-semibold">{item.code}</span>
@@ -336,7 +373,7 @@ export default function BillingSection({
           )}
         </Card>
 
-        <Card>
+        <Card className="business-side-card">
           <SectionHeading title={t('billing.latest')} description={t('billing.latest.hint')} />
           {dashboardLoading ? (
             <SkeletonRows rows={4} />
@@ -348,7 +385,7 @@ export default function BillingSection({
                 <button
                   key={bill.invoiceNumber}
                   onClick={() => onOpenInvoice(bill.invoiceNumber)}
-                  className="flex items-center justify-between rounded-xl border-hairline px-3 py-2.5 text-left transition hover:bg-secondary"
+                  className="business-list-row flex items-center justify-between rounded-2xl px-3 py-2.5 text-left"
                 >
                   <span className="min-w-0">
                     <span className="block truncate text-sm font-medium">{bill.invoiceNumber}</span>
@@ -371,6 +408,7 @@ export default function BillingSection({
             Add your shop address, phone and GSTIN to <span className="font-medium">.env.local</span> so they print on the invoice.
           </Notice>
         )}
+      </div>
       </div>
     </div>
   )

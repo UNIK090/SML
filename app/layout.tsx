@@ -7,6 +7,10 @@ export const metadata: Metadata = {
   title: 'SRI MAHA LAXMI JEWELLERS | Jewellery Billing',
   description: 'Real-time jewellery billing, catalogue, and earnings ledger.',
   generator: 'v0.app',
+  icons: {
+    icon: [{ url: '/api/brand?kind=favicon', type: 'image/png' }],
+    apple: [{ url: '/api/brand?kind=favicon', type: 'image/png' }],
+  },
 }
 export const viewport: Viewport = { colorScheme: 'light', themeColor: '#f7f8fa' }
 // Applies the stored theme before first paint, so a dark-mode user never sees a

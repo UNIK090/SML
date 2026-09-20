@@ -4,7 +4,7 @@
 // each re-inventing card/badge/table markup, which is what made the old single
 // dashboard component so long.
 
-import type { ReactNode } from 'react'
+import { forwardRef, type ReactNode } from 'react'
 import type { LucideIcon } from 'lucide-react'
 import { AnimatedNumber } from '@/components/motion'
 
@@ -17,18 +17,52 @@ export const formatDay = (value: string) =>
 
 export function SectionHeading({ title, description, action }: { title: string; description?: string; action?: ReactNode }) {
   return (
-    <div className="mb-6 flex-wrap items-end justify-between gap-4">
+    <div className="mb-7 flex flex-wrap items-end justify-between gap-4 border-b border-hairline pb-5">
       <div>
-        <h2 className="text-xl font-semibold tracking-tight">{title}</h2>
-        {description && <p className="mt-1 text-sm text-muted-foreground">{description}</p>}
+        <p className="mb-1 text-[10px] font-semibold tracking-[0.16em] text-gold-deep uppercase">Workspace</p>
+        <h2 className="text-xl font-semibold tracking-tight sm:text-2xl">{title}</h2>
+        {description && <p className="mt-1.5 max-w-2xl text-sm leading-6 text-muted-foreground">{description}</p>}
       </div>
       {action}
     </div>
   )
 }
 
+/**
+ * Executive-style page lead used above each work area. It separates the
+ * business context from the operational controls that follow it, which makes
+ * dense billing screens easier to scan at a counter or on a laptop.
+ */
+export function WorkspaceHero({
+  eyebrow = 'Business workspace',
+  title,
+  description,
+  action,
+  children,
+}: {
+  eyebrow?: string
+  title: string
+  description: string
+  action?: ReactNode
+  children?: ReactNode
+}) {
+  return (
+    <section className="business-hero overflow-hidden rounded-3xl px-5 py-6 sm:px-7 sm:py-7">
+      <div className="relative z-10 flex flex-wrap items-start justify-between gap-5">
+        <div className="max-w-2xl">
+          <p className="business-eyebrow">{eyebrow}</p>
+          <h2 className="mt-2 text-2xl font-semibold tracking-tight text-white sm:text-3xl">{title}</h2>
+          <p className="mt-2 max-w-xl text-sm leading-6 text-slate-300">{description}</p>
+        </div>
+        {action && <div className="shrink-0">{action}</div>}
+      </div>
+      {children && <div className="relative z-10 mt-6">{children}</div>}
+    </section>
+  )
+}
+
 export function Card({ children, className = '' }: { children: ReactNode; className?: string }) {
-  return <section className={`card-shadow rounded-2xl border-hairline bg-card p-6 ${className}`}>{children}</section>
+  return <section className={`business-card card-shadow rounded-3xl border-hairline bg-card/95 p-5 sm:p-6 ${className}`}>{children}</section>
 }
 
 export function Button({
@@ -42,10 +76,10 @@ export function Button({
   type?: 'button' | 'submit'
 } & React.ButtonHTMLAttributes<HTMLButtonElement>) {
   const styles: Record<string, string> = {
-    primary: 'bg-primary text-primary-foreground hover:opacity-90',
-    gold: 'bg-gold text-white hover:opacity-90',
-    success: 'bg-success text-white hover:opacity-90',
-    danger: 'border-hairline bg-card text-destructive hover:bg-red-50',
+    primary: 'bg-primary text-primary-foreground shadow-[0_8px_18px_rgb(25_43_75_/_20%)] hover:-translate-y-px hover:opacity-95',
+    gold: 'bg-gold text-slate-950 shadow-[0_8px_18px_rgb(181_136_40_/_24%)] hover:-translate-y-px hover:opacity-95',
+    success: 'bg-success text-white shadow-[0_8px_18px_rgb(22_125_84_/_20%)] hover:-translate-y-px hover:opacity-95',
+    danger: 'border-hairline bg-card text-destructive hover:bg-red-50 dark:hover:bg-red-950/25',
     outline: 'border-hairline bg-card text-foreground hover:bg-secondary',
     ghost: 'text-muted-foreground hover:bg-secondary hover:text-foreground',
   }
@@ -54,27 +88,28 @@ export function Button({
     <button
       type={type}
       {...rest}
-      className={`inline-flex items-center justify-center gap-2 rounded-xl font-medium transition disabled:pointer-events-none disabled:opacity-55 ${styles[variant]} ${sizes} ${rest.className ?? ''}`}
+      className={`inline-flex items-center justify-center gap-2 rounded-xl font-medium transition duration-200 disabled:pointer-events-none disabled:opacity-55 ${styles[variant]} ${sizes} ${rest.className ?? ''}`}
     >
       {children}
     </button>
   )
 }
 
-export function Input(props: React.InputHTMLAttributes<HTMLInputElement>) {
+export const Input = forwardRef<HTMLInputElement, React.InputHTMLAttributes<HTMLInputElement>>(function Input(props, ref) {
   return (
     <input
+      ref={ref}
       {...props}
-      className={`h-11 w-full rounded-xl border-hairline bg-card px-3 text-sm transition placeholder:text-muted-foreground/70 ${props.className ?? ''}`}
+      className={`h-11 w-full rounded-xl border-hairline bg-card/90 px-3 text-sm shadow-[inset_0_1px_0_rgb(255_255_255_/_30%)] transition placeholder:text-muted-foreground/70 ${props.className ?? ''}`}
     />
   )
-}
+})
 
 export function Select(props: React.SelectHTMLAttributes<HTMLSelectElement>) {
   return (
     <select
       {...props}
-      className={`h-11 w-full rounded-xl border-hairline bg-card px-3 text-sm transition ${props.className ?? ''}`}
+      className={`h-11 w-full rounded-xl border-hairline bg-card/90 px-3 text-sm shadow-[inset_0_1px_0_rgb(255_255_255_/_30%)] transition ${props.className ?? ''}`}
     />
   )
 }
@@ -96,7 +131,7 @@ export function Badge({ children, tone = 'neutral' }: { children: ReactNode; ton
     warn: 'bg-warn-soft text-warn',
     gold: 'bg-gold-soft text-gold-deep',
   }
-  return <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium ${tones[tone]}`}>{children}</span>
+  return <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold ${tones[tone]}`}>{children}</span>
 }
 
 export function StatCard({
@@ -127,7 +162,7 @@ export function StatCard({
 
   if (loading) {
     return (
-      <div className="card-shadow rounded-2xl border-hairline bg-card p-5">
+      <div className="business-card card-shadow rounded-3xl border-hairline bg-card/95 p-5">
         <div className="mb-4 flex items-center justify-between gap-2">
           <Skeleton className="h-3.5 w-20" />
           <Skeleton className="size-8 rounded-lg" />
@@ -139,15 +174,15 @@ export function StatCard({
   }
 
   return (
-    <div className="card-shadow min-w-0 rounded-2xl border-hairline bg-card p-5 transition-shadow hover:shadow-[var(--shadow-lg)]">
+    <div className="business-card card-shadow min-w-0 rounded-3xl border-hairline bg-card/95 p-5 transition duration-200 hover:-translate-y-0.5 hover:shadow-[var(--shadow-lg)]">
       <div className="mb-4 flex items-center justify-between gap-2">
-        <p className="truncate text-sm text-muted-foreground">{label}</p>
-        <span className={`flex size-8 shrink-0 items-center justify-center rounded-lg ${iconTone[tone]}`}>
+        <p className="truncate text-[11px] font-semibold tracking-[0.08em] text-muted-foreground uppercase">{label}</p>
+        <span className={`flex size-9 shrink-0 items-center justify-center rounded-xl ${iconTone[tone]}`}>
           <Icon className="size-4" />
         </span>
       </div>
       {/* The value must never wrap or overlap the icon on large amounts. */}
-      <p className="text-xl font-semibold tracking-tight whitespace-nowrap sm:text-2xl">
+      <p className="text-2xl font-semibold tracking-tight whitespace-nowrap sm:text-[1.7rem]">
         {amount === undefined ? <span className="tnum">{value}</span> : <AnimatedNumber value={amount} format={money} />}
       </p>
       <p className="mt-1 text-xs text-muted-foreground">{hint}</p>
@@ -217,7 +252,7 @@ export function SkeletonStats({ count = 4 }: { count?: number }) {
   return (
     <div className="grid gap-4 sm:grid-cols-2 2xl:grid-cols-4" role="status" aria-label="Loading">
       {Array.from({ length: count }).map((_, index) => (
-        <div key={index} className="card-shadow rounded-2xl border-hairline bg-card p-5">
+        <div key={index} className="business-card card-shadow rounded-3xl border-hairline bg-card/95 p-5">
           <div className="mb-4 flex items-center justify-between">
             <Skeleton className="h-3.5 w-20" />
             <Skeleton className="h-8 w-8 rounded-lg" />

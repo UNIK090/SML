@@ -5,24 +5,28 @@
 // Data comes from the cached hook in lib/use-api, so switching sections paints
 // instantly from cache and revalidates in the background.
 
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useState } from 'react'
+import dynamic from 'next/dynamic'
 import AppShell, { type SectionKey } from '@/components/app-shell'
-import BillingSection from '@/components/sections/billing-section'
-import PaymentsSection from '@/components/sections/payments-section'
-import ItemsSection from '@/components/sections/items-section'
-import ProfileSection from '@/components/sections/profile-section'
-import InvoiceModal from '@/components/invoice-modal'
-import PaymentSuccess from '@/components/payment-success'
 import { Notice } from '@/components/ui'
 import { usePreferences } from '@/components/preferences'
 import { useApi, writeCache } from '@/lib/use-api'
-import type { Dashboard, Invoice, Item, Shop } from '@/lib/types'
+import type { BrandAssets, Dashboard, Invoice, Item, Shop } from '@/lib/types'
 
-const todayIso = () => new Date().toISOString().slice(0, 10)
-const firstOfMonthIso = () => {
-  const d = new Date()
-  return new Date(d.getFullYear(), d.getMonth(), 1).toISOString().slice(0, 10)
-}
+// Keep the first billing-desk bundle small; each work area is fetched only
+// when it is opened, while the app shell remains interactive immediately.
+const SectionFallback = () => (
+  <div className="grid gap-4 sm:grid-cols-2">
+    {Array.from({ length: 4 }).map((_, index) => <div key={index} className="h-40 animate-pulse rounded-2xl border-hairline bg-secondary/60" />)}
+  </div>
+)
+const BillingSection = dynamic(() => import('@/components/sections/billing-section'), { loading: SectionFallback })
+const PaymentsSection = dynamic(() => import('@/components/sections/payments-section'), { loading: SectionFallback })
+const ItemsSection = dynamic(() => import('@/components/sections/items-section'), { loading: SectionFallback })
+const ReportsSection = dynamic(() => import('@/components/sections/reports-section'), { loading: SectionFallback })
+const ProfileSection = dynamic(() => import('@/components/sections/profile-section'), { loading: SectionFallback })
+const InvoiceModal = dynamic(() => import('@/components/invoice-modal'))
+const PaymentSuccess = dynamic(() => import('@/components/payment-success'))
 
 export default function BillingDashboard() {
   const { t } = usePreferences()
@@ -31,23 +35,23 @@ export default function BillingDashboard() {
   const [success, setSuccess] = useState<{ invoiceNumber: string; amount: string } | null>(null)
   const [paid, setPaid] = useState<{ invoiceNumber: string; amount: string } | null>(null)
 
-  const range = useMemo(() => `from=${firstOfMonthIso()}&to=${todayIso()}`, [])
-  const dashboardUrl = `/api/dashboard?${range}`
-
-  const dashboard = useApi<Dashboard>(dashboardUrl)
-  const items = useApi<Item[]>('/api/items')
-  const shop = useApi<Shop>('/api/shop')
+  // The server supplies the current India business month on every request, so
+  // this remains correct when an open billing desk rolls past midnight.
+  const dashboard = useApi<Dashboard>('/api/dashboard', { refreshInterval: 30_000 })
+  const items = useApi<Item[]>('/api/items', { refreshInterval: 60_000 })
+  const shop = useApi<Shop>('/api/shop', { refreshInterval: 300_000 })
   const session = useApi<{ email: string }>('/api/auth/session')
-  const logo = useApi<unknown>('/api/logo')
+  const brand = useApi<BrandAssets>('/api/brand?info=1')
 
-  const hasLogo = Boolean(logo.data) && !logo.error
-  const logoVersion = 1
+  const hasLogo = Boolean(brand.data?.logo)
+  const logoVersion = brand.data?.updatedAt ?? '1'
 
   // Revalidating while data is already on screen drives the thin top bar rather
   // than replacing content with a skeleton.
   const isRevalidating =
     (dashboard.isValidating && Boolean(dashboard.data)) ||
     (items.isValidating && Boolean(items.data)) ||
+    (shop.isValidating && Boolean(shop.data)) ||
     (dashboard.isLoading && Boolean(dashboard.data))
 
   const refresh = useCallback(() => {
@@ -74,6 +78,10 @@ export default function BillingDashboard() {
     [],
   )
 
+  const handleBrandChanged = useCallback((next: BrandAssets) => {
+    writeCache('/api/brand?info=1', next)
+  }, [])
+
   return (
     <>
       {isRevalidating && <div className="top-progress" role="status" aria-label={t('common.loading')} />}
@@ -83,6 +91,7 @@ export default function BillingDashboard() {
         onSectionChange={setSection}
         shopName={shop.data?.name ?? 'Sri Maha Laxmi Jewellers'}
         adminEmail={session.data?.email ?? ''}
+        brand={brand.data}
       >
         {dashboard.error && (
           <div className="mb-5">
@@ -114,7 +123,8 @@ export default function BillingDashboard() {
             />
           )}
           {section === 'items' && <ItemsSection items={items.data ?? []} loading={items.isLoading} refresh={refresh} />}
-          {section === 'profile' && <ProfileSection onShopChanged={handleShopChanged} />}
+          {section === 'reports' && <ReportsSection dashboard={dashboard.data ?? null} dashboardLoading={dashboard.isLoading} />}
+          {section === 'profile' && <ProfileSection onShopChanged={handleShopChanged} onBrandChanged={handleBrandChanged} />}
         </div>
       </AppShell>
 

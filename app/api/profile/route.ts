@@ -7,6 +7,7 @@ import { requireAdmin } from '@/lib/db/guard'
 import { getShopDetails, getShopDetailsFromEnv, PROFILE_ID } from '@/lib/shop'
 import { hashPassword, verifyPassword } from '@/lib/auth'
 import { randomBytes } from 'node:crypto'
+import { getInvoiceDeliveryStatus, getSmsDeliveryStatus } from '@/lib/messaging'
 
 /** Current shop profile, plus whether it is overridden by the environment. */
 export async function GET() {
@@ -19,6 +20,8 @@ export async function GET() {
       saved: row ?? null,
       fromEnv: getShopDetailsFromEnv(),
       adminEmail: process.env.ADMIN_EMAIL ?? null,
+      invoiceDelivery: getInvoiceDeliveryStatus(),
+      smsDelivery: getSmsDeliveryStatus(),
     })
   } catch (error) {
     console.error('[v0] Failed to load profile:', error)

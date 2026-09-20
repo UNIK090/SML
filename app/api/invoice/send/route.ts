@@ -5,7 +5,8 @@ import { billingTransactions, invoiceItems, invoiceSends } from '@/lib/db/schema
 import { isConnectionError } from '@/lib/db/errors'
 import { requireAdmin } from '@/lib/db/guard'
 import { getShopDetails } from '@/lib/shop'
-import { buildMessage, isAutoSendEnabled, normalisePhone, sendInvoice, type Channel } from '@/lib/messaging'
+import { buildMessage, buildSmsMessage, isAutoSendEnabled, normalisePhone, sendInvoice, type Channel } from '@/lib/messaging'
+import { publicInvoiceUrl } from '@/lib/public-url'
 
 /** Send history for an invoice, newest first — lets a bill be re-sent knowingly. */
 export async function GET(request: Request) {
@@ -34,7 +35,12 @@ export async function POST(request: Request) {
 
     if (!invoiceNumber) return NextResponse.json({ error: 'An invoice number is required.' }, { status: 400 })
 
-    const [invoice] = await db.select().from(billingTransactions).where(eq(billingTransactions.invoiceNumber, invoiceNumber))
+    // These queries are independent and this endpoint runs while an operator is
+    // waiting at the counter, so do not serialize their database latency.
+    const [[invoice], lines] = await Promise.all([
+      db.select().from(billingTransactions).where(eq(billingTransactions.invoiceNumber, invoiceNumber)),
+      db.select().from(invoiceItems).where(eq(invoiceItems.invoiceNumber, invoiceNumber)).orderBy(asc(invoiceItems.id)),
+    ])
     if (!invoice) return NextResponse.json({ error: 'Invoice not found.' }, { status: 404 })
 
     // The phone supplied on the form wins, so a corrected number can be used;
@@ -45,8 +51,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Enter a valid 10-digit Indian mobile number.' }, { status: 400 })
     }
 
-    const lines = await db.select().from(invoiceItems).where(eq(invoiceItems.invoiceNumber, invoiceNumber)).orderBy(asc(invoiceItems.id))
-    const message = buildMessage({
+    const invoiceMessage = {
       invoiceNumber,
       customerName: invoice.customerName,
       shop: await getShopDetails(),
@@ -55,8 +60,9 @@ export async function POST(request: Request) {
       discount: invoice.discount,
       paymentStatus: invoice.paymentStatus,
       businessDay: String(invoice.businessDay),
-      publicUrl: null,
-    })
+      publicUrl: publicInvoiceUrl(request, invoice.publicToken),
+    }
+    const message = channel === 'sms' ? buildSmsMessage(invoiceMessage) : buildMessage(invoiceMessage)
 
     const result = await sendInvoice({ phone, channel, message })
 

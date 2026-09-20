@@ -49,32 +49,45 @@ function AdminLoginForm() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-background px-6 py-12">
-      <div className="card-shadow-lg grid w-full max-w-4xl overflow-hidden rounded-3xl border-hairline bg-card md:grid-cols-2">
+    <main className="login-canvas flex min-h-screen items-center justify-center px-5 py-8 sm:px-8 sm:py-12">
+      <div className="card-shadow-lg grid w-full max-w-5xl overflow-hidden rounded-[2rem] border border-white/12 bg-card md:grid-cols-[1.08fr_.92fr]">
         {/* Brand panel */}
-        <div className="relative flex-col justify-between bg-primary p-10 text-primary-foreground">
-          <div>
-            <div className="mb-10 flex size-12 items-center justify-center rounded-2xl bg-gold text-white">
+        <div className="relative flex min-h-[33rem] flex-col justify-between overflow-hidden bg-primary p-8 text-primary-foreground sm:p-10">
+          <div className="absolute -top-24 -right-28 size-80 rounded-full border border-white/10" />
+          <div className="absolute -bottom-32 -left-24 size-72 rounded-full border border-white/10" />
+          <div className="relative z-10">
+            <div className="mb-10 flex size-12 items-center justify-center rounded-2xl bg-gold text-slate-950 shadow-[0_12px_30px_rgb(0_0_0_/_22%)]">
               <Sparkles className="size-6" />
             </div>
-            <p className="text-xs font-medium tracking-[0.24em] text-gold uppercase">Sri Maha Laxmi Jewellers</p>
-            <h1 className="mt-5 text-4xl leading-tight font-semibold">{t('login.title')}</h1>
-            <p className="mt-5 max-w-sm text-sm leading-6 opacity-75">
+            <p className="text-xs font-semibold tracking-[0.2em] text-gold uppercase">Sri Maha Laxmi Jewellers</p>
+            <h1 className="mt-5 text-4xl leading-[1.1] font-semibold tracking-tight">{t('login.title')}</h1>
+            <p className="mt-5 max-w-sm text-sm leading-6 text-slate-300">
               {t('login.hint')}
             </p>
+            <div className="mt-9 grid max-w-sm grid-cols-2 gap-3">
+              <div className="rounded-2xl border border-white/12 bg-white/8 p-3 backdrop-blur">
+                <p className="text-[10px] font-semibold tracking-[0.12em] text-slate-300 uppercase">Workspace</p>
+                <p className="mt-1 text-sm font-medium">Billing & revenue</p>
+              </div>
+              <div className="rounded-2xl border border-white/12 bg-white/8 p-3 backdrop-blur">
+                <p className="text-[10px] font-semibold tracking-[0.12em] text-slate-300 uppercase">Access</p>
+                <p className="mt-1 text-sm font-medium">Admin secured</p>
+              </div>
+            </div>
           </div>
-          <div className="mt-16 flex items-center gap-3 text-sm opacity-75">
+          <div className="relative z-10 mt-16 flex items-center gap-3 text-sm text-slate-300">
             <ShieldCheck className="size-5 text-gold" />
-            <span>{t('login.admin')}</span>
+            <span>{t('login.admin')} · protected business workspace</span>
           </div>
         </div>
 
         {/* Form panel */}
-        <div className="p-10">
+        <div className="bg-card p-8 sm:p-10">
           <div className="mb-8">
-            <div className="mb-4 flex size-11 items-center justify-center rounded-xl bg-gold-soft text-gold-deep">
+            <div className="mb-4 flex size-11 items-center justify-center rounded-xl bg-gold-soft text-gold-deep shadow-sm">
               <KeyRound className="size-5" />
             </div>
+            <p className="mb-1 text-[10px] font-semibold tracking-[0.15em] text-gold-deep uppercase">Secure sign in</p>
             <h2 className="text-2xl font-semibold tracking-tight">{t('login.welcome')}</h2>
             <p className="mt-2 text-sm text-muted-foreground">{t('login.subtitle')}</p>
           </div>

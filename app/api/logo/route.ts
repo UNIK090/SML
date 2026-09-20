@@ -43,7 +43,7 @@ export async function GET() {
   if (denied) return denied
   try {
     const [row] = await db.select().from(shopLogo).where(eq(shopLogo.id, LOGO_ID))
-    if (!row) return NextResponse.json({ exists: false })
+    if (!row || !row.data || !row.mimeType) return NextResponse.json({ exists: false })
 
     const buffer = Buffer.from(row.data, 'base64')
     return new NextResponse(new Uint8Array(buffer), {

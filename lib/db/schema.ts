@@ -3,9 +3,15 @@ import { date, integer, numeric, pgTable, serial, text, timestamp } from 'drizzl
 export const inventoryItems = pgTable('inventory_items', {
   id: serial('id').primaryKey(),
   code: integer('code').notNull().unique(),
+  barcode: text('barcode'),
   name: text('name').notNull(),
   category: text('category').notNull(),
   price: numeric('price', { precision: 12, scale: 2 }).notNull(),
+  // Product artwork is stored with the catalogue record so it survives
+  // serverless deployments and never needs a public file-system write.
+  imageMimeType: text('image_mime_type'),
+  imageData: text('image_data'),
+  imageByteSize: integer('image_byte_size'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 })
@@ -30,6 +36,7 @@ export const billingTransactions = pgTable('billing_transactions', {
   customerName: text('customer_name'),
   customerPhone: text('customer_phone'),
   discount: numeric('discount', { precision: 12, scale: 2 }).notNull().default('0'),
+  publicToken: text('public_token'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 })
 
@@ -63,9 +70,17 @@ export const dailyEarnings = pgTable('daily_earnings', {
 // API so there is only ever one logo.
 export const shopLogo = pgTable('shop_logo', {
   id: integer('id').primaryKey(),
-  mimeType: text('mime_type').notNull(),
-  data: text('data').notNull(),
-  byteSize: integer('byte_size').notNull(),
+  mimeType: text('mime_type'),
+  data: text('data'),
+  byteSize: integer('byte_size'),
+  // Kept alongside the invoice logo so the three public-facing brand assets
+  // can be updated atomically from the Profile screen.
+  faviconMimeType: text('favicon_mime_type'),
+  faviconData: text('favicon_data'),
+  faviconByteSize: integer('favicon_byte_size'),
+  avatarMimeType: text('avatar_mime_type'),
+  avatarData: text('avatar_data'),
+  avatarByteSize: integer('avatar_byte_size'),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 })
 

@@ -5,8 +5,8 @@
 // reconciled — the two were previously mixed into one screen.
 
 import { useCallback, useEffect, useState } from 'react'
-import { BadgeIndianRupee, Banknote, CheckCircle2, ChevronLeft, ChevronRight, Clock4, Loader2, Search, TrendingUp, Wallet } from 'lucide-react'
-import { Badge, Button, Card, EmptyState, Field, Input, Notice, SectionHeading, SkeletonRows, Select, StatCard, Table, formatDay, money } from '@/components/ui'
+import { BadgeIndianRupee, Banknote, CheckCircle2, ChevronLeft, ChevronRight, Clock4, Loader2, Search, Trash2, TrendingUp, Wallet } from 'lucide-react'
+import { Badge, Button, Card, EmptyState, Field, Input, Notice, SectionHeading, SkeletonRows, Select, StatCard, Table, WorkspaceHero, formatDay, money } from '@/components/ui'
 import { usePreferences } from '@/components/preferences'
 import type { Dashboard, Transaction } from '@/lib/types'
 
@@ -34,6 +34,7 @@ export default function PaymentsSection({
   const [data, setData] = useState<PaymentsResponse | null>(null)
   const [loading, setLoading] = useState(true)
   const [busyInvoice, setBusyInvoice] = useState<string | null>(null)
+  const [clearing, setClearing] = useState(false)
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
 
@@ -104,8 +105,53 @@ export default function PaymentsSection({
     }
   }
 
+  const clearTransactions = async () => {
+    if (!window.confirm('Clear every invoice, payment history, daily total, and invoice send record? Your catalogue and shop settings will remain. This cannot be undone.')) return
+    setClearing(true)
+    setMessage('')
+    setError('')
+    try {
+      const response = await fetch('/api/payments', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ confirmation: 'CLEAR_TRANSACTIONS' }),
+      })
+      const result = (await response.json()) as { error?: string; cleared?: number }
+      if (!response.ok) {
+        setError(result.error ?? 'Could not clear transactions.')
+        return
+      }
+      setData({ rows: [], total: 0, page: 1, pages: 1 })
+      setPage(1)
+      setMessage(`${result.cleared ?? 0} transaction${result.cleared === 1 ? '' : 's'} cleared. Your catalogue and settings were kept.`)
+      refresh()
+    } catch {
+      setError('Could not clear transactions.')
+    } finally {
+      setClearing(false)
+    }
+  }
+
   return (
     <div className="flex flex-col gap-6">
+      <WorkspaceHero
+        eyebrow="Revenue intelligence"
+        title="Payments & performance"
+        description="Review cash flow, settle outstanding invoices, and keep a dependable record of every business day."
+        action={<span className="rounded-xl border border-white/15 bg-white/10 px-3 py-2 text-xs font-medium text-slate-100 backdrop-blur">Financial overview</span>}
+      >
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="business-hero-metric rounded-2xl p-3.5">
+            <p className="text-[10px] font-semibold tracking-[0.1em] text-slate-300 uppercase">Month to date</p>
+            <p className="tnum mt-1 text-xl font-semibold text-white">{money(dashboard?.rangeTotal ?? 0)}</p>
+          </div>
+          <div className="business-hero-metric rounded-2xl p-3.5">
+            <p className="text-[10px] font-semibold tracking-[0.1em] text-slate-300 uppercase">Open receivables</p>
+            <p className="tnum mt-1 text-xl font-semibold text-white">{money(dashboard?.pendingTotal ?? 0)}</p>
+          </div>
+        </div>
+      </WorkspaceHero>
+
       {/* Two-up until there is genuinely room for four, so large totals never collide. */}
       <section className="grid gap-4 sm:grid-cols-2 2xl:grid-cols-4">
         <StatCard icon={BadgeIndianRupee} label={t('payments.today')} amount={dashboard?.todayTotal ?? 0} hint={`${dashboard?.todayCount ?? 0} ${t('payments.today.hint')}`} tone="gold" loading={dashboardLoading} />
@@ -114,7 +160,7 @@ export default function PaymentsSection({
         <StatCard icon={Banknote} label={t('payments.range')} amount={dashboard?.rangeTotal ?? 0} hint={`${dashboard?.rangeCount ?? 0} ${t('payments.range.hint')}`} tone="success" loading={dashboardLoading} />
       </section>
 
-      <Card>
+      <Card className="business-primary-card">
         <SectionHeading
           title={t('payments.allBills')}
           description={t('payments.allBills.hint')}
@@ -242,6 +288,18 @@ export default function PaymentsSection({
           </Table>
         )}
       </Card>
+
+      <div className="flex justify-end pt-1">
+        <button
+          onClick={() => void clearTransactions()}
+          disabled={clearing}
+          className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-[11px] font-medium text-muted-foreground transition hover:bg-red-50 hover:text-destructive disabled:opacity-55 dark:hover:bg-red-950/25"
+          title="Permanently clear all invoices and transaction history"
+        >
+          {clearing ? <Loader2 className="size-3 animate-spin" /> : <Trash2 className="size-3" />}
+          {clearing ? 'Clearing…' : 'Clear transactions'}
+        </button>
+      </div>
     </div>
   )
 }

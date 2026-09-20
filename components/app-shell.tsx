@@ -6,6 +6,8 @@
 import { useState, type ReactNode } from 'react'
 import {
   Check,
+  CalendarDays,
+  ChartColumn,
   CircleCheck,
   Clock3,
   Gem,
@@ -24,8 +26,9 @@ import {
 } from 'lucide-react'
 import { usePreferences } from '@/components/preferences'
 import { LANGUAGES, type TranslationKey } from '@/lib/i18n'
+import type { BrandAssets } from '@/lib/types'
 
-export type SectionKey = 'billing' | 'payments' | 'items' | 'profile'
+export type SectionKey = 'billing' | 'payments' | 'items' | 'reports' | 'profile'
 
 type Section = {
   key: SectionKey
@@ -38,6 +41,7 @@ const SECTIONS: Section[] = [
   { key: 'billing', labelKey: 'nav.billing', hintKey: 'nav.billing.hint', icon: ReceiptText },
   { key: 'payments', labelKey: 'nav.payments', hintKey: 'nav.payments.hint', icon: Wallet },
   { key: 'items', labelKey: 'nav.items', hintKey: 'nav.items.hint', icon: Gem },
+  { key: 'reports', labelKey: 'nav.reports', hintKey: 'nav.reports.hint', icon: ChartColumn },
   { key: 'profile', labelKey: 'nav.profile', hintKey: 'nav.profile.hint', icon: Settings },
 ]
 
@@ -71,11 +75,11 @@ function NavItem({
         aria-label={t(labelKey)}
         title={t(labelKey)}
         className={`relative flex h-11 w-full items-center justify-center rounded-xl transition ${
-          active ? 'card-shadow bg-card text-foreground' : 'text-muted-foreground hover:bg-card/70 hover:text-foreground'
+          active ? 'bg-white/14 text-sidebar-foreground shadow-[0_10px_22px_rgb(0_0_0_/_16%)]' : 'text-sidebar-foreground/55 hover:bg-white/8 hover:text-sidebar-foreground'
         }`}
       >
         {active && <span className="absolute top-1/2 left-0 h-6 w-[3px] -translate-y-1/2 rounded-r-full bg-gold" aria-hidden />}
-        <Icon className={`size-[18px] ${active ? 'text-gold-deep' : ''}`} />
+        <Icon className={`size-[18px] ${active ? 'text-gold' : ''}`} />
       </button>
     )
   }
@@ -85,17 +89,17 @@ function NavItem({
       onClick={onSelect}
       aria-current={active ? 'page' : undefined}
       className={`relative flex w-full items-center gap-3 rounded-xl px-2.5 py-2.5 text-left transition ${
-        active ? 'card-shadow bg-card text-foreground' : 'text-muted-foreground hover:bg-card/70 hover:text-foreground'
+        active ? 'bg-white/14 text-sidebar-foreground shadow-[0_10px_22px_rgb(0_0_0_/_16%)]' : 'text-sidebar-foreground/55 hover:bg-white/8 hover:text-sidebar-foreground'
       }`}
     >
       {active && <span className="absolute top-1/2 left-0 h-7 w-[3px] -translate-y-1/2 rounded-r-full bg-gold" aria-hidden />}
       {/* Fixed-width icon column keeps all labels on a single vertical line. */}
       <span className="flex w-7 shrink-0 justify-center">
-        <Icon className={`size-[18px] ${active ? 'text-gold-deep' : ''}`} />
+        <Icon className={`size-[18px] ${active ? 'text-gold' : ''}`} />
       </span>
       <span className="min-w-0 flex-1">
         <span className="block truncate text-sm leading-5 font-medium">{t(labelKey)}</span>
-        <span className="mt-0.5 block truncate text-[11px] leading-4 text-muted-foreground">{t(hintKey)}</span>
+        <span className={`mt-0.5 block truncate text-[11px] leading-4 ${active ? 'text-sidebar-foreground/62' : 'text-sidebar-foreground/40'}`}>{t(hintKey)}</span>
       </span>
     </button>
   )
@@ -106,12 +110,14 @@ export default function AppShell({
   onSectionChange,
   shopName,
   adminEmail,
+  brand,
   children,
 }: {
   section: SectionKey
   onSectionChange: (next: SectionKey) => void
   shopName: string
   adminEmail: string
+  brand?: BrandAssets
   children: ReactNode
 }) {
   const { theme, language, sidebarCollapsed, toggleTheme, setLanguage, toggleSidebar, t } = usePreferences()
@@ -130,34 +136,41 @@ export default function AppShell({
 
   const current = SECTIONS.find((entry) => entry.key === section)
   const shopLabel = shopName.toUpperCase()
+  const brandVersion = brand?.updatedAt ? encodeURIComponent(brand.updatedAt) : '1'
+  const logoUrl = `/api/brand?kind=logo&v=${brandVersion}`
+  const avatarUrl = `/api/brand?kind=avatar&v=${brandVersion}`
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="mx-auto flex min-h-screen max-w-[1500px]">
+      <div className="flex min-h-screen">
         {/* ---------- Desktop sidebar ---------- */}
         <aside
-          className={`hidden shrink-0 flex-col border-hairline bg-sidebar lg:sticky lg:top-0 lg:flex lg:h-screen lg:self-start lg:border-r lg:py-4 ${
+          className={`app-sidebar hidden shrink-0 flex-col border-sidebar-border lg:sticky lg:top-0 lg:flex lg:h-screen lg:self-start lg:border-r lg:py-5 ${
             sidebarCollapsed ? 'lg:w-[4.5rem] lg:px-3' : 'lg:w-72 lg:px-4'
           } transition-[width,padding] duration-300 ease-out`}
         >
           {/* Brand block */}
           <div className={`flex items-center ${sidebarCollapsed ? 'justify-center' : 'gap-3'}`}>
-            <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-              <Sparkles className="size-5" />
-            </span>
+            {brand?.logo ? (
+              <img src={logoUrl} alt="Shop logo" className="size-10 shrink-0 rounded-2xl border border-white/12 bg-white/8 object-contain p-1 shadow-[0_10px_24px_rgb(0_0_0_/_22%)]" />
+            ) : (
+              <span className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-gold text-slate-950 shadow-[0_10px_24px_rgb(0_0_0_/_22%)]">
+                <Sparkles className="size-5" />
+              </span>
+            )}
             {!sidebarCollapsed && (
               <>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-[13px] leading-5 font-semibold tracking-tight" title={shopLabel}>
+                  <p className="truncate text-[13px] leading-5 font-semibold tracking-tight text-sidebar-foreground" title={shopLabel}>
                     {shopLabel}
                   </p>
-                  <p className="truncate text-[11px] leading-4 text-muted-foreground">{t('brand.desk')}</p>
+                  <p className="truncate text-[11px] leading-4 text-sidebar-foreground/50">{t('brand.desk')}</p>
                 </div>
                 <button
                   onClick={toggleSidebar}
                   aria-label={t('nav.collapse')}
                   title={t('nav.collapse')}
-                  className="flex size-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition hover:bg-card hover:text-foreground"
+                  className="flex size-8 shrink-0 items-center justify-center rounded-lg text-sidebar-foreground/55 transition hover:bg-white/8 hover:text-sidebar-foreground"
                 >
                   <PanelLeftClose className="size-4" />
                 </button>
@@ -170,14 +183,14 @@ export default function AppShell({
               onClick={toggleSidebar}
               aria-label={t('nav.expand')}
               title={t('nav.expand')}
-              className="mt-4 flex h-9 w-full items-center justify-center rounded-lg text-muted-foreground transition hover:bg-card hover:text-foreground"
+              className="mt-5 flex h-9 w-full items-center justify-center rounded-lg text-sidebar-foreground/55 transition hover:bg-white/8 hover:text-sidebar-foreground"
             >
               <PanelLeftOpen className="size-4" />
             </button>
           )}
 
           {/* Navigation */}
-          <nav className="mt-5 flex-1 flex-col gap-1 border-t border-hairline pt-4" aria-label="Sections">
+          <nav className="mt-7 flex-1 flex-col gap-1 border-t border-sidebar-border pt-4" aria-label="Sections">
             {SECTIONS.map((entry) => (
               <NavItem
                 key={entry.key}
@@ -191,10 +204,11 @@ export default function AppShell({
           </nav>
 
           {/* Status footer */}
-          <div className="mt-4 border-t border-hairline pt-4">
+          <div className="mt-4 border-t border-sidebar-border pt-4">
             {sidebarCollapsed ? (
               <div className="flex flex-col items-center gap-3.5">
-                <span className="text-muted-foreground" title="Business day closes at 12:00 AM">
+                {brand?.avatar ? <img src={avatarUrl} alt="Shop display picture" className="size-7 rounded-full border border-white/20 object-cover" /> : null}
+                <span className="text-sidebar-foreground/48" title="Business day closes at 12:00 AM">
                   <Clock3 className="size-4" />
                 </span>
                 <span className="text-success" title="Live database">
@@ -203,7 +217,13 @@ export default function AppShell({
               </div>
             ) : (
               <div className="flex flex-col gap-2">
-                <p className="flex items-center gap-2 text-[11px] leading-4 text-muted-foreground">
+                {brand?.avatar && (
+                  <div className="mb-1 flex items-center gap-2.5">
+                    <img src={avatarUrl} alt="Shop display picture" className="size-7 rounded-full border border-white/20 object-cover" />
+                    <span className="truncate text-[11px] font-medium text-sidebar-foreground/78">Shop display picture</span>
+                  </div>
+                )}
+                <p className="flex items-center gap-2 text-[11px] leading-4 text-sidebar-foreground/52">
                   <Clock3 className="size-3.5 shrink-0" />
                   <span className="truncate">Day closes at 12:00 AM</span>
                 </p>
@@ -218,23 +238,30 @@ export default function AppShell({
 
         {/* ---------- Content ---------- */}
         <div className="flex min-w-0 flex-1 flex-col">
-          <header className="sticky top-0 z-30 border-b border-hairline bg-card/85 px-4 py-3.5 backdrop-blur sm:px-6 sm:py-4 print:hidden">
-            <div className="flex items-center justify-between gap-3">
+          <header className="sticky top-0 z-30 border-b border-hairline bg-background/82 px-4 py-3.5 backdrop-blur-xl sm:px-7 sm:py-4 print:hidden">
+            <div className="mx-auto flex max-w-[1540px] items-center justify-between gap-3">
               <div className="flex min-w-0 items-center gap-3">
                 <button
                   onClick={() => setDrawerOpen(true)}
                   aria-label={t('nav.expand')}
-                  className="flex size-9 shrink-0 items-center justify-center rounded-xl border-hairline text-muted-foreground transition hover:bg-secondary hover:text-foreground lg:hidden"
+                  className="flex size-10 shrink-0 items-center justify-center rounded-xl border-hairline bg-card/80 text-muted-foreground transition hover:bg-secondary hover:text-foreground lg:hidden"
                 >
                   <Menu className="size-4" />
                 </button>
                 <div className="min-w-0">
-                  <h1 className="truncate text-base leading-6 font-semibold tracking-tight sm:text-lg">{current ? t(current.labelKey) : ''}</h1>
+                  <div className="mb-0.5 hidden items-center gap-1.5 text-[10px] font-semibold tracking-[0.14em] text-gold-deep uppercase sm:flex">
+                    <span className="size-1.5 rounded-full bg-gold" /> Business workspace
+                  </div>
+                  <h1 className="truncate text-lg leading-6 font-semibold tracking-tight sm:text-xl">{current ? t(current.labelKey) : ''}</h1>
                   <p className="hidden truncate text-xs leading-4 text-muted-foreground sm:block">{current ? t(current.hintKey) : ''}</p>
                 </div>
               </div>
 
               <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
+                <span className="hidden items-center gap-2 rounded-xl border-hairline bg-card/75 px-3 py-2 text-xs text-muted-foreground 2xl:flex">
+                  <CalendarDays className="size-3.5 text-gold-deep" />
+                  {new Intl.DateTimeFormat('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }).format(new Date())}
+                </span>
                 <button
                   onClick={toggleTheme}
                   aria-label={t('nav.theme')}
@@ -297,33 +324,39 @@ export default function AppShell({
             </div>
           </header>
 
-          <main className="flex-1 px-4 py-6 sm:px-6 sm:py-7">{children}</main>
+          <main className="dashboard-canvas flex-1 px-4 py-6 sm:px-7 sm:py-8">
+            <div className="mx-auto w-full max-w-[1540px]">{children}</div>
+          </main>
         </div>
       </div>
 
       {/* ---------- Mobile drawer ---------- */}
       {drawerOpen && (
         <div className="fixed inset-0 z-50 lg:hidden" role="dialog" aria-modal="true">
-          <button className="absolute inset-0 bg-primary/45 backdrop-blur-sm" aria-hidden onClick={() => setDrawerOpen(false)} />
-          <nav className="animate-slide-in absolute inset-y-0 left-0 flex w-72 flex-col border-r border-hairline bg-sidebar px-4 py-5">
+          <button className="absolute inset-0 bg-slate-950/60 backdrop-blur-sm" aria-hidden onClick={() => setDrawerOpen(false)} />
+          <nav className="app-sidebar animate-slide-in absolute inset-y-0 left-0 flex w-72 flex-col border-r border-sidebar-border px-4 py-5">
             <div className="flex items-center gap-3">
-              <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-                <Sparkles className="size-5" />
-              </span>
+              {brand?.logo ? (
+                <img src={logoUrl} alt="Shop logo" className="size-10 shrink-0 rounded-2xl border border-white/12 bg-white/8 object-contain p-1 shadow-[0_10px_24px_rgb(0_0_0_/_22%)]" />
+              ) : (
+                <span className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-gold text-slate-950 shadow-[0_10px_24px_rgb(0_0_0_/_22%)]">
+                  <Sparkles className="size-5" />
+                </span>
+              )}
               <div className="min-w-0 flex-1">
-                <p className="truncate text-[13px] leading-5 font-semibold tracking-tight">{shopLabel}</p>
-                <p className="truncate text-[11px] leading-4 text-muted-foreground">{t('brand.desk')}</p>
+                <p className="truncate text-[13px] leading-5 font-semibold tracking-tight text-sidebar-foreground">{shopLabel}</p>
+                <p className="truncate text-[11px] leading-4 text-sidebar-foreground/50">{t('brand.desk')}</p>
               </div>
               <button
                 onClick={() => setDrawerOpen(false)}
                 aria-label={t('common.close')}
-                className="flex size-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition hover:bg-card hover:text-foreground"
+                className="flex size-8 shrink-0 items-center justify-center rounded-lg text-sidebar-foreground/55 transition hover:bg-white/8 hover:text-sidebar-foreground"
               >
                 <X className="size-4" />
               </button>
             </div>
 
-            <div className="mt-5 flex-col gap-1 border-t border-hairline pt-4">
+            <div className="mt-7 flex-col gap-1 border-t border-sidebar-border pt-4">
               {SECTIONS.map((entry) => (
                 <NavItem
                   key={entry.key}

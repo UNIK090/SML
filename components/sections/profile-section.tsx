@@ -4,19 +4,43 @@
 // and the appearance/language preferences.
 
 import { useCallback, useEffect, useState } from 'react'
-import { Building2, Check, Globe, KeyRound, Loader2, Moon, Palette, Sun } from 'lucide-react'
-import { Button, Card, Field, Input, Notice, SectionHeading, Skeleton } from '@/components/ui'
+import { Building2, Check, CheckCircle2, Globe, ImagePlus, KeyRound, Loader2, MessageCircleMore, Moon, Palette, Smartphone, Sun, Trash2, UserRound } from 'lucide-react'
+import { Badge, Button, Card, Field, Input, Notice, SectionHeading, Skeleton, WorkspaceHero } from '@/components/ui'
 import { usePreferences } from '@/components/preferences'
 import { LANGUAGES } from '@/lib/i18n'
-import type { Shop } from '@/lib/types'
+import type { BrandAssets, Shop } from '@/lib/types'
 
 type ProfileResponse = {
   profile: Shop
   fromEnv: Shop
   adminEmail: string | null
+  invoiceDelivery: {
+    provider: string
+    autoSendEnabled: boolean
+    configured: boolean
+    automatic: boolean
+    detail: string
+    setup: string[]
+  }
+  smsDelivery: {
+    provider: string
+    autoSendEnabled: boolean
+    configured: boolean
+    automatic: boolean
+    detail: string
+    setup: string[]
+  }
 }
 
-export default function ProfileSection({ onShopChanged }: { onShopChanged: (shop: Shop) => void }) {
+type BrandKind = 'logo' | 'favicon' | 'avatar'
+
+const BRAND_COPY: Record<BrandKind, { title: string; hint: string }> = {
+  logo: { title: 'Shop logo', hint: 'Shown beside your shop name and on invoices.' },
+  avatar: { title: 'Display picture', hint: 'Shown in the dashboard navigation.' },
+  favicon: { title: 'Browser favicon', hint: 'Shown in browser tabs and bookmarks.' },
+}
+
+export default function ProfileSection({ onShopChanged, onBrandChanged }: { onShopChanged: (shop: Shop) => void; onBrandChanged: (assets: BrandAssets) => void }) {
   const { theme, language, setLanguage, toggleTheme, t } = usePreferences()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -24,6 +48,10 @@ export default function ProfileSection({ onShopChanged }: { onShopChanged: (shop
   const [error, setError] = useState('')
   const [adminEmail, setAdminEmail] = useState<string | null>(null)
   const [fromEnv, setFromEnv] = useState<Shop | null>(null)
+  const [invoiceDelivery, setInvoiceDelivery] = useState<ProfileResponse['invoiceDelivery'] | null>(null)
+  const [smsDelivery, setSmsDelivery] = useState<ProfileResponse['smsDelivery'] | null>(null)
+  const [brand, setBrand] = useState<BrandAssets | null>(null)
+  const [uploading, setUploading] = useState<BrandKind | null>(null)
 
   const [form, setForm] = useState({ name: '', address: '', phone: '', email: '', gstin: '' })
 
@@ -38,7 +66,7 @@ export default function ProfileSection({ onShopChanged }: { onShopChanged: (shop
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      const response = await fetch('/api/profile')
+      const [response, brandResponse] = await Promise.all([fetch('/api/profile'), fetch('/api/brand?info=1')])
       if (!response.ok) {
         setError('Could not load your profile.')
         return
@@ -53,12 +81,60 @@ export default function ProfileSection({ onShopChanged }: { onShopChanged: (shop
       })
       setFromEnv(data.fromEnv)
       setAdminEmail(data.adminEmail)
+      setInvoiceDelivery(data.invoiceDelivery)
+      setSmsDelivery(data.smsDelivery)
+      if (brandResponse.ok) setBrand((await brandResponse.json()) as BrandAssets)
     } catch {
       setError('Could not load your profile.')
     } finally {
       setLoading(false)
     }
   }, [])
+
+  const saveBrandAsset = async (kind: BrandKind, file: File) => {
+    setUploading(kind)
+    setMessage('')
+    setError('')
+    try {
+      const formData = new FormData()
+      formData.set('image', file)
+      const response = await fetch(`/api/brand?kind=${kind}`, { method: 'POST', body: formData })
+      const result = (await response.json()) as { error?: string; assets?: BrandAssets }
+      if (!response.ok || !result.assets) {
+        setError(result.error ?? 'Could not upload the image.')
+        return
+      }
+      setBrand(result.assets)
+      onBrandChanged(result.assets)
+      setMessage(`${BRAND_COPY[kind].title} updated.`)
+    } catch {
+      setError('Could not upload the image.')
+    } finally {
+      setUploading(null)
+    }
+  }
+
+  const removeBrandAsset = async (kind: BrandKind) => {
+    if (!window.confirm(`Remove the ${BRAND_COPY[kind].title.toLowerCase()}?`)) return
+    setUploading(kind)
+    setMessage('')
+    setError('')
+    try {
+      const response = await fetch(`/api/brand?kind=${kind}`, { method: 'DELETE' })
+      const result = (await response.json()) as { error?: string; assets?: BrandAssets }
+      if (!response.ok || !result.assets) {
+        setError(result.error ?? 'Could not remove the image.')
+        return
+      }
+      setBrand(result.assets)
+      onBrandChanged(result.assets)
+      setMessage(`${BRAND_COPY[kind].title} removed.`)
+    } catch {
+      setError('Could not remove the image.')
+    } finally {
+      setUploading(null)
+    }
+  }
 
   useEffect(() => {
     load()
@@ -138,8 +214,15 @@ export default function ProfileSection({ onShopChanged }: { onShopChanged: (shop
         {error && <Notice tone="danger">{error}</Notice>}
       </div>
 
+      <WorkspaceHero
+        eyebrow="Business administration"
+        title="Business profile & controls"
+        description="Manage the identity customers see, your invoice delivery setup, and the operating preferences for this billing desk."
+        action={<span className="rounded-xl border border-white/15 bg-white/10 px-3 py-2 text-xs font-medium text-slate-100 backdrop-blur">Admin settings</span>}
+      />
+
       {/* Shop identity on the invoice */}
-      <Card>
+      <Card className="business-primary-card">
         <SectionHeading
           title="Shop details"
           description="These print at the top of every invoice and in the WhatsApp message."
@@ -194,6 +277,141 @@ export default function ProfileSection({ onShopChanged }: { onShopChanged: (shop
               </Button>
             </div>
           </form>
+        )}
+      </Card>
+
+      <Card>
+        <SectionHeading
+          title="Brand images"
+          description="Upload your shop logo, display picture, and browser favicon. PNG, JPG, GIF, or WebP files under 400 KB are accepted."
+          action={
+            <span className="flex size-10 items-center justify-center rounded-xl bg-gold-soft text-gold-deep">
+              <ImagePlus className="size-5" />
+            </span>
+          }
+        />
+        <div className="grid gap-4 md:grid-cols-3">
+          {(['logo', 'avatar', 'favicon'] as BrandKind[]).map((kind) => {
+            const active = Boolean(brand?.[kind])
+            const version = brand?.updatedAt ? encodeURIComponent(brand.updatedAt) : '1'
+            const source = `/api/brand?kind=${kind}&v=${version}`
+            return (
+              <div key={kind} className="rounded-2xl border-hairline bg-background/55 p-4">
+                <div className="flex items-start gap-3">
+                  {active ? (
+                    <img src={source} alt="" className={`shrink-0 border border-hairline bg-card object-cover ${kind === 'avatar' ? 'size-12 rounded-full' : 'size-12 rounded-xl p-1'}`} />
+                  ) : (
+                    <span className={`flex size-12 shrink-0 items-center justify-center border border-dashed border-hairline bg-card text-muted-foreground ${kind === 'avatar' ? 'rounded-full' : 'rounded-xl'}`}>
+                      {kind === 'avatar' ? <UserRound className="size-5" /> : <ImagePlus className="size-5" />}
+                    </span>
+                  )}
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold">{BRAND_COPY[kind].title}</p>
+                    <p className="mt-1 text-xs leading-5 text-muted-foreground">{BRAND_COPY[kind].hint}</p>
+                  </div>
+                </div>
+                <div className="mt-4 flex items-center gap-2">
+                  <label className={`inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-lg border-hairline bg-card px-2.5 text-xs font-medium transition hover:bg-secondary ${uploading === kind ? 'pointer-events-none opacity-60' : ''}`}>
+                    {uploading === kind ? <Loader2 className="size-3.5 animate-spin" /> : <ImagePlus className="size-3.5" />}
+                    {active ? 'Replace' : 'Upload'}
+                    <input
+                      className="sr-only"
+                      type="file"
+                      accept="image/png,image/jpeg,image/gif,image/webp"
+                      onChange={(event) => {
+                        const file = event.target.files?.[0]
+                        event.target.value = ''
+                        if (file) void saveBrandAsset(kind, file)
+                      }}
+                    />
+                  </label>
+                  {active && (
+                    <button onClick={() => void removeBrandAsset(kind)} disabled={uploading === kind} className="flex size-8 items-center justify-center rounded-lg text-muted-foreground transition hover:bg-red-50 hover:text-destructive disabled:opacity-55 dark:hover:bg-red-950/25" aria-label={`Remove ${BRAND_COPY[kind].title}`} title={`Remove ${BRAND_COPY[kind].title}`}>
+                      <Trash2 className="size-3.5" />
+                    </button>
+                  )}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </Card>
+
+      <Card>
+        <SectionHeading
+          title="Automatic WhatsApp invoices"
+          description="New bills are saved immediately, then delivered in the background when a customer mobile number is present."
+          action={
+            <span className="flex size-10 items-center justify-center rounded-xl bg-gold-soft text-gold-deep">
+              <MessageCircleMore className="size-5" />
+            </span>
+          }
+        />
+
+        {loading ? (
+          <div className="space-y-3"><Skeleton className="h-5 w-40" /><Skeleton className="h-4 w-full" /><Skeleton className="h-11 w-full" /></div>
+        ) : invoiceDelivery && (
+          <div className="rounded-2xl border-hairline bg-background/60 p-5">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-semibold">Provider: {invoiceDelivery.provider.replace('_', ' ')}</p>
+                <p className="mt-1 text-sm text-muted-foreground">{invoiceDelivery.detail}</p>
+              </div>
+              <Badge tone={invoiceDelivery.automatic ? 'success' : invoiceDelivery.configured ? 'gold' : 'warn'}>
+                {invoiceDelivery.automatic ? <CheckCircle2 className="size-3.5" /> : null}
+                {invoiceDelivery.automatic ? 'Automatic sending on' : invoiceDelivery.configured ? 'Ready to enable' : 'Setup needed'}
+              </Badge>
+            </div>
+
+            {!invoiceDelivery.automatic && (
+              <div className="mt-4 border-t border-hairline pt-4">
+                <p className="text-sm font-medium">Configure these production environment variables</p>
+                <p className="mt-1 text-xs text-muted-foreground">For Meta, create an approved WhatsApp template whose body has exactly one variable: <code>{'{{1}}'}</code>. Customer opt-in is required before automatic messaging.</p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {invoiceDelivery.setup.map((value) => <code key={value} className="rounded-lg bg-secondary px-2.5 py-1.5 text-xs">{value}</code>)}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </Card>
+
+      <Card>
+        <SectionHeading
+          title="Direct SMS invoices"
+          description="Send the invoice link, shop details, and bill amount directly from your store to the customer’s mobile number."
+          action={
+            <span className="flex size-10 items-center justify-center rounded-xl bg-gold-soft text-gold-deep">
+              <Smartphone className="size-5" />
+            </span>
+          }
+        />
+
+        {loading ? (
+          <div className="space-y-3"><Skeleton className="h-5 w-40" /><Skeleton className="h-4 w-full" /><Skeleton className="h-11 w-full" /></div>
+        ) : smsDelivery && (
+          <div className="rounded-2xl border-hairline bg-background/60 p-5">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-semibold">Provider: {smsDelivery.provider === 'none' ? 'Not connected' : smsDelivery.provider.toUpperCase()}</p>
+                <p className="mt-1 text-sm text-muted-foreground">{smsDelivery.detail}</p>
+              </div>
+              <Badge tone={smsDelivery.automatic ? 'success' : smsDelivery.configured ? 'gold' : 'warn'}>
+                {smsDelivery.automatic ? <CheckCircle2 className="size-3.5" /> : null}
+                {smsDelivery.automatic ? 'Direct SMS on' : smsDelivery.configured ? 'Ready to enable' : 'Setup needed'}
+              </Badge>
+            </div>
+
+            {!smsDelivery.automatic && (
+              <div className="mt-4 border-t border-hairline pt-4">
+                <p className="text-sm font-medium">Configure direct SMS delivery</p>
+                <p className="mt-1 text-xs text-muted-foreground">For India, register a transactional DLT template that includes variables for the shop name/address, invoice number, total, and invoice URL. Customer consent and an approved sender are required.</p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {smsDelivery.setup.map((value) => <code key={value} className="rounded-lg bg-secondary px-2.5 py-1.5 text-xs">{value}</code>)}
+                </div>
+              </div>
+            )}
+          </div>
         )}
       </Card>
 

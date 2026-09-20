@@ -6,13 +6,13 @@
 // invoice form competing for space.
 
 import { useMemo, useState } from 'react'
-import { Gem, Pencil, Plus, Search, Trash2, X } from 'lucide-react'
-import { Button, Card, EmptyState, Field, Input, Notice, SectionHeading, Skeleton, StatCard, money } from '@/components/ui'
+import { Gem, ImagePlus, Loader2, Pencil, Plus, Search, Trash2, X } from 'lucide-react'
+import { Button, Card, EmptyState, Field, Input, Notice, SectionHeading, Skeleton, StatCard, WorkspaceHero, money } from '@/components/ui'
 import { usePreferences } from '@/components/preferences'
 import type { Item } from '@/lib/types'
 
-type Draft = { code: string; name: string; category: string; price: string }
-const EMPTY: Draft = { code: '', name: '', category: '', price: '' }
+type Draft = { code: string; barcode: string; name: string; category: string; price: string }
+const EMPTY: Draft = { code: '', barcode: '', name: '', category: '', price: '' }
 
 export default function ItemsSection({ items, loading, refresh }: { items: Item[]; loading: boolean; refresh: () => void }) {
   const { t } = usePreferences()
@@ -21,6 +21,8 @@ export default function ItemsSection({ items, loading, refresh }: { items: Item[
   const [formOpen, setFormOpen] = useState(false)
   const [filter, setFilter] = useState('')
   const [saving, setSaving] = useState(false)
+  const [imageFile, setImageFile] = useState<File | null>(null)
+  const [removingImage, setRemovingImage] = useState(false)
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
 
@@ -43,14 +45,16 @@ export default function ItemsSection({ items, loading, refresh }: { items: Item[
     setEditing(null)
     setDraft(EMPTY)
     setFormOpen(true)
+    setImageFile(null)
     setMessage('')
     setError('')
   }
 
   const startEdit = (item: Item) => {
     setEditing(item)
-    setDraft({ code: String(item.code), name: item.name, category: item.category, price: item.price })
+    setDraft({ code: String(item.code), barcode: item.barcode ?? '', name: item.name, category: item.category, price: item.price })
     setFormOpen(true)
+    setImageFile(null)
     setMessage('')
     setError('')
   }
@@ -59,6 +63,30 @@ export default function ItemsSection({ items, loading, refresh }: { items: Item[
     setEditing(null)
     setDraft(EMPTY)
     setFormOpen(false)
+    setImageFile(null)
+  }
+
+  const imageUrl = (item: Item) => `/api/items/image?id=${item.id}&v=${encodeURIComponent(item.imageVersion)}`
+
+  const removeImage = async (item: Item) => {
+    if (!window.confirm(`Remove the image for ${item.name}?`)) return
+    setRemovingImage(true)
+    setMessage('')
+    setError('')
+    try {
+      const response = await fetch(`/api/items/image?id=${item.id}`, { method: 'DELETE' })
+      const result = (await response.json()) as { error?: string }
+      if (!response.ok) {
+        setError(result.error ?? 'Could not remove the product image.')
+        return
+      }
+      setMessage(`Image removed from ${item.name}.`)
+      refresh()
+    } catch {
+      setError('Could not remove the product image.')
+    } finally {
+      setRemovingImage(false)
+    }
   }
 
   const save = async (event: React.FormEvent) => {
@@ -67,6 +95,7 @@ export default function ItemsSection({ items, loading, refresh }: { items: Item[
     setMessage('')
     setError('')
     try {
+      const pendingImage = imageFile
       const payload = editing
         ? { ...draft, id: editing.id, code: Number(draft.code), price: Number(draft.price) }
         : { ...draft, code: Number(draft.code), price: Number(draft.price) }
@@ -81,7 +110,18 @@ export default function ItemsSection({ items, loading, refresh }: { items: Item[
         setError(result.error ?? 'Could not save the item.')
         return
       }
-      setMessage(`${result.name ?? draft.name} ${editing ? 'updated' : 'added to the catalogue'}.`)
+      if (pendingImage) {
+        const imageForm = new FormData()
+        imageForm.set('image', pendingImage)
+        const imageResponse = await fetch(`/api/items/image?id=${result.id}`, { method: 'POST', body: imageForm })
+        const imageResult = (await imageResponse.json()) as { error?: string }
+        if (!imageResponse.ok) {
+          setError(`${result.name ?? draft.name} was saved, but the image could not be uploaded: ${imageResult.error ?? 'unknown error'}`)
+          refresh()
+          return
+        }
+      }
+      setMessage(`${result.name ?? draft.name} ${editing ? 'updated' : 'added to the catalogue'}${pendingImage ? ' with product image' : ''}.`)
       cancel()
       refresh()
     } catch {
@@ -112,13 +152,20 @@ export default function ItemsSection({ items, loading, refresh }: { items: Item[
 
   return (
     <div className="flex flex-col gap-6">
+      <WorkspaceHero
+        eyebrow="Catalogue management"
+        title="Inventory control centre"
+        description="Keep product data precise, prices current, and your sales desk ready for the next customer."
+        action={<span className="rounded-xl border border-white/15 bg-white/10 px-3 py-2 text-xs font-medium text-slate-100 backdrop-blur">{items.length} active items</span>}
+      />
+
       <section className="grid gap-4 sm:grid-cols-3">
         <StatCard icon={Gem} label={t('items.count')} value={String(items.length)} hint={t('items.count.hint')} tone="gold" loading={loading} />
         <StatCard icon={Gem} label={t('items.categories')} value={String(categories)} hint={t('items.categories.hint')} loading={loading} />
         <StatCard icon={Gem} label={t('items.value')} amount={catalogueValue} hint={t('items.value.hint')} loading={loading} />
       </section>
 
-      <Card>
+      <Card className="business-primary-card">
         <SectionHeading
           title={t('items.title')}
           description={t('items.hint')}
@@ -131,12 +178,15 @@ export default function ItemsSection({ items, loading, refresh }: { items: Item[
         />
 
         {formOpen && (
-          <form onSubmit={save} className="mb-6 grid gap-4 rounded-2xl bg-secondary/60 p-5 sm:grid-cols-2">
+          <form onSubmit={save} className="mb-6 grid gap-4 rounded-2xl border-hairline bg-secondary/70 p-5 sm:grid-cols-2">
             <Field label={t('items.code')} hint={t('items.code.hint')}>
               <Input required value={draft.code} onChange={(event) => setDraft({ ...draft, code: event.target.value })} placeholder="e.g. 101" inputMode="numeric" />
             </Field>
             <Field label={t('items.name')}>
               <Input required value={draft.name} onChange={(event) => setDraft({ ...draft, name: event.target.value })} placeholder="e.g. Gold chain" />
+            </Field>
+            <Field label="Barcode" hint="Optional · scanned at billing">
+              <Input value={draft.barcode} onChange={(event) => setDraft({ ...draft, barcode: event.target.value })} placeholder="e.g. 8901234567890" inputMode="numeric" autoComplete="off" />
             </Field>
             <Field label={t('items.category')}>
               <Input required value={draft.category} onChange={(event) => setDraft({ ...draft, category: event.target.value })} placeholder="e.g. GOLD" />
@@ -144,6 +194,24 @@ export default function ItemsSection({ items, loading, refresh }: { items: Item[
             <Field label={t('items.price')}>
               <Input required type="number" min="0" step="0.01" value={draft.price} onChange={(event) => setDraft({ ...draft, price: event.target.value })} placeholder="0.00" />
             </Field>
+            <div className="sm:col-span-2">
+              <Field label="Product image" hint="Optional · PNG, JPG, GIF, or WebP · maximum 700 KB">
+                <div className="flex flex-wrap items-center gap-3 rounded-xl border border-dashed border-gold/55 bg-gold-soft/35 p-3">
+                  {editing?.image && !imageFile ? <img src={imageUrl(editing)} alt="Current product" className="size-12 rounded-lg border-hairline bg-card object-cover" /> : <span className="flex size-12 items-center justify-center rounded-lg bg-card text-gold-deep"><ImagePlus className="size-5" /></span>}
+                  <label className="inline-flex h-9 cursor-pointer items-center gap-2 rounded-lg bg-card px-3 text-xs font-semibold shadow-sm transition hover:bg-white dark:hover:bg-secondary">
+                    <ImagePlus className="size-3.5 text-gold-deep" />
+                    {imageFile ? 'Change selected image' : editing?.image ? 'Replace image' : 'Choose image'}
+                    <input className="sr-only" type="file" accept="image/png,image/jpeg,image/gif,image/webp" onChange={(event) => setImageFile(event.target.files?.[0] ?? null)} />
+                  </label>
+                  <span className="max-w-full truncate text-xs text-muted-foreground">{imageFile?.name ?? (editing?.image ? 'Current product image' : 'No image selected')}</span>
+                  {editing?.image && !imageFile && (
+                    <button type="button" disabled={removingImage} onClick={() => void removeImage(editing)} className="ml-auto inline-flex items-center gap-1 text-xs font-medium text-destructive hover:underline disabled:opacity-55">
+                      {removingImage ? <Loader2 className="size-3 animate-spin" /> : <Trash2 className="size-3" />} Remove
+                    </button>
+                  )}
+                </div>
+              </Field>
+            </div>
             <div className="flex gap-2 sm:col-span-2">
               <Button type="submit" variant="gold" disabled={saving}>
                 {saving ? t('common.saving') : editing ? t('items.update') : t('items.save')}
@@ -155,9 +223,10 @@ export default function ItemsSection({ items, loading, refresh }: { items: Item[
           </form>
         )}
 
-        <div className="relative mb-5 max-w-md">
-          <Search className="pointer-events-none absolute top-3.5 left-3.5 size-4 text-muted-foreground" />
-          <Input value={filter} onChange={(event) => setFilter(event.target.value)} placeholder={t('items.filterPlaceholder')} className="pl-10" />
+        <div className="catalogue-search relative mb-6 max-w-2xl">
+          <Search className="pointer-events-none absolute top-4.5 left-4 size-5 text-gold-deep" />
+          <Input value={filter} onChange={(event) => setFilter(event.target.value)} placeholder={t('items.filterPlaceholder')} className="!h-14 !border-2 !border-gold/70 !bg-card !pl-12 text-base font-medium placeholder:font-normal" />
+          <span className="pointer-events-none absolute top-4.5 right-4 hidden rounded-md bg-gold-soft px-2 py-0.5 text-[10px] font-semibold tracking-wide text-gold-deep uppercase sm:block">Quick search</span>
         </div>
 
         <div className="flex-col gap-3">
@@ -170,7 +239,7 @@ export default function ItemsSection({ items, loading, refresh }: { items: Item[
             // Skeleton cards keep the layout stable while the catalogue loads.
             <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
               {Array.from({ length: 6 }).map((_, index) => (
-                <div key={index} className="rounded-2xl border-hairline bg-background/60 p-4">
+                <div key={index} className="business-list-row rounded-2xl p-4">
                   <Skeleton className="mb-3 h-5 w-16" />
                   <Skeleton className="mb-2 h-4 w-32" />
                   <Skeleton className="mb-4 h-3 w-20" />
@@ -188,14 +257,19 @@ export default function ItemsSection({ items, loading, refresh }: { items: Item[
           ) : (
             <div className="stagger grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
               {visible.map((item) => (
-                <div key={item.id} className="flex flex-col justify-between rounded-2xl border-hairline bg-background/60 p-4 transition hover:bg-gold-soft/30">
-                  <div className="flex items-start justify-between gap-3">
+                <div key={item.id} className="business-list-row flex flex-col justify-between rounded-2xl p-4">
+                  <div className="flex items-start gap-3">
+                    {item.image ? (
+                      <img src={imageUrl(item)} alt="" className="size-14 shrink-0 rounded-xl border-hairline bg-card object-cover" />
+                    ) : (
+                      <span className="flex size-14 shrink-0 items-center justify-center rounded-xl bg-secondary text-gold-deep"><Gem className="size-5" /></span>
+                    )}
                     <div className="min-w-0">
                       <span className="inline-flex items-center rounded-lg bg-secondary px-2 py-0.5 text-xs font-semibold">Code {item.code}</span>
                       <p className="mt-2 truncate font-medium">{item.name}</p>
                       <p className="text-xs tracking-wide text-muted-foreground uppercase">{item.category}</p>
                     </div>
-                    <p className="tnum shrink-0 text-sm font-semibold">{money(Number(item.price))}</p>
+                    <p className="tnum ml-auto shrink-0 text-sm font-semibold">{money(Number(item.price))}</p>
                   </div>
                   <div className="mt-4 flex gap-2">
                     <Button variant="outline" onClick={() => startEdit(item)} className="!h-9 flex-1 !px-3 text-xs">

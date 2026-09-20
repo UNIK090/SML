@@ -5,8 +5,9 @@
 // Extracted from the old dashboard so the invoice can be opened from Billing or
 // Payments without duplicating the markup.
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Download, Loader2, Send, X } from 'lucide-react'
+import QRCode from 'qrcode'
 import { Button, Field, Input, Notice, money } from '@/components/ui'
 import { usePreferences } from '@/components/preferences'
 import type { Invoice, Shop } from '@/lib/types'
@@ -21,7 +22,7 @@ export default function InvoiceModal({
   invoice: Invoice
   shop: Shop | null
   hasLogo: boolean
-  logoVersion: number
+  logoVersion: string | number
   onClose: () => void
 }) {
   const { t } = usePreferences()
@@ -29,11 +30,27 @@ export default function InvoiceModal({
   const [sending, setSending] = useState<'whatsapp' | 'sms' | null>(null)
   const [note, setNote] = useState('')
   const [error, setError] = useState('')
+  const [receiptUrl, setReceiptUrl] = useState('')
+  const [qrCode, setQrCode] = useState('')
 
   const lines = invoice.lines ?? []
   const subtotal = lines.reduce((sum, line) => sum + Number(line.lineTotal), 0)
   const discount = Number(invoice.discount || 0)
   const hasShopDetails = Boolean(shop?.address || shop?.phone || shop?.email || shop?.gstin)
+
+  useEffect(() => {
+    if (!invoice.publicToken) return
+    const url = `${window.location.origin}/invoice/${invoice.publicToken}`
+    let active = true
+    setReceiptUrl(url)
+    void QRCode.toDataURL(url, {
+      errorCorrectionLevel: 'M',
+      margin: 1,
+      width: 180,
+      color: { dark: '#172033', light: '#ffffff' },
+    }).then((value) => { if (active) setQrCode(value) }).catch(() => { if (active) setQrCode('') })
+    return () => { active = false }
+  }, [invoice.publicToken])
 
   const send = async (channel: 'whatsapp' | 'sms') => {
     setSending(channel)
@@ -67,18 +84,18 @@ export default function InvoiceModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-primary/40 p-4 py-10 backdrop-blur-sm">
-      <div className="receipt-modal card-shadow-lg w-full max-w-lg rounded-2xl bg-card p-7">
+    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-950/55 p-4 py-8 backdrop-blur-md sm:py-10">
+      <div className="receipt-modal business-invoice w-full max-w-xl rounded-3xl border-hairline bg-card p-6 sm:p-7">
         <div className="flex items-start justify-between print:hidden">
-          <p className="text-xs tracking-widest text-muted-foreground uppercase">{t('invoice.tax')}</p>
-          <button aria-label="Close invoice" onClick={onClose} className="text-muted-foreground transition hover:text-foreground">
+          <p className="rounded-full bg-secondary px-2.5 py-1 text-[10px] font-semibold tracking-[0.13em] text-muted-foreground uppercase">{t('invoice.tax')}</p>
+          <button aria-label="Close invoice" onClick={onClose} className="flex size-8 items-center justify-center rounded-lg text-muted-foreground transition hover:bg-secondary hover:text-foreground">
             <X className="size-5" />
           </button>
         </div>
 
         {/* Invoice head — this block is what prints. */}
         <div className="mt-5 border-b border-hairline pb-5 text-center">
-          {hasLogo && <img src={`/api/logo?v=${logoVersion}`} alt="" className="mx-auto mb-3 max-h-20 object-contain" />}
+          {hasLogo && <img src={`/api/brand?kind=logo&v=${encodeURIComponent(String(logoVersion))}`} alt="" className="mx-auto mb-3 max-h-20 object-contain" />}
           <h2 className="text-xl font-semibold tracking-tight">{(shop?.name ?? 'SRI MAHA LAXMI JEWELLERS').toUpperCase()}</h2>
           {shop?.address && <p className="mt-1 text-xs text-muted-foreground">{shop.address}</p>}
           {(shop?.phone || shop?.email) && (
@@ -88,7 +105,7 @@ export default function InvoiceModal({
           {!hasShopDetails && <p className="mt-1 text-xs text-muted-foreground/70">{t('invoice.shopHint')}</p>}
         </div>
 
-        <div className="mt-4 grid gap-1 text-xs sm:grid-cols-2">
+        <div className="mt-4 grid gap-1.5 rounded-2xl bg-secondary/50 p-3 text-xs sm:grid-cols-2">
           <p><span className="text-muted-foreground">{t('invoice.number')}</span> <span className="font-medium">{invoice.invoiceNumber}</span></p>
           <p className="sm:text-right"><span className="text-muted-foreground">{t('invoice.date')}</span> <span className="font-medium">{invoice.businessDay}</span></p>
           <p><span className="text-muted-foreground">{t('invoice.customer')}</span> <span className="font-medium">{invoice.customerName || t('common.walkIn')}</span></p>
@@ -137,6 +154,17 @@ export default function InvoiceModal({
             <span>{money(Number(invoice.totalAmount))}</span>
           </div>
         </div>
+
+        {qrCode && receiptUrl && (
+          <div className="mt-6 flex items-center justify-center gap-4 rounded-2xl border border-dashed border-hairline bg-background/60 p-4 text-left">
+            <img src={qrCode} alt={t('invoice.qr.title')} width={112} height={112} className="size-28 rounded-lg bg-white p-1" />
+            <div className="min-w-0">
+              <p className="text-sm font-semibold">{t('invoice.qr.title')}</p>
+              <p className="mt-1 text-xs text-muted-foreground">{t('invoice.qr.hint')}</p>
+              <a href={receiptUrl} target="_blank" rel="noreferrer" className="mt-2 inline-block break-all text-xs font-medium text-gold-deep underline print:hidden">{receiptUrl}</a>
+            </div>
+          </div>
+        )}
 
         <p className="mt-5 text-center text-xs text-muted-foreground/70">{t('invoice.thanks')}</p>
 

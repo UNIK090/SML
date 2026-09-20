@@ -4,12 +4,25 @@
 CREATE TABLE IF NOT EXISTS inventory_items (
   id          serial PRIMARY KEY,
   code        integer NOT NULL UNIQUE,
+  barcode     text,
   name        text NOT NULL,
   category    text NOT NULL,
   price       numeric(12, 2) NOT NULL,
   created_at  timestamptz NOT NULL DEFAULT now(),
   updated_at  timestamptz NOT NULL DEFAULT now()
 );
+
+-- Barcodes stay text so EAN/UPC values keep leading zeroes and are not limited
+-- by the range of the integer item code. Blank values remain optional.
+ALTER TABLE inventory_items ADD COLUMN IF NOT EXISTS barcode text;
+CREATE UNIQUE INDEX IF NOT EXISTS inventory_items_barcode_unique
+  ON inventory_items (barcode) WHERE barcode IS NOT NULL;
+
+-- Optional product photographs for the visual catalogue. Bytes are stored in
+-- the database because the production app has a read-only serverless disk.
+ALTER TABLE inventory_items ADD COLUMN IF NOT EXISTS image_mime_type text;
+ALTER TABLE inventory_items ADD COLUMN IF NOT EXISTS image_data text;
+ALTER TABLE inventory_items ADD COLUMN IF NOT EXISTS image_byte_size integer;
 
 CREATE TABLE IF NOT EXISTS billing_transactions (
   id              serial PRIMARY KEY,
@@ -29,6 +42,12 @@ CREATE TABLE IF NOT EXISTS billing_transactions (
 ALTER TABLE billing_transactions ADD COLUMN IF NOT EXISTS customer_name  text;
 ALTER TABLE billing_transactions ADD COLUMN IF NOT EXISTS customer_phone text;
 ALTER TABLE billing_transactions ADD COLUMN IF NOT EXISTS discount       numeric(12, 2) NOT NULL DEFAULT '0';
+
+-- Each new invoice gets an unguessable token for its QR receipt link. It is
+-- nullable for invoices created before this feature was installed.
+ALTER TABLE billing_transactions ADD COLUMN IF NOT EXISTS public_token text;
+CREATE UNIQUE INDEX IF NOT EXISTS billing_transactions_public_token_unique
+  ON billing_transactions (public_token) WHERE public_token IS NOT NULL;
 
 -- One row per item on an invoice.
 CREATE TABLE IF NOT EXISTS invoice_items (
@@ -63,6 +82,20 @@ CREATE TABLE IF NOT EXISTS shop_logo (
   byte_size  integer NOT NULL,
   updated_at timestamptz NOT NULL DEFAULT now()
 );
+
+-- Browser favicon and display picture use the same single-row brand record as
+-- the shop logo. These additions are safe for existing installations.
+ALTER TABLE shop_logo ADD COLUMN IF NOT EXISTS favicon_mime_type text;
+ALTER TABLE shop_logo ADD COLUMN IF NOT EXISTS favicon_data text;
+ALTER TABLE shop_logo ADD COLUMN IF NOT EXISTS favicon_byte_size integer;
+ALTER TABLE shop_logo ADD COLUMN IF NOT EXISTS avatar_mime_type text;
+ALTER TABLE shop_logo ADD COLUMN IF NOT EXISTS avatar_data text;
+ALTER TABLE shop_logo ADD COLUMN IF NOT EXISTS avatar_byte_size integer;
+-- The original three columns are optional now: this lets a shop upload a
+-- favicon or display picture before its invoice logo.
+ALTER TABLE shop_logo ALTER COLUMN mime_type DROP NOT NULL;
+ALTER TABLE shop_logo ALTER COLUMN data DROP NOT NULL;
+ALTER TABLE shop_logo ALTER COLUMN byte_size DROP NOT NULL;
 
 -- Every attempt to send an invoice to a customer, so a bill can be proved sent
 -- and failures can be retried. `status` is QUEUED (a WhatsApp link was handed to

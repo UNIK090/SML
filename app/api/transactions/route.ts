@@ -1,11 +1,14 @@
-import { NextResponse } from 'next/server'
+import { after, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { billingTransactions, inventoryItems, invoiceItems, invoiceSends } from '@/lib/db/schema'
 import { isConnectionError, isUniqueViolation } from '@/lib/db/errors'
 import { requireAdmin } from '@/lib/db/guard'
-import { asc, inArray } from 'drizzle-orm'
-import { buildMessage, isAutoSendEnabled, normalisePhone, sendInvoice } from '@/lib/messaging'
+import { inArray } from 'drizzle-orm'
+import { buildMessage, buildSmsMessage, canAutoSendInvoices, canAutoSendSmsInvoices, getInvoiceDeliveryStatus, getSmsDeliveryStatus, normalisePhone, sendInvoice, type Channel } from '@/lib/messaging'
 import { getShopDetails } from '@/lib/shop'
+import { randomBytes } from 'node:crypto'
+import { publicInvoiceUrl } from '@/lib/public-url'
+import { businessDate } from '@/lib/business-time'
 
 type IncomingLine = { code: unknown; quantity: unknown; billedPrice: unknown }
 
@@ -82,6 +85,13 @@ export async function POST(request: Request) {
     const total = subtotal - discount
     const first = lineRows[0]
     const invoiceNumber = makeInvoiceNumber()
+    // Date every invoice in the shop's local business timezone. Relying on a
+    // database default would split late-night India sales into the next/previous
+    // UTC day and make the daily total reset at the wrong time.
+    const businessDay = businessDate()
+    // This token is deliberately separate from the human-readable invoice
+    // number, so the customer-facing QR receipt cannot be guessed.
+    const publicToken = randomBytes(18).toString('base64url')
 
     // Header and lines must land together or not at all.
     const transaction = await db.transaction(async (tx) => {
@@ -94,51 +104,77 @@ export async function POST(request: Request) {
         quantity: first.quantity,
         totalAmount: total.toFixed(2),
         paymentStatus,
+        businessDay,
         customerName,
         customerPhone,
         discount: discount.toFixed(2),
+        publicToken,
       }).returning()
 
       const lines = await tx.insert(invoiceItems).values(lineRows.map((row) => ({ ...row, invoiceNumber }))).returning()
       return { header, lines }
     })
 
-    // Optional auto-send. Only runs when INVOICE_AUTO_SEND=true AND a real
-    // provider is configured, so a mistyped number is never messaged silently by
-    // the link provider (which cannot send without a human pressing Send anyway).
+    // Invoice saves should feel immediate. Direct WhatsApp/SMS providers run
+    // after the response so the counter is never blocked by a network call.
+    // Each attempt is retained in invoice_sends for delivery auditing.
     let sendStatus: string | undefined
-    let sendLink: string | undefined
     let sendDetail: string | undefined
     const phone = customerPhone ? normalisePhone(customerPhone) : null
-    if (isAutoSendEnabled() && phone) {
-      try {
-        const lines = await db.select().from(invoiceItems).where(inArray(invoiceItems.invoiceNumber, [invoiceNumber])).orderBy(asc(invoiceItems.id))
-        const message = buildMessage({
-          invoiceNumber,
-          customerName,
-          shop: await getShopDetails(),
-          total: total.toFixed(2),
-          lines: lines.map((line) => ({ itemName: line.itemName, quantity: line.quantity, lineTotal: line.lineTotal })),
-          discount: discount.toFixed(2),
-          paymentStatus,
-          businessDay: new Date().toISOString().slice(0, 10),
-          publicUrl: null,
-        })
-        const sent = await sendInvoice({ phone, channel: 'whatsapp', message })
-        sendStatus = sent.status; sendLink = sent.link; sendDetail = sent.detail
-        await db.insert(invoiceSends).values({
-          invoiceNumber, channel: 'whatsapp', provider: sent.provider, phone,
-          status: sent.status, response: sent.detail ?? null,
-        })
-      } catch (error) {
-        // A delivery failure must never fail the bill itself — the sale is already saved.
-        console.error('[v0] Auto-send failed:', error)
-        sendStatus = 'FAILED'
-        sendDetail = error instanceof Error ? error.message : 'Auto-send failed.'
-      }
+    const whatsappDelivery = getInvoiceDeliveryStatus()
+    const smsDelivery = getSmsDeliveryStatus()
+    const jobs: { channel: Channel; provider: string }[] = []
+    const blocked: string[] = []
+    if (phone && canAutoSendInvoices()) jobs.push({ channel: 'whatsapp', provider: whatsappDelivery.provider })
+    else if (phone && whatsappDelivery.autoSendEnabled) blocked.push(whatsappDelivery.detail)
+    if (phone && canAutoSendSmsInvoices()) jobs.push({ channel: 'sms', provider: smsDelivery.provider })
+    else if (phone && smsDelivery.autoSendEnabled) blocked.push(smsDelivery.detail)
+
+    if (phone && jobs.length > 0) {
+      sendStatus = 'SCHEDULED'
+      const channels = jobs.map((job) => job.channel === 'sms' ? 'SMS' : 'WhatsApp').join(' and ')
+      sendDetail = `${channels} delivery is being sent in the background.`
+      const receiptUrl = publicInvoiceUrl(request, publicToken)
+      after(async () => {
+        try {
+          const invoiceMessage = {
+            invoiceNumber,
+            customerName,
+            shop: await getShopDetails(),
+            total: total.toFixed(2),
+            lines: transaction.lines.map((line) => ({ itemName: line.itemName, quantity: line.quantity, lineTotal: line.lineTotal })),
+            discount: discount.toFixed(2),
+            paymentStatus,
+            businessDay: String(transaction.header.businessDay),
+            publicUrl: receiptUrl,
+          }
+          await Promise.all(jobs.map(async (job) => {
+            try {
+              const message = job.channel === 'sms' ? buildSmsMessage(invoiceMessage) : buildMessage(invoiceMessage)
+              const sent = await sendInvoice({ phone, channel: job.channel, message })
+              await db.insert(invoiceSends).values({ invoiceNumber, channel: job.channel, provider: sent.provider, phone, status: sent.status, response: sent.detail ?? null })
+            } catch (error) {
+              console.error(`[invoice] Automatic ${job.channel} send failed:`, error)
+              await db.insert(invoiceSends).values({
+                invoiceNumber, channel: job.channel, provider: job.provider, phone,
+                status: 'FAILED', response: error instanceof Error ? error.message : 'Automatic delivery failed.',
+              }).catch(() => undefined)
+            }
+          }))
+        } catch (error) {
+          console.error('[invoice] Automatic delivery preparation failed:', error)
+          await Promise.all(jobs.map((job) => db.insert(invoiceSends).values({
+            invoiceNumber, channel: job.channel, provider: job.provider, phone,
+            status: 'FAILED', response: error instanceof Error ? error.message : 'Automatic delivery preparation failed.',
+          }).catch(() => undefined)))
+        }
+      })
+    } else if (phone && blocked.length > 0) {
+      sendStatus = 'FAILED'
+      sendDetail = blocked.join(' ')
     }
 
-    return NextResponse.json({ ...transaction.header, lines: transaction.lines, subtotal, sendStatus, sendLink, sendDetail }, { status: 201 })
+    return NextResponse.json({ ...transaction.header, lines: transaction.lines, subtotal, sendStatus, sendDetail }, { status: 201 })
   } catch (error) {
     console.error('[v0] Failed to save transaction:', error)
     if (isUniqueViolation(error)) {

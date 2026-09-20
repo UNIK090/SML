@@ -13,10 +13,12 @@ export async function GET(request: Request) {
     const invoiceNumber = new URL(request.url).searchParams.get('invoiceNumber')
     if (!invoiceNumber) return NextResponse.json({ error: 'An invoice number is required.' }, { status: 400 })
 
-    const [header] = await db.select().from(billingTransactions).where(eq(billingTransactions.invoiceNumber, invoiceNumber))
+    // Header and lines have the same lookup key, so fetch them together.
+    const [[header], lines] = await Promise.all([
+      db.select().from(billingTransactions).where(eq(billingTransactions.invoiceNumber, invoiceNumber)),
+      db.select().from(invoiceItems).where(eq(invoiceItems.invoiceNumber, invoiceNumber)).orderBy(asc(invoiceItems.id)),
+    ])
     if (!header) return NextResponse.json({ error: 'Invoice not found.' }, { status: 404 })
-
-    const lines = await db.select().from(invoiceItems).where(eq(invoiceItems.invoiceNumber, invoiceNumber)).orderBy(asc(invoiceItems.id))
     return NextResponse.json({ ...header, lines })
   } catch (error) {
     console.error('[v0] Failed to load invoice:', error)

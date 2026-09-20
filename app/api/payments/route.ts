@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { and, desc, eq, gte, lte, sql, type SQL } from 'drizzle-orm'
 import { db } from '@/lib/db'
-import { billingTransactions } from '@/lib/db/schema'
+import { billingTransactions, dailyEarnings, invoiceItems, invoiceSends } from '@/lib/db/schema'
 import { isConnectionError } from '@/lib/db/errors'
 import { requireAdmin } from '@/lib/db/guard'
 
@@ -32,16 +32,17 @@ export async function GET(request: Request) {
     }
     const where = conditions.length > 0 ? and(...conditions) : undefined
 
-    const [countRow] = await db.select({ count: sql<number>`count(*)` }).from(billingTransactions).where(where)
+    const [[countRow], rows] = await Promise.all([
+      db.select({ count: sql<number>`count(*)` }).from(billingTransactions).where(where),
+      db
+        .select()
+        .from(billingTransactions)
+        .where(where)
+        .orderBy(desc(billingTransactions.createdAt))
+        .limit(perPage)
+        .offset((page - 1) * perPage),
+    ])
     const total = Number(countRow?.count ?? 0)
-
-    const rows = await db
-      .select()
-      .from(billingTransactions)
-      .where(where)
-      .orderBy(desc(billingTransactions.createdAt))
-      .limit(perPage)
-      .offset((page - 1) * perPage)
 
     return NextResponse.json({ rows, total, page, perPage, pages: Math.max(1, Math.ceil(total / perPage)) })
   } catch (error) {
@@ -75,5 +76,37 @@ export async function PATCH(request: Request) {
     console.error('[v0] Failed to update payment status:', error)
     if (isConnectionError(error)) return NextResponse.json({ error: 'Could not reach the database. Please try again.' }, { status: 503 })
     return NextResponse.json({ error: 'Could not update the payment status.' }, { status: 500 })
+  }
+}
+
+/**
+ * Permanently removes the transaction ledger while preserving the catalogue,
+ * shop profile, and branding. The exact confirmation value makes accidental
+ * calls from a normal navigation request impossible.
+ */
+export async function DELETE(request: Request) {
+  const denied = await requireAdmin()
+  if (denied) return denied
+  try {
+    const body = await request.json().catch(() => null)
+    if (body?.confirmation !== 'CLEAR_TRANSACTIONS') {
+      return NextResponse.json({ error: 'Transaction clearing was not confirmed.' }, { status: 400 })
+    }
+
+    const cleared = await db.transaction(async (tx) => {
+      const [count] = await tx.select({ count: sql<number>`count(*)` }).from(billingTransactions)
+      // Delete dependent records first so this stays valid if foreign keys are
+      // added by a future database migration.
+      await tx.delete(invoiceSends)
+      await tx.delete(invoiceItems)
+      await tx.delete(billingTransactions)
+      await tx.delete(dailyEarnings)
+      return Number(count?.count ?? 0)
+    })
+    return NextResponse.json({ success: true, cleared })
+  } catch (error) {
+    console.error('[v0] Failed to clear transactions:', error)
+    if (isConnectionError(error)) return NextResponse.json({ error: 'Could not reach the database. Please try again.' }, { status: 503 })
+    return NextResponse.json({ error: 'Could not clear transactions.' }, { status: 500 })
   }
 }

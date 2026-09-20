@@ -72,8 +72,8 @@ async function fetchWithCache<T>(url: string): Promise<T> {
  * immediately. `isLoading` is true only on a genuine first load with no cache,
  * which is what drives the skeleton.
  */
-export function useApi<T>(url: string | null, options: { revalidate?: boolean } = {}) {
-  const { revalidate = true } = options
+export function useApi<T>(url: string | null, options: { revalidate?: boolean; refreshInterval?: number } = {}) {
+  const { revalidate = true, refreshInterval = 0 } = options
   const cached = url ? (cache.get(url)?.data as T | undefined) : undefined
 
   const [data, setData] = useState<T | undefined>(cached)
@@ -135,6 +135,24 @@ export function useApi<T>(url: string | null, options: { revalidate?: boolean } 
       listeners.delete(listener)
     }
   }, [url, revalidate, load])
+
+  // Keep a desk that stays open all day current without blocking interaction.
+  // Refetch promptly when it returns to the foreground, and optionally poll a
+  // small number of high-value endpoints while the tab is visible.
+  useEffect(() => {
+    if (!url || !revalidate || typeof window === 'undefined') return
+    const refreshVisible = () => {
+      if (document.visibilityState === 'visible') void load(true)
+    }
+    window.addEventListener('focus', refreshVisible)
+    document.addEventListener('visibilitychange', refreshVisible)
+    const timer = refreshInterval > 0 ? window.setInterval(refreshVisible, refreshInterval) : null
+    return () => {
+      window.removeEventListener('focus', refreshVisible)
+      document.removeEventListener('visibilitychange', refreshVisible)
+      if (timer !== null) window.clearInterval(timer)
+    }
+  }, [url, revalidate, refreshInterval, load])
 
   return { data, error, isLoading, isValidating, refresh: () => load(Boolean(data)) }
 }
