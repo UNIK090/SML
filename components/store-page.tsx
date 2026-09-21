@@ -207,8 +207,13 @@ function ShopWindow() {
       </header>
 
       {/* -------------------------------- Hero -------------------------------- */}
-      <section className="relative overflow-hidden px-4 pt-14 pb-20 sm:px-7 sm:pt-20 lg:pt-24">
-        <div className="mx-auto grid w-full max-w-[1400px] items-center gap-14 lg:grid-cols-[1.05fr_.95fr]">
+      <section className="sf-hero relative overflow-hidden px-4 pt-14 pb-20 sm:px-7 sm:pt-20 lg:pt-24">
+        <video className="sf-hero-video" autoPlay loop muted playsInline preload="metadata" aria-hidden="true">
+          <source src="/media/jewellery-hero.mp4" type="video/mp4" />
+        </video>
+        <div className="sf-hero-tint" aria-hidden="true" />
+
+        <div className="relative z-10 mx-auto grid w-full max-w-[1400px] items-center gap-14 lg:grid-cols-[1.05fr_.95fr]">
           <div>
             {/*
               While the catalogue is still loading, say nothing rather than
