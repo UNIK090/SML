@@ -53,7 +53,18 @@ export default function ProfileSection({ onShopChanged, onBrandChanged }: { onSh
   const [brand, setBrand] = useState<BrandAssets | null>(null)
   const [uploading, setUploading] = useState<BrandKind | null>(null)
 
-  const [form, setForm] = useState({ name: '', address: '', phone: '', email: '', gstin: '' })
+  const [form, setForm] = useState({
+    name: '',
+    address: '',
+    phone: '',
+    email: '',
+    gstin: '',
+    // Storefront copy. Edited here rather than on the Store screen because it is
+    // shop identity, and it is what the website hero and contact block read.
+    tagline: '',
+    whatsapp: '',
+    storeHours: '',
+  })
 
   // Password form
   const [currentPassword, setCurrentPassword] = useState('')
@@ -78,6 +89,9 @@ export default function ProfileSection({ onShopChanged, onBrandChanged }: { onSh
         phone: data.profile.phone ?? '',
         email: data.profile.email ?? '',
         gstin: data.profile.gstin ?? '',
+        tagline: data.profile.tagline ?? '',
+        whatsapp: data.profile.whatsapp ?? '',
+        storeHours: data.profile.storeHours ?? '',
       })
       setFromEnv(data.fromEnv)
       setAdminEmail(data.adminEmail)
@@ -259,6 +273,30 @@ export default function ProfileSection({ onShopChanged, onBrandChanged }: { onSh
             </Field>
             <Field label="Email" hint={t('common.optional')}>
               <Input type="email" value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} placeholder="Optional" />
+            </Field>
+            <div className="sm:col-span-2">
+              <Field label="Website tagline" hint="The one line under your shop name on the online store.">
+                <Input
+                  value={form.tagline}
+                  onChange={(event) => setForm({ ...form, tagline: event.target.value })}
+                  placeholder="e.g. Hand-picked gold and diamond jewellery since 1985"
+                />
+              </Field>
+            </div>
+            <Field label="WhatsApp number" hint="For the website's WhatsApp button. Blank uses your phone number.">
+              <Input
+                value={form.whatsapp}
+                onChange={(event) => setForm({ ...form, whatsapp: event.target.value })}
+                placeholder="10-digit number or a wa.me link"
+                inputMode="tel"
+              />
+            </Field>
+            <Field label="Shop hours" hint="Shown on the website and at checkout.">
+              <Input
+                value={form.storeHours}
+                onChange={(event) => setForm({ ...form, storeHours: event.target.value })}
+                placeholder="e.g. Mon–Sat · 10:00 am – 8:30 pm"
+              />
             </Field>
             <div className="sm:col-span-2">
               <Field label="GSTIN" hint="Leave blank if you are not GST registered — it is then omitted from the invoice.">

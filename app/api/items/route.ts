@@ -17,14 +17,73 @@ const itemFields = {
   price: inventoryItems.price,
   imageMimeType: inventoryItems.imageMimeType,
   imageByteSize: inventoryItems.imageByteSize,
+  // Storefront listing fields. They travel with the catalogue response so the
+  // Items screen can show one badge and the Store screen can edit them without
+  // a second endpoint.
+  published: inventoryItems.published,
+  storePrice: inventoryItems.storePrice,
+  description: inventoryItems.description,
+  collection: inventoryItems.collection,
+  badge: inventoryItems.badge,
+  featured: inventoryItems.featured,
   updatedAt: inventoryItems.updatedAt,
 }
 
-type SelectedItem = { imageMimeType: string | null; imageByteSize: number | null; updatedAt: Date; id: number; code: number; barcode: string | null; name: string; category: string; price: string }
+type SelectedItem = {
+  imageMimeType: string | null
+  imageByteSize: number | null
+  updatedAt: Date
+  id: number
+  code: number
+  barcode: string | null
+  name: string
+  category: string
+  price: string
+  published: boolean
+  storePrice: string | null
+  description: string | null
+  collection: string | null
+  badge: string | null
+  featured: number
+}
 
 function itemResponse(item: SelectedItem) {
   const { imageMimeType, imageByteSize, updatedAt, ...safe } = item
   return { ...safe, image: Boolean(imageMimeType && imageByteSize), imageVersion: updatedAt.toISOString() }
+}
+
+/**
+ * Normalises the storefront half of an item payload.
+ *
+ * Absent fields are left untouched (undefined) so a publish toggle from the
+ * Store screen does not wipe the description a moment later.
+ */
+function storeFields(body: Record<string, unknown>) {
+  const patch: Record<string, unknown> = {}
+  if (typeof body.published === 'boolean') patch.published = body.published
+  if (body.storePrice !== undefined) {
+    if (body.storePrice === null || body.storePrice === '') {
+      patch.storePrice = null
+    } else {
+      const value = Number(body.storePrice)
+      if (!Number.isFinite(value) || value < 0) return { error: 'Enter a valid website price.' }
+      patch.storePrice = value.toFixed(2)
+    }
+  }
+  if (body.description !== undefined) {
+    patch.description = typeof body.description === 'string' && body.description.trim() ? body.description.trim().slice(0, 600) : null
+  }
+  if (body.collection !== undefined) {
+    patch.collection = typeof body.collection === 'string' && body.collection.trim() ? body.collection.trim().slice(0, 80) : null
+  }
+  if (body.badge !== undefined) {
+    patch.badge = typeof body.badge === 'string' && body.badge.trim() ? body.badge.trim().slice(0, 24) : null
+  }
+  if (body.featured !== undefined) {
+    const value = Number(body.featured)
+    patch.featured = Number.isFinite(value) ? Math.trunc(value) : 0
+  }
+  return { patch }
 }
 
 export async function GET(request: Request) {
@@ -93,7 +152,13 @@ export async function PATCH(request: Request) {
     const category = typeof body.category === 'string' ? body.category.trim() : ''
     const barcode = typeof body.barcode === 'string' && body.barcode.trim() ? body.barcode.trim() : null
     if (!Number.isInteger(id) || !Number.isInteger(code) || !name || !category || !Number.isFinite(price) || price < 0) return NextResponse.json({ error: 'Enter valid item details.' }, { status: 400 })
-    const [item] = await db.update(inventoryItems).set({ code, barcode, name, category, price: price.toFixed(2), updatedAt: new Date() }).where(eq(inventoryItems.id, id)).returning(itemFields)
+    const store = storeFields(body)
+    if (store.error) return NextResponse.json({ error: store.error }, { status: 400 })
+    const [item] = await db
+      .update(inventoryItems)
+      .set({ code, barcode, name, category, price: price.toFixed(2), ...store.patch, updatedAt: new Date() })
+      .where(eq(inventoryItems.id, id))
+      .returning(itemFields)
     if (!item) return NextResponse.json({ error: 'Catalogue item not found.' }, { status: 404 })
     return NextResponse.json(itemResponse(item))
   } catch (error) {
@@ -141,7 +206,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Enter a valid code, name, category, and price.' }, { status: 400 })
     }
 
-    const [item] = await db.insert(inventoryItems).values({ code, barcode, name, category, price: price.toFixed(2) }).returning(itemFields)
+    const store = storeFields(body)
+    if (store.error) return NextResponse.json({ error: store.error }, { status: 400 })
+    const [item] = await db
+      .insert(inventoryItems)
+      .values({ code, barcode, name, category, price: price.toFixed(2), ...store.patch })
+      .returning(itemFields)
     return NextResponse.json(itemResponse(item), { status: 201 })
   } catch (error) {
     console.error('[v0] Failed to add catalogue item:', error)

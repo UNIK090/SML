@@ -4,8 +4,8 @@ import { PreferencesProvider } from '@/components/preferences'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'SRI MAHA LAXMI JEWELLERS | Jewellery Billing',
-  description: 'Real-time jewellery billing, catalogue, and earnings ledger.',
+  title: 'SRI MAHA LAXMI JEWELLERS | Fine Jewellery',
+  description: 'Hand-picked gold, diamond and temple jewellery. Browse the collection online and order directly from the shop.',
   generator: 'v0.app',
   icons: {
     icon: [{ url: '/api/brand?kind=favicon', type: 'image/png' }],

@@ -3,6 +3,7 @@ import { asc, eq } from 'drizzle-orm'
 import { db } from '@/lib/db'
 import { billingTransactions, invoiceItems } from '@/lib/db/schema'
 import { getShopDetails } from '@/lib/shop'
+import PrintInvoiceButton from '@/components/print-invoice-button'
 
 export const dynamic = 'force-dynamic'
 
@@ -23,8 +24,8 @@ export default async function PublicInvoicePage({ params }: { params: Promise<{ 
   const discount = Number(invoice.discount || 0)
 
   return (
-    <main className="dashboard-canvas min-h-screen px-4 py-10 text-foreground sm:py-14">
-      <article className="business-invoice mx-auto w-full max-w-xl rounded-3xl border-hairline bg-card p-6 sm:p-8">
+    <main className="invoice-print-root dashboard-canvas min-h-screen px-4 py-10 text-foreground sm:py-14">
+      <article className="invoice-print-sheet business-invoice mx-auto w-full max-w-xl rounded-3xl border-hairline bg-card p-6 sm:p-8">
         <p className="text-center text-xs font-medium tracking-[0.24em] text-gold-deep uppercase">Invoice receipt</p>
         <h1 className="mt-2 text-center text-xl font-semibold tracking-tight">{shop.name.toUpperCase()}</h1>
         {(shop.address || shop.phone || shop.gstin) && (
@@ -58,6 +59,9 @@ export default async function PublicInvoicePage({ params }: { params: Promise<{ 
           <p className="flex justify-between border-t border-hairline pt-2 text-base font-semibold"><span>Total</span><span>{rupees(invoice.totalAmount)}</span></p>
         </div>
         <p className="mt-8 text-center text-xs text-muted-foreground">Thank you for your business.</p>
+        <div className="mt-6 print:hidden">
+          <PrintInvoiceButton className="mx-auto" />
+        </div>
       </article>
     </main>
   )

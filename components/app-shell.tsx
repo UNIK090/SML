@@ -5,6 +5,7 @@
 
 import { useState, type ReactNode } from 'react'
 import {
+  BellRing,
   Check,
   CalendarDays,
   ChartColumn,
@@ -20,6 +21,7 @@ import {
   ReceiptText,
   Settings,
   Sparkles,
+  Store,
   Sun,
   Wallet,
   X,
@@ -28,7 +30,7 @@ import { usePreferences } from '@/components/preferences'
 import { LANGUAGES, type TranslationKey } from '@/lib/i18n'
 import type { BrandAssets } from '@/lib/types'
 
-export type SectionKey = 'billing' | 'payments' | 'items' | 'reports' | 'profile'
+export type SectionKey = 'billing' | 'orders' | 'payments' | 'items' | 'store' | 'reports' | 'profile'
 
 type Section = {
   key: SectionKey
@@ -39,8 +41,12 @@ type Section = {
 
 const SECTIONS: Section[] = [
   { key: 'billing', labelKey: 'nav.billing', hintKey: 'nav.billing.hint', icon: ReceiptText },
+  // Orders sits directly under Billing because that is the order the work
+  // happens in: an online order becomes a bill.
+  { key: 'orders', labelKey: 'nav.orders', hintKey: 'nav.orders.hint', icon: BellRing },
   { key: 'payments', labelKey: 'nav.payments', hintKey: 'nav.payments.hint', icon: Wallet },
   { key: 'items', labelKey: 'nav.items', hintKey: 'nav.items.hint', icon: Gem },
+  { key: 'store', labelKey: 'nav.store', hintKey: 'nav.store.hint', icon: Store },
   { key: 'reports', labelKey: 'nav.reports', hintKey: 'nav.reports.hint', icon: ChartColumn },
   { key: 'profile', labelKey: 'nav.profile', hintKey: 'nav.profile.hint', icon: Settings },
 ]
@@ -111,6 +117,7 @@ export default function AppShell({
   shopName,
   adminEmail,
   brand,
+  ordersBell,
   children,
 }: {
   section: SectionKey
@@ -118,6 +125,11 @@ export default function AppShell({
   shopName: string
   adminEmail: string
   brand?: BrandAssets
+  /**
+   * The realtime order bell. Passed in rather than mounted here because only the
+   * dashboard owns the realtime connection — the shell stays a pure layout.
+   */
+  ordersBell?: ReactNode
   children: ReactNode
 }) {
   const { theme, language, sidebarCollapsed, toggleTheme, setLanguage, toggleSidebar, t } = usePreferences()
@@ -262,6 +274,7 @@ export default function AppShell({
                   <CalendarDays className="size-3.5 text-gold-deep" />
                   {new Intl.DateTimeFormat('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }).format(new Date())}
                 </span>
+                {ordersBell}
                 <button
                   onClick={toggleTheme}
                   aria-label={t('nav.theme')}

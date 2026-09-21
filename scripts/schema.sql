@@ -126,3 +126,86 @@ CREATE TABLE IF NOT EXISTS shop_profile (
   gstin      text,
   updated_at timestamptz NOT NULL DEFAULT now()
 );
+
+-- ---------------------------------------------------------------------------
+-- Online storefront
+-- ---------------------------------------------------------------------------
+-- An item appears on the public website only when published is true, so the
+-- billing catalogue is never exposed by accident. Everything here is edited
+-- from the admin Store screen.
+ALTER TABLE inventory_items ADD COLUMN IF NOT EXISTS published    boolean NOT NULL DEFAULT false;
+ALTER TABLE inventory_items ADD COLUMN IF NOT EXISTS store_price  numeric(12, 2);
+ALTER TABLE inventory_items ADD COLUMN IF NOT EXISTS description  text;
+ALTER TABLE inventory_items ADD COLUMN IF NOT EXISTS collection   text;
+ALTER TABLE inventory_items ADD COLUMN IF NOT EXISTS badge        text;
+ALTER TABLE inventory_items ADD COLUMN IF NOT EXISTS featured     integer NOT NULL DEFAULT 0;
+
+CREATE INDEX IF NOT EXISTS inventory_items_published_idx
+  ON inventory_items (published, featured, updated_at DESC);
+
+-- Storefront copy on the shop profile row (id = 1).
+ALTER TABLE shop_profile ADD COLUMN IF NOT EXISTS tagline     text;
+ALTER TABLE shop_profile ADD COLUMN IF NOT EXISTS whatsapp    text;
+ALTER TABLE shop_profile ADD COLUMN IF NOT EXISTS store_hours text;
+
+-- One row per online order. Kept separate from billing_transactions: an order
+-- is a request the shop confirms, and invoice_number links it to the bill that
+-- is raised later, so the same sale is never counted twice.
+CREATE TABLE IF NOT EXISTS store_orders (
+  id              serial PRIMARY KEY,
+  order_number    text NOT NULL UNIQUE,
+  public_token    text NOT NULL UNIQUE,
+  customer_name   text NOT NULL,
+  customer_phone  text NOT NULL,
+  customer_email  text,
+  fulfilment      text NOT NULL DEFAULT 'PICKUP',
+  address_line    text,
+  city            text,
+  pincode         text,
+  notes           text,
+  payment_status  text NOT NULL DEFAULT 'PENDING',
+  status          text NOT NULL DEFAULT 'NEW',
+  item_count      integer NOT NULL DEFAULT 0,
+  subtotal        numeric(12, 2) NOT NULL DEFAULT '0',
+  delivery_fee    numeric(12, 2) NOT NULL DEFAULT '0',
+  total_amount    numeric(12, 2) NOT NULL DEFAULT '0',
+  invoice_number  text,
+  business_day    date NOT NULL DEFAULT now(),
+  acked_at        timestamptz,
+  created_at      timestamptz NOT NULL DEFAULT now(),
+  updated_at      timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS store_orders_created_at_idx ON store_orders (created_at DESC);
+CREATE INDEX IF NOT EXISTS store_orders_status_idx     ON store_orders (status, created_at DESC);
+CREATE INDEX IF NOT EXISTS store_orders_acked_idx      ON store_orders (acked_at);
+
+-- Line items, copied rather than referenced so a later catalogue edit cannot
+-- rewrite an order that has already been placed.
+CREATE TABLE IF NOT EXISTS store_order_items (
+  id           serial PRIMARY KEY,
+  order_number text NOT NULL,
+  item_code    integer NOT NULL,
+  item_name    text NOT NULL,
+  category     text NOT NULL,
+  unit_price   numeric(12, 2) NOT NULL,
+  quantity     integer NOT NULL,
+  line_total   numeric(12, 2) NOT NULL,
+  created_at   timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS store_order_items_order_number_idx ON store_order_items (order_number);
+
+-- Append-only feed behind the realtime order alerts and the admin bell history.
+CREATE TABLE IF NOT EXISTS order_notifications (
+  id           serial PRIMARY KEY,
+  event_id     text NOT NULL UNIQUE,
+  type         text NOT NULL,
+  order_number text,
+  title        text NOT NULL,
+  body         text NOT NULL,
+  audience     text NOT NULL DEFAULT 'admin',
+  created_at   timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS order_notifications_created_at_idx ON order_notifications (created_at DESC);

@@ -17,6 +17,12 @@ export type ShopDetails = {
   phone: string | null
   email: string | null
   gstin: string | null
+  /** Storefront copy: a one-line promise under the shop name. */
+  tagline: string | null
+  /** Number or wa.me URL used by the "Order on WhatsApp" buttons. */
+  whatsapp: string | null
+  /** Free text such as "Mon–Sat · 10:00 am – 8:30 pm". */
+  storeHours: string | null
 }
 
 export const PROFILE_ID = 1
@@ -36,6 +42,9 @@ export function getShopDetailsFromEnv(): ShopDetails {
     phone: clean(process.env.SHOP_PHONE),
     email: clean(process.env.SHOP_EMAIL),
     gstin: clean(process.env.SHOP_GSTIN),
+    tagline: clean(process.env.SHOP_TAGLINE),
+    whatsapp: clean(process.env.SHOP_WHATSAPP),
+    storeHours: clean(process.env.SHOP_HOURS),
   }
 }
 
@@ -55,6 +64,9 @@ export async function getShopDetails(): Promise<ShopDetails> {
       phone: clean(row.phone) ?? env.phone,
       email: clean(row.email) ?? env.email,
       gstin: clean(row.gstin) ?? env.gstin,
+      tagline: clean(row.tagline) ?? env.tagline,
+      whatsapp: clean(row.whatsapp) ?? env.whatsapp,
+      storeHours: clean(row.storeHours) ?? env.storeHours,
     }
   } catch (error) {
     console.error('[v0] Falling back to environment shop details:', error)

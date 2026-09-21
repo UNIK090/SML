@@ -6,10 +6,11 @@
 // Payments without duplicating the markup.
 
 import { useEffect, useState } from 'react'
-import { Download, Loader2, Send, X } from 'lucide-react'
+import { Loader2, Send, X } from 'lucide-react'
 import QRCode from 'qrcode'
 import { Button, Field, Input, Notice, money } from '@/components/ui'
 import { usePreferences } from '@/components/preferences'
+import PrintInvoiceButton from '@/components/print-invoice-button'
 import type { Invoice, Shop } from '@/lib/types'
 
 export default function InvoiceModal({
@@ -84,8 +85,8 @@ export default function InvoiceModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-950/55 p-4 py-8 backdrop-blur-md sm:py-10">
-      <div className="receipt-modal business-invoice w-full max-w-xl rounded-3xl border-hairline bg-card p-6 sm:p-7">
+    <div className="invoice-print-root fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-950/55 p-4 py-8 backdrop-blur-md sm:py-10">
+      <div className="invoice-print-sheet receipt-modal business-invoice w-full max-w-xl rounded-3xl border-hairline bg-card p-6 sm:p-7">
         <div className="flex items-start justify-between print:hidden">
           <p className="rounded-full bg-secondary px-2.5 py-1 text-[10px] font-semibold tracking-[0.13em] text-muted-foreground uppercase">{t('invoice.tax')}</p>
           <button aria-label="Close invoice" onClick={onClose} className="flex size-8 items-center justify-center rounded-lg text-muted-foreground transition hover:bg-secondary hover:text-foreground">
@@ -191,9 +192,10 @@ export default function InvoiceModal({
           {error && <div className="mt-2"><Notice tone="danger">{error}</Notice></div>}
         </div>
 
-        <Button onClick={() => window.print()} className="mt-4 w-full print:hidden">
-          <Download className="size-4" /> {t('common.print')}
-        </Button>
+        <div className="mt-4 print:hidden">
+          <p className="mb-2 text-center text-xs text-muted-foreground">{t('invoice.print.hint')}</p>
+          <PrintInvoiceButton className="w-full" />
+        </div>
       </div>
     </div>
   )

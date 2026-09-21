@@ -85,6 +85,11 @@ export async function PATCH(request: Request) {
       phone: cleanOrNull(body.phone, 20),
       email: cleanOrNull(body.email, 160),
       gstin,
+      // Storefront copy. `null` deliberately clears a field rather than keeping
+      // a stale value, because this is a full profile save.
+      tagline: cleanOrNull(body.tagline, 160),
+      whatsapp: cleanOrNull(body.whatsapp, 200),
+      storeHours: cleanOrNull(body.storeHours, 120),
       updatedAt: new Date(),
     }
 

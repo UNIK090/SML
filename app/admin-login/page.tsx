@@ -17,9 +17,10 @@ function AdminLoginForm() {
   const [busy, setBusy] = useState(false)
 
   // Only ever follow a same-site relative path, so a crafted ?next= cannot
-  // bounce the admin off to another origin after signing in.
-  const requested = searchParams.get('next') ?? '/'
-  const destination = requested.startsWith('/') && !requested.startsWith('//') ? requested : '/'
+  // bounce the admin off to another origin after signing in. The default is the
+  // admin desk, not the public shop, because that is where the sign-in came from.
+  const requested = searchParams.get('next') ?? '/admin'
+  const destination = requested.startsWith('/') && !requested.startsWith('//') ? requested : '/admin'
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault()

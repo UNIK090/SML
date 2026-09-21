@@ -11,6 +11,99 @@ export type Item = {
   /** Image bytes are never placed in catalogue JSON; this flags the image endpoint. */
   image: boolean
   imageVersion: string
+  // --- Storefront ---------------------------------------------------------
+  /** True when the item is listed on the public website. */
+  published: boolean
+  /** Website selling price; null means the reference price above is used. */
+  storePrice: string | null
+  description: string | null
+  collection: string | null
+  badge: string | null
+  featured: number
+}
+
+/** A product as the public storefront is allowed to see it. */
+export type StoreProduct = {
+  /** Catalogue code — the id used when adding to the basket. */
+  code: number
+  name: string
+  category: string
+  collection: string
+  description: string | null
+  badge: string | null
+  price: number
+  image: boolean
+  imageVersion: string
+}
+
+export type StoreCatalogue = {
+  shop: Shop & { tagline: string | null; whatsapp: string | null; storeHours: string | null }
+  products: StoreProduct[]
+  collections: { name: string; count: number; from: number }[]
+  categories: string[]
+  updatedAt: string
+}
+
+export type OrderStatus = 'NEW' | 'CONFIRMED' | 'READY' | 'COMPLETED' | 'CANCELLED'
+export type OrderPaymentStatus = 'PENDING' | 'PAID'
+
+export type OrderLine = {
+  id: number
+  itemCode: number
+  itemName: string
+  category: string
+  unitPrice: string
+  quantity: number
+  lineTotal: string
+}
+
+/** An order as returned to the storefront's tracking page. */
+export type PublicOrder = {
+  orderNumber: string
+  customerName: string
+  status: OrderStatus
+  paymentStatus: OrderPaymentStatus
+  fulfilment: string
+  totalAmount: string
+  itemCount: number
+  createdAt: string
+  shop: { name: string; phone: string | null; address: string | null }
+  lines: OrderLine[]
+}
+
+/** An order as returned to the admin Orders screen. */
+export type Order = {
+  id: number
+  orderNumber: string
+  customerName: string
+  customerPhone: string
+  customerEmail: string | null
+  fulfilment: string
+  addressLine: string | null
+  city: string | null
+  pincode: string | null
+  notes: string | null
+  paymentStatus: OrderPaymentStatus
+  status: OrderStatus
+  itemCount: number
+  subtotal: string
+  deliveryFee: string
+  totalAmount: string
+  invoiceNumber: string | null
+  ackedAt: string | null
+  createdAt: string
+  lines: OrderLine[]
+}
+
+/** One line in the admin notification feed (also the realtime payload). */
+export type OrderNotification = {
+  eventId: string
+  type: string
+  orderNumber: string | null
+  title: string
+  body: string
+  audience: string
+  createdAt: string
 }
 
 export type Transaction = {
@@ -68,6 +161,9 @@ export type Shop = {
   phone: string | null
   email: string | null
   gstin: string | null
+  tagline?: string | null
+  whatsapp?: string | null
+  storeHours?: string | null
 }
 
 export type BrandAssets = {
