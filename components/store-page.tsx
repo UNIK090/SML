@@ -266,7 +266,7 @@ function ShopWindow() {
             </dl>
           </div>
 
-          {/* The gem: one CSS-driven assembly, no images, no canvas. */}
+          {/* A static faceted gem keeps the hero balanced without motion. */}
           <div className="relative mx-auto flex aspect-square w-full max-w-[26rem] items-center justify-center">
             <span className="sf-gem-ring" aria-hidden />
             <span className="sf-gem-ring-2" aria-hidden />
