@@ -62,16 +62,20 @@ function NavItem({
   section,
   active,
   collapsed,
+  notificationCount,
   onSelect,
   t,
 }: {
   section: Section
   active: boolean
   collapsed: boolean
+  /** Orders needing action; only supplied for the Orders navigation item. */
+  notificationCount?: number
   onSelect: () => void
   t: (key: TranslationKey) => string
 }) {
   const { icon: Icon, labelKey, hintKey } = section
+  const badge = notificationCount && notificationCount > 0 ? (notificationCount > 99 ? '99+' : notificationCount) : null
 
   if (collapsed) {
     return (
@@ -86,6 +90,11 @@ function NavItem({
       >
         {active && <span className="absolute top-1/2 left-0 h-6 w-[3px] -translate-y-1/2 rounded-r-full bg-gold" aria-hidden />}
         <Icon className={`size-[18px] ${active ? 'text-gold' : ''}`} />
+        {badge && (
+          <span className="tnum absolute top-1 right-1 flex min-w-4 items-center justify-center rounded-full bg-gold px-1 text-[9px] leading-4 font-bold text-slate-950" aria-label={`${badge} new order notifications`}>
+            {badge}
+          </span>
+        )}
       </button>
     )
   }
@@ -100,8 +109,13 @@ function NavItem({
     >
       {active && <span className="absolute top-1/2 left-0 h-7 w-[3px] -translate-y-1/2 rounded-r-full bg-gold" aria-hidden />}
       {/* Fixed-width icon column keeps all labels on a single vertical line. */}
-      <span className="flex w-7 shrink-0 justify-center">
+      <span className="relative flex w-7 shrink-0 justify-center">
         <Icon className={`size-[18px] ${active ? 'text-gold' : ''}`} />
+        {badge && (
+          <span className="tnum absolute -top-1 -right-1 flex min-w-4 items-center justify-center rounded-full bg-gold px-1 text-[9px] leading-4 font-bold text-slate-950" aria-label={`${badge} new order notifications`}>
+            {badge}
+          </span>
+        )}
       </span>
       <span className="min-w-0 flex-1">
         <span className="block truncate text-sm leading-5 font-medium">{t(labelKey)}</span>
@@ -117,6 +131,7 @@ export default function AppShell({
   shopName,
   adminEmail,
   brand,
+  ordersNotificationCount,
   ordersBell,
   children,
 }: {
@@ -125,6 +140,8 @@ export default function AppShell({
   shopName: string
   adminEmail: string
   brand?: BrandAssets
+  /** Number of online orders still needing action, shown on the Orders icon. */
+  ordersNotificationCount?: number
   /**
    * The realtime order bell. Passed in rather than mounted here because only the
    * dashboard owns the realtime connection — the shell stays a pure layout.
@@ -209,6 +226,7 @@ export default function AppShell({
                 section={entry}
                 active={entry.key === section}
                 collapsed={sidebarCollapsed}
+                notificationCount={entry.key === 'orders' ? ordersNotificationCount : undefined}
                 onSelect={() => onSectionChange(entry.key)}
                 t={t}
               />
@@ -376,6 +394,7 @@ export default function AppShell({
                   section={entry}
                   active={entry.key === section}
                   collapsed={false}
+                  notificationCount={entry.key === 'orders' ? ordersNotificationCount : undefined}
                   onSelect={() => {
                     onSectionChange(entry.key)
                     setDrawerOpen(false)

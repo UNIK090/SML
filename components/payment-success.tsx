@@ -9,7 +9,7 @@
 // failures are swallowed; the animation is the primary feedback.
 
 import { useEffect, useRef, useState } from 'react'
-import { Volume2, VolumeX } from 'lucide-react'
+import { ReceiptText, Sparkles, Volume2, VolumeX } from 'lucide-react'
 import { Button } from '@/components/ui'
 
 const SOUND_PREF_KEY = 'aurum-success-sound'
@@ -58,6 +58,7 @@ export default function PaymentSuccess({
   title,
   hint,
   amount,
+  variant = 'payment',
   onDone,
   onViewInvoice,
 }: {
@@ -65,6 +66,8 @@ export default function PaymentSuccess({
   title: string
   hint: string
   amount?: string
+  /** Invoices get a slightly richer completion sequence than a payment update. */
+  variant?: 'invoice' | 'payment'
   onDone: () => void
   onViewInvoice?: () => void
 }) {
@@ -111,22 +114,34 @@ export default function PaymentSuccess({
 
   if (!open) return null
 
+  const isInvoice = variant === 'invoice'
+
   return (
     <div
       role="dialog"
       aria-modal="true"
       aria-label={title}
-      className="fixed inset-0 z-[60] flex items-center justify-center bg-primary/45 p-4 backdrop-blur-sm"
+      className={`success-dialog-backdrop fixed inset-0 z-[60] flex items-center justify-center bg-primary/45 p-4 backdrop-blur-sm ${isInvoice ? 'invoice-success-backdrop' : ''}`}
       onClick={onDone}
     >
       <div
-        className="animate-rise-in card-shadow-lg w-full max-w-sm rounded-3xl bg-card p-8 text-center"
+        className={`animate-rise-in card-shadow-lg w-full max-w-sm rounded-3xl bg-card p-8 text-center ${isInvoice ? 'invoice-success-card' : ''}`}
         onClick={(event) => event.stopPropagation()}
       >
+        {isInvoice && (
+          <>
+            <div className="invoice-success-aura" aria-hidden />
+            <div className="invoice-success-sparks" aria-hidden>
+              {Array.from({ length: 10 }).map((_, index) => <span key={index} className="invoice-success-spark" />)}
+            </div>
+          </>
+        )}
+
         <div className="relative mx-auto mb-6 flex size-24 items-center justify-center">
           {/* Expanding halo behind the ring. */}
-          <span className="animate-ripple absolute inset-0 rounded-full bg-success/25" aria-hidden />
-          <span className="animate-ring-pop relative flex size-24 items-center justify-center rounded-full bg-success-soft">
+          <span className={`animate-ripple absolute inset-0 rounded-full bg-success/25 ${isInvoice ? 'invoice-success-ripple' : ''}`} aria-hidden />
+          {isInvoice && <span className="invoice-success-orbit" aria-hidden />}
+          <span className={`animate-ring-pop relative flex size-24 items-center justify-center rounded-full bg-success-soft ${isInvoice ? 'invoice-success-ring' : ''}`}>
             <svg viewBox="0 0 52 52" className="size-14" aria-hidden>
               <circle cx="26" cy="26" r="23" fill="none" stroke="currentColor" strokeWidth="3" className="text-success/25" />
               <path
@@ -144,7 +159,15 @@ export default function PaymentSuccess({
 
         <h2 className="text-xl font-semibold tracking-tight">{title}</h2>
         <p className="mt-1.5 text-sm text-muted-foreground">{hint}</p>
-        {amount && <p className="tnum mt-4 text-3xl font-semibold tracking-tight">{amount}</p>}
+        {amount && <p className={`tnum mt-4 text-3xl font-semibold tracking-tight ${isInvoice ? 'invoice-success-amount' : ''}`}>{amount}</p>}
+
+        {isInvoice && (
+          <p className="invoice-success-status mx-auto mt-4 inline-flex items-center gap-2 rounded-full border border-success/20 bg-success-soft/55 px-3 py-1.5 text-xs font-medium text-success">
+            <ReceiptText className="size-3.5" aria-hidden />
+            <span>Sales ledger updated</span>
+            <Sparkles className="invoice-success-status-spark size-3" aria-hidden />
+          </p>
+        )}
 
         <div className="mt-7 flex-col gap-2">
           {onViewInvoice && (

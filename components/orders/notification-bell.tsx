@@ -24,6 +24,7 @@ const relative = (iso: string) => {
 
 export default function NotificationBell({
   unseenCount,
+  openCount,
   notifications,
   connected,
   soundOn,
@@ -33,6 +34,8 @@ export default function NotificationBell({
   onOpenOrders,
 }: {
   unseenCount: number
+  /** Orders still needing work: new, confirmed, or ready. */
+  openCount: number
   notifications: OrderNotification[]
   connected: boolean
   soundOn: boolean
@@ -67,15 +70,19 @@ export default function NotificationBell({
     })
   }
 
+  // Prioritise unread alerts; otherwise show the active order workload.
+  const badgeCount = unseenCount > 0 ? unseenCount : openCount
+  const urgent = unseenCount > 0
+
   return (
     <div className="relative">
       <button
         onClick={toggle}
-        aria-label={unseenCount > 0 ? `New orders: ${unseenCount} waiting` : 'Order notifications'}
+        aria-label={badgeCount > 0 ? `Order notifications: ${badgeCount} ${urgent ? 'new' : 'still to action'}` : 'Order notifications'}
         aria-expanded={panelOpen}
         className="relative flex h-9 items-center gap-1.5 rounded-full border-hairline px-2.5 text-xs font-medium text-muted-foreground transition hover:bg-secondary hover:text-foreground"
       >
-        {unseenCount > 0 ? (
+        {urgent ? (
           <BellRing className={`size-4 text-gold-deep ${ringing ? 'sf-bell-ringing' : ''}`} />
         ) : (
           <Bell className="size-4" />

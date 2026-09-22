@@ -101,9 +101,11 @@ export default function BillingDashboard() {
         shopName={shop.data?.name ?? 'Sri Maha Laxmi Jewellers'}
         adminEmail={session.data?.email ?? ''}
         brand={brand.data}
+        ordersNotificationCount={realtime.openCount}
         ordersBell={
           <NotificationBell
             unseenCount={realtime.unseenCount}
+            openCount={realtime.openCount}
             notifications={realtime.notifications}
             connected={realtime.connected}
             soundOn={realtime.soundOn}
@@ -161,6 +163,7 @@ export default function BillingDashboard() {
         title={t('success.billSaved')}
         hint={success?.invoiceNumber ?? ''}
         amount={success?.amount}
+        variant="invoice"
         onDone={() => setSuccess(null)}
         onViewInvoice={success ? () => { const target = success; setSuccess(null); openInvoice(target.invoiceNumber) } : undefined}
       />

@@ -184,12 +184,136 @@
 .animate-rise-in { animation: rise-in 320ms ease-out both; }
 .animate-tick { stroke-dasharray: 48; animation: tick-draw 420ms 220ms ease-out both; }
 
+/* Saving an invoice is a small moment of completion, not just a state change.
+   These layers play once, in a short sequence, and stay inside the dialog so
+   the desk behind it remains readable. */
+@keyframes invoice-backdrop-in {
+  from { background-color: oklch(0.27 0.05 258 / 0%); backdrop-filter: blur(0); }
+  to { background-color: oklch(0.27 0.05 258 / 45%); backdrop-filter: blur(4px); }
+}
+
+@keyframes invoice-card-arrive {
+  0% { opacity: 0; transform: translateY(26px) scale(0.9); }
+  58% { opacity: 1; transform: translateY(-4px) scale(1.018); }
+  78% { transform: translateY(1px) scale(0.995); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes invoice-aura-pulse {
+  0%, 100% { opacity: 0.25; transform: scale(0.86); }
+  48% { opacity: 0.6; transform: scale(1.08); }
+}
+
+@keyframes invoice-orbit-in {
+  from { opacity: 0; transform: rotate(-55deg) scale(0.72); }
+  to { opacity: 1; transform: rotate(0) scale(1); }
+}
+
+@keyframes invoice-ring-settle {
+  0% { box-shadow: 0 0 0 0 oklch(0.53 0.12 162 / 0%); }
+  58% { box-shadow: 0 0 0 11px oklch(0.53 0.12 162 / 12%); }
+  100% { box-shadow: 0 0 0 5px oklch(0.53 0.12 162 / 0%); }
+}
+
+@keyframes invoice-spark-flight {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(0) rotate(0deg); }
+  18% { opacity: 0.95; }
+  100% { opacity: 0; transform: translate(calc(-50% + var(--spark-x)), calc(-50% + var(--spark-y))) scale(1) rotate(150deg); }
+}
+
+@keyframes invoice-amount-in {
+  from { opacity: 0; transform: translateY(8px); filter: blur(4px); }
+  to { opacity: 1; transform: translateY(0); filter: blur(0); }
+}
+
+@keyframes invoice-status-in {
+  from { opacity: 0; transform: translateY(5px) scale(0.94); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes invoice-status-sparkle {
+  0%, 100% { opacity: 0.45; transform: scale(0.75) rotate(0deg); }
+  50% { opacity: 1; transform: scale(1.12) rotate(30deg); }
+}
+
+.invoice-success-backdrop { animation: invoice-backdrop-in 280ms ease-out both; }
+
+.invoice-success-card {
+  isolation: isolate;
+  overflow: hidden;
+  animation: invoice-card-arrive 640ms cubic-bezier(0.22, 1.24, 0.36, 1) both;
+}
+
+.invoice-success-aura {
+  position: absolute;
+  top: -7rem;
+  left: 50%;
+  z-index: -1;
+  width: 19rem;
+  height: 13rem;
+  border-radius: 999px;
+  background: radial-gradient(ellipse, oklch(0.75 0.11 162 / 17%), transparent 68%);
+  transform: translateX(-50%);
+  animation: invoice-aura-pulse 1.4s ease-in-out 260ms both;
+  pointer-events: none;
+}
+
+.invoice-success-sparks { position: absolute; inset: 0; z-index: -1; pointer-events: none; }
+
+.invoice-success-spark {
+  position: absolute;
+  top: 7.3rem;
+  left: 50%;
+  width: 0.35rem;
+  height: 0.35rem;
+  border-radius: 0.1rem;
+  background: var(--gold);
+  box-shadow: 0 0 10px oklch(0.72 0.11 78 / 50%);
+  animation: invoice-spark-flight 760ms cubic-bezier(0.16, 0.85, 0.32, 1) 180ms both;
+}
+
+.invoice-success-spark:nth-child(1) { --spark-x: -7.4rem; --spark-y: -3.7rem; }
+.invoice-success-spark:nth-child(2) { --spark-x: -4.9rem; --spark-y: -6rem; animation-delay: 230ms; }
+.invoice-success-spark:nth-child(3) { --spark-x: -1.7rem; --spark-y: -7rem; animation-delay: 160ms; }
+.invoice-success-spark:nth-child(4) { --spark-x: 2rem; --spark-y: -6.8rem; animation-delay: 270ms; }
+.invoice-success-spark:nth-child(5) { --spark-x: 5.5rem; --spark-y: -5.2rem; animation-delay: 190ms; }
+.invoice-success-spark:nth-child(6) { --spark-x: 7.5rem; --spark-y: -2.4rem; animation-delay: 250ms; }
+.invoice-success-spark:nth-child(7) { --spark-x: -6.5rem; --spark-y: 1rem; animation-delay: 300ms; }
+.invoice-success-spark:nth-child(8) { --spark-x: 6.4rem; --spark-y: 0.6rem; animation-delay: 320ms; }
+.invoice-success-spark:nth-child(9) { --spark-x: -3.1rem; --spark-y: 2.7rem; animation-delay: 220ms; }
+.invoice-success-spark:nth-child(10) { --spark-x: 3.7rem; --spark-y: 2.6rem; animation-delay: 290ms; }
+
+.invoice-success-orbit {
+  position: absolute;
+  width: 7.25rem;
+  height: 7.25rem;
+  border: 1px dashed oklch(0.53 0.12 162 / 32%);
+  border-radius: 999px;
+  animation: invoice-orbit-in 520ms cubic-bezier(0.22, 1, 0.36, 1) 120ms both;
+}
+
+.invoice-success-ring { animation: ring-pop 420ms cubic-bezier(0.34, 1.56, 0.64, 1) both, invoice-ring-settle 700ms ease-out 240ms both; }
+.invoice-success-ripple { animation-duration: 1.1s; }
+.invoice-success-amount { animation: invoice-amount-in 460ms cubic-bezier(0.22, 1, 0.36, 1) 300ms both; }
+.invoice-success-status { animation: invoice-status-in 380ms cubic-bezier(0.22, 1, 0.36, 1) 420ms both; }
+.invoice-success-status-spark { animation: invoice-status-sparkle 1.25s ease-in-out 800ms 3 both; }
+
 /* Respect users who have asked the OS to reduce motion. */
 @media (prefers-reduced-motion: reduce) {
   .animate-ring-pop,
   .animate-ripple,
   .animate-rise-in,
   .animate-tick,
+  .invoice-success-backdrop,
+  .invoice-success-card,
+  .invoice-success-aura,
+  .invoice-success-spark,
+  .invoice-success-orbit,
+  .invoice-success-ring,
+  .invoice-success-ripple,
+  .invoice-success-amount,
+  .invoice-success-status,
+  .invoice-success-status-spark,
   .animate-section,
   .top-progress,
   .animate-slide-in,
@@ -197,6 +321,7 @@
     animation: none;
   }
   .animate-tick { stroke-dashoffset: 0; }
+  .invoice-success-spark { display: none; }
   .top-progress { opacity: 0; }
   * { transition-duration: 0.01ms !important; }
 }
