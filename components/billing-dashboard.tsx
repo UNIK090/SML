@@ -118,6 +118,7 @@ export default function BillingDashboard() {
               window.location.hash = orderNumber
             }}
             onOpenOrders={() => setSection('orders')}
+            suppressPanel={realtime.toasts.length > 0}
           />
         }
       >

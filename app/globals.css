@@ -600,338 +600,377 @@
 /* ==========================================================================
    Storefront (public landing page + online store)
    --------------------------------------------------------------------------
-   The billing workspace and the shop window are deliberately different
-   worlds. The site is a dark, cinematic jewellery gallery: deep espresso and
-   midnight backdrops, a warm liquid-gold accent, and entrance choreography
-   that plays once as each block scrolls into view. Everything below is plain
-   CSS driven by one IntersectionObserver, so there is no animation library in
-   the bundle and the whole thing degrades to a static page when motion is
-   reduced.
+   A traditional Indian jewellery-counter look, in the spirit of the big chains:
+   an ivory canvas, a deep maroon brand bar, warm gold hairlines, and plain white
+   product cards. Bright and content-led — no dark cinema hero. Every token below
+   maps to something a customer would call "cream", "maroon" or "gold".
    ========================================================================== */
 
 @theme inline {
   --color-ink: var(--sf-ink);
-  --color-ink-soft: var(--sf-ink-soft);
-  --color-night: var(--sf-night);
-  --color-champagne: var(--sf-champagne);
-  --color-halo: var(--sf-halo);
+  --color-ink-soft: var(--sf-surface);
+  --color-night: var(--sf-cream);
+  --color-champagne: var(--sf-maroon);
+  --color-halo: var(--sf-gold-deep);
+  --color-maroon: var(--sf-maroon);
+  --color-maroon-deep: var(--sf-maroon-deep);
+  --color-cream: var(--sf-cream);
+  --color-cream-soft: var(--sf-cream-soft);
+  --color-line: var(--sf-line);
+  --color-body: var(--sf-body);
 }
 
 :root {
-  --sf-ink: oklch(0.16 0.014 55);
-  --sf-ink-soft: oklch(0.23 0.018 55);
-  --sf-night: oklch(0.12 0.01 55);
-  --sf-champagne: oklch(0.82 0.1 84);
-  --sf-halo: oklch(0.72 0.12 82);
-  --sf-gold-text: linear-gradient(
-    100deg,
-    oklch(0.78 0.09 78) 0%,
-    oklch(0.95 0.07 92) 22%,
-    oklch(0.83 0.12 74) 44%,
-    oklch(0.97 0.05 96) 62%,
-    oklch(0.79 0.1 76) 100%
-  );
+  /* Surfaces: ivory page, white cards, a cream band for section breaks. */
+  --sf-canvas: oklch(0.985 0.006 85);
+  --sf-cream: oklch(0.972 0.012 84);
+  --sf-cream-soft: oklch(0.955 0.018 84);
+  --sf-surface: oklch(1 0 0);
+  --sf-line: oklch(0.905 0.012 82);
+  --sf-line-strong: oklch(0.855 0.016 80);
+
+  /* Type: warm near-black ink, so text reads brown-warm rather than grey. */
+  --sf-heading: oklch(0.26 0.02 60);
+  --sf-body: oklch(0.44 0.014 70);
+  --sf-muted: oklch(0.58 0.012 70);
+  --sf-ink: var(--sf-heading);
+
+  /* Brand: deep maroon banner + one bright gold accent. */
+  --sf-maroon: oklch(0.36 0.14 22);
+  --sf-maroon-deep: oklch(0.30 0.13 22);
+
+  /* Gold. --sf-gold-ink is for gold text on maroon, --sf-gold-deep for gold
+     text on white (the lighter tone is unreadable on cream). */
+  --sf-gold: oklch(0.83 0.11 82);
+  --sf-gold-deep: oklch(0.7 0.115 72);
+  --sf-gold-ink: oklch(0.86 0.09 84);
+  --sf-gold-line: oklch(0.87 0.07 82);
+  --sf-gold-wash: oklch(0.968 0.028 85);
+
+  /* Kept so older markup referencing these names keeps working. */
+  --sf-ink-soft: var(--sf-surface);
+  --sf-night: var(--sf-cream);
+  --sf-champagne: var(--sf-maroon);
+  --sf-halo: var(--sf-gold-deep);
+  --sf-gold-text: var(--sf-gold-deep);
 }
 
 /* ---------- Base canvas ---------- */
 .sf-canvas {
   position: relative;
-  isolation: isolate;
-  background:
-    radial-gradient(80rem 40rem at 82% -6%, oklch(0.36 0.06 68 / 42%), transparent 68%),
-    radial-gradient(60rem 34rem at 4% 18%, oklch(0.3 0.05 262 / 34%), transparent 66%),
-    linear-gradient(178deg, var(--sf-night), var(--sf-ink) 34%, oklch(0.135 0.012 55));
-  color: oklch(0.95 0.008 90);
+  background: var(--sf-canvas);
+  color: var(--sf-body);
 }
 
-/* A faint jeweller's loupe grid, drawn rather than shipped as an asset. */
-.sf-canvas::before {
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  background-image:
-    linear-gradient(oklch(1 0 0 / 2.6%) 1px, transparent 1px),
-    linear-gradient(90deg, oklch(1 0 0 / 2.6%) 1px, transparent 1px);
-  background-size: 72px 72px;
-  mask-image: radial-gradient(circle at 50% 0%, black, transparent 78%);
-  content: '';
-  pointer-events: none;
+.sf-canvas h1,
+.sf-canvas h2,
+.sf-canvas h3 {
+  color: var(--sf-heading);
+  font-family: ui-serif, Georgia, Cambria, 'Times New Roman', serif;
+}
+
+.sf-canvas ::selection {
+  background: var(--sf-maroon);
+  color: #fff;
 }
 
 .sf-hairline {
-  border-color: oklch(1 0 0 / 10%);
+  border-color: var(--sf-line);
 }
 
 /* ---------- Type ---------- */
-.sf-gold-text {
-  background-image: var(--sf-gold-text);
-  background-size: 220% 100%;
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  animation: sf-shine 7s ease-in-out infinite;
+.sf-gold-text { color: var(--sf-gold-deep); }
+
+/* Section eyebrow: a short gold rule followed by a small-caps label. */
+.sf-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--sf-maroon);
 }
 
-@keyframes sf-shine {
-  0%, 100% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
+.sf-eyebrow::before {
+  display: block;
+  width: 1.6rem;
+  height: 2px;
+  border-radius: 999px;
+  background: var(--sf-gold);
+  content: '';
 }
 
-/* ---------- Reveal on scroll ----------
-   One class, two directions. `data-reveal` is set by the IntersectionObserver
-   in components/store/reveal.tsx; the element is visible before JS runs only if
-   the observer never fires, which is what the `.sf-reveal-ready` guard is for. */
-.sf-reveal-ready [data-reveal] {
-  opacity: 0;
-  transform: translateY(26px);
-  transition:
-    opacity 760ms cubic-bezier(0.22, 1, 0.36, 1),
-    transform 760ms cubic-bezier(0.22, 1, 0.36, 1),
-    filter 760ms ease;
-  filter: blur(6px);
-  will-change: opacity, transform;
+/* ---------- Masthead ---------- */
+/* Thin maroon strip above the header, where the chains put their offers. */
+.sf-topbar {
+  background: var(--sf-maroon-deep);
+  color: oklch(0.95 0.02 85 / 94%);
 }
 
-.sf-reveal-ready [data-reveal='left'] { transform: translateX(-30px); }
-.sf-reveal-ready [data-reveal='right'] { transform: translateX(30px); }
-.sf-reveal-ready [data-reveal='zoom'] { transform: scale(0.94); }
-
-.sf-reveal-ready [data-reveal].sf-in {
-  opacity: 1;
-  transform: none;
-  filter: blur(0);
+/* White header with one hairline under it. */
+.sf-header {
+  background: var(--sf-surface);
+  box-shadow: 0 1px 0 var(--sf-line), 0 4px 14px oklch(0.3 0.03 60 / 5%);
 }
 
-/* ---------- Hero choreography ----------
-   Each line is masked and slides up from behind its own edge, which is what
-   gives the headline its "lit from below" weight. */
+/* ---------- Hero: a short cream banner, not a full-height dark hero ---------- */
 .sf-hero {
-  min-height: min(48rem, calc(100vh - 4.5rem));
+  position: relative;
+  isolation: isolate;
   display: grid;
   align-items: center;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 88% 16%, oklch(0.9 0.06 84 / 55%), transparent 22rem),
+    linear-gradient(115deg, var(--sf-gold-wash), var(--sf-cream) 55%, oklch(0.99 0.006 85));
+  border-bottom: 1px solid var(--sf-line);
 }
 
-.sf-hero-video,
-.sf-hero-tint {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
+/* The shop's own hero clip sits in a display-style frame beside the copy. */
+.sf-hero-video-card {
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  border: 1px solid var(--sf-gold-line);
+  border-radius: 0;
+  background: var(--sf-surface);
+  box-shadow: 0 18px 40px oklch(0.4 0.05 70 / 12%);
 }
 
 .sf-hero-video {
-  z-index: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
   object-fit: cover;
   object-position: center;
-  filter: saturate(0.88) contrast(1.06) brightness(0.72);
 }
 
-/* The tint keeps the film present without competing with the shop's copy. */
-.sf-hero-tint {
-  z-index: 1;
-  pointer-events: none;
-  background:
-    linear-gradient(90deg, oklch(0.12 0.012 55 / 91%) 0%, oklch(0.13 0.014 55 / 73%) 48%, oklch(0.12 0.014 55 / 58%) 100%),
-    linear-gradient(180deg, oklch(0.1 0.01 55 / 28%), oklch(0.12 0.012 55 / 54%)),
-    radial-gradient(circle at 78% 36%, oklch(0.72 0.11 78 / 15%), transparent 34%);
-}
-
-@keyframes sf-mask-up {
-  from { transform: translateY(105%); }
-  to { transform: translateY(0); }
+/* Gold-framed panel, like the display sheets the counters use. */
+.sf-hero-frame {
+  border: 1px solid var(--sf-gold-line);
+  border-radius: 1.25rem;
+  background: oklch(1 0 0 / 76%);
+  box-shadow: 0 18px 40px oklch(0.4 0.05 70 / 8%);
 }
 
 .sf-line-mask {
   display: block;
-  overflow: hidden;
   padding-bottom: 0.06em;
 }
 
 .sf-line {
   display: block;
-  animation: sf-mask-up 1s cubic-bezier(0.19, 1, 0.22, 1) both;
+  animation: sf-line-rise 700ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
-@keyframes sf-fade-up {
-  from { opacity: 0; transform: translateY(18px); }
+@keyframes sf-line-rise {
+  from { opacity: 0; transform: translateY(0.5em); }
   to { opacity: 1; transform: translateY(0); }
 }
 
-.sf-fade-up { animation: sf-fade-up 900ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+.sf-fade-up { animation: sf-fade-rise 620ms cubic-bezier(0.22, 1, 0.36, 1) both; }
 
-/* ---------- The hero gem ----------
-   Kept intentionally still so the background film and product story take focus. */
-
-.sf-gem {
-  position: relative;
-  display: grid;
-  place-items: center;
+@keyframes sf-fade-rise {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
-.sf-gem-core {
-  position: relative;
-  width: 100%;
-  aspect-ratio: 1;
-  border-radius: 2.6rem;
-  background:
-    conic-gradient(
-      from 200deg,
-      oklch(0.98 0.05 92), oklch(0.72 0.11 76), oklch(0.95 0.06 94),
-      oklch(0.6 0.09 68), oklch(0.99 0.04 96), oklch(0.74 0.12 80),
-      oklch(0.98 0.05 92)
-    );
-  box-shadow:
-    0 40px 90px oklch(0.55 0.11 78 / 30%),
-    inset 0 1px 0 oklch(1 0 0 / 70%),
-    inset 0 -18px 40px oklch(0.4 0.08 60 / 45%);
-  transform: rotate(45deg);
-  overflow: hidden;
+/* Small stat tiles under the banner copy. */
+.sf-stat {
+  border: 1px solid var(--sf-line);
+  border-radius: 0.9rem;
+  background: var(--sf-surface);
+  transition: border-color 200ms ease, box-shadow 200ms ease, transform 200ms ease;
 }
 
-.sf-gem-core::after {
-  position: absolute;
-  inset: -40%;
-  background: conic-gradient(from 0deg, transparent 0deg, oklch(1 0 0 / 62%) 28deg, transparent 70deg, transparent 360deg);
-  content: '';
-}
-
-.sf-gem-ring {
-  position: absolute;
-  inset: -13%;
-  border: 1px solid oklch(0.86 0.09 84 / 42%);
-  border-radius: 999px;
-  border-right-color: transparent;
-  border-bottom-color: transparent;
-}
-
-.sf-gem-ring-2 {
-  position: absolute;
-  inset: -26%;
-  border: 1px dashed oklch(0.9 0.06 88 / 22%);
-  border-radius: 999px;
-}
-
-.sf-orbit-dot {
-  position: absolute;
-  top: -3px;
-  left: 50%;
-  width: 8px;
-  height: 8px;
-  border-radius: 999px;
-  background: var(--sf-champagne);
-  box-shadow: 0 0 18px 5px oklch(0.8 0.11 84 / 60%);
-  transform-origin: 0 calc(50% + 20rem);
+.sf-stat:hover {
+  border-color: var(--sf-gold-line);
+  box-shadow: 0 10px 22px oklch(0.4 0.05 70 / 8%);
+  transform: translateY(-2px);
 }
 
 /* ---------- Product cards ---------- */
 .sf-card {
   position: relative;
   overflow: hidden;
-  border: 1px solid oklch(1 0 0 / 9%);
-  border-radius: 1.6rem;
-  background: linear-gradient(168deg, oklch(1 0 0 / 7%), oklch(1 0 0 / 2.4%));
-  backdrop-filter: blur(10px);
-  transition: transform 420ms cubic-bezier(0.22, 1, 0.36, 1), border-color 420ms ease, box-shadow 420ms ease;
+  border: 1px solid var(--sf-line);
+  border-radius: 0.75rem;
+  background: var(--sf-surface);
+  box-shadow: 0 1px 2px oklch(0.3 0.03 60 / 4%);
+  transition: border-color 200ms ease, box-shadow 200ms ease, transform 200ms ease;
 }
 
 .sf-card:hover,
 .sf-card:focus-within {
-  border-color: oklch(0.84 0.1 82 / 45%);
-  box-shadow: 0 30px 60px oklch(0 0 0 / 42%), 0 0 0 1px oklch(0.84 0.1 82 / 18%);
-  transform: translateY(-6px);
+  border-color: var(--sf-gold-line);
+  box-shadow: 0 14px 30px oklch(0.4 0.05 70 / 12%);
+  transform: translateY(-3px);
 }
 
 .sf-card-media {
   position: relative;
   overflow: hidden;
-  background:
-    radial-gradient(circle at 50% 120%, oklch(0.5 0.08 74 / 30%), transparent 60%),
-    linear-gradient(160deg, oklch(0.28 0.02 60), oklch(0.19 0.015 55));
+  background: var(--sf-cream-soft);
 }
 
 .sf-card-media img {
-  transition: transform 900ms cubic-bezier(0.22, 1, 0.36, 1), filter 600ms ease;
+  transition: transform 480ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .sf-card:hover .sf-card-media img {
-  transform: scale(1.07);
-  filter: saturate(1.08);
+  transform: scale(1.045);
 }
 
-/* A gold sweep travels across the card face on hover — the "showcase light". */
-.sf-card-sheen::after {
+/* Soft sheen across the photo on hover. */
+.sf-card-sheen .sf-card-media::after {
   position: absolute;
   inset: 0;
-  background: linear-gradient(115deg, transparent 35%, oklch(1 0 0 / 16%) 48%, transparent 62%);
-  transform: translateX(-120%);
-  transition: transform 900ms cubic-bezier(0.22, 1, 0.36, 1);
+  background: linear-gradient(115deg, transparent 40%, oklch(1 0 0 / 22%) 50%, transparent 60%);
   content: '';
+  transform: translateX(-130%);
+  transition: transform 680ms cubic-bezier(0.22, 1, 0.36, 1);
   pointer-events: none;
 }
 
-.sf-card:hover .sf-card-sheen::after { transform: translateX(120%); }
+.sf-card-sheen:hover .sf-card-media::after {
+  transform: translateX(130%);
+}
 
-/* ---------- Small shared bits ---------- */
+/* ---------- Buttons & chips ---------- */
 .sf-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  border-radius: 999px;
+  border-radius: 0.5rem;
   font-weight: 600;
-  transition: transform 220ms ease, box-shadow 220ms ease, background 220ms ease, color 220ms ease;
+  transition: background 160ms ease, border-color 160ms ease, color 160ms ease, transform 160ms ease, box-shadow 160ms ease;
 }
 
-.sf-btn:active { transform: scale(0.975); }
+.sf-btn:active { transform: translateY(1px); }
 
+/* Solid maroon: the primary shop action (basket, place order, explore). */
 .sf-btn-gold {
-  background-image: linear-gradient(100deg, oklch(0.86 0.11 86), oklch(0.73 0.12 74));
-  color: oklch(0.2 0.03 60);
-  box-shadow: 0 14px 32px oklch(0.62 0.11 76 / 34%), inset 0 1px 0 oklch(1 0 0 / 55%);
+  background: var(--sf-maroon);
+  color: #fff;
+  box-shadow: 0 6px 16px oklch(0.36 0.14 22 / 20%);
 }
 
-.sf-btn-gold:hover { box-shadow: 0 20px 44px oklch(0.62 0.11 76 / 46%); transform: translateY(-1px); }
+.sf-btn-gold:hover {
+  background: var(--sf-maroon-deep);
+  box-shadow: 0 10px 22px oklch(0.36 0.14 22 / 28%);
+  transform: translateY(-1px);
+}
 
+/* Outlined, on white — the secondary action. */
 .sf-btn-ghost {
-  border: 1px solid oklch(1 0 0 / 16%);
-  color: oklch(0.94 0.01 90);
+  border: 1px solid var(--sf-line-strong);
+  background: var(--sf-surface);
+  color: var(--sf-heading);
 }
 
-.sf-btn-ghost:hover { background: oklch(1 0 0 / 8%); border-color: oklch(1 0 0 / 28%); }
+.sf-btn-ghost:hover {
+  border-color: var(--sf-gold-deep);
+  background: var(--sf-gold-wash);
+  color: var(--sf-maroon);
+}
 
 .sf-chip {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  border: 1px solid oklch(1 0 0 / 12%);
+  border: 1px solid var(--sf-line-strong);
   border-radius: 999px;
-  padding: 0.35rem 0.85rem;
+  background: var(--sf-surface);
+  padding: 0.42rem 0.95rem;
   font-size: 0.75rem;
   letter-spacing: 0.02em;
-  color: oklch(0.9 0.01 88);
-  transition: border-color 200ms ease, background 200ms ease, color 200ms ease;
+  color: var(--sf-heading);
+  transition: border-color 160ms ease, background 160ms ease, color 160ms ease, transform 160ms ease;
+}
+
+.sf-chip:hover {
+  border-color: var(--sf-gold-deep);
+  color: var(--sf-maroon);
+  transform: translateY(-1px);
 }
 
 .sf-chip[data-active='true'] {
-  border-color: oklch(0.85 0.1 84 / 60%);
-  background: oklch(0.85 0.1 84 / 16%);
-  color: oklch(0.97 0.03 90);
+  border-color: var(--sf-maroon);
+  background: var(--sf-maroon);
+  color: #fff;
 }
 
-.sf-chip:hover { border-color: oklch(1 0 0 / 30%); }
-
-/* Live badge: the dot pulses, which is the honest signal that the feed is up. */
-@keyframes sf-pulse {
-  0%, 100% { box-shadow: 0 0 0 0 oklch(0.7 0.16 150 / 60%); }
-  70% { box-shadow: 0 0 0 9px oklch(0.7 0.16 150 / 0%); }
+/* Round "shop by" shortcuts, as every counter site uses. */
+.sf-circle {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
 }
 
+.sf-circle-ring {
+  position: relative;
+  display: flex;
+  width: 5.5rem;
+  height: 5.5rem;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border: 2px solid var(--sf-gold-line);
+  border-radius: 999px;
+  background: var(--sf-cream-soft);
+  transition: border-color 200ms ease, transform 200ms ease, box-shadow 200ms ease;
+}
+
+.sf-circle:hover .sf-circle-ring {
+  border-color: var(--sf-gold-deep);
+  box-shadow: 0 12px 24px oklch(0.4 0.05 70 / 14%);
+  transform: translateY(-3px);
+}
+
+/* ---------- Section furniture ---------- */
+/* Striped trust strip under the banner. */
+.sf-trust-strip {
+  background: var(--sf-cream);
+  border-top: 1px solid var(--sf-line);
+  border-bottom: 1px solid var(--sf-line);
+}
+
+/* Cream band to break up long runs of white cards. */
+.sf-band { background: var(--sf-cream); }
+.sf-band-gold { background: linear-gradient(180deg, var(--sf-gold-wash), var(--sf-cream)); }
+
+/* Live indicator shared with the admin order feed. */
 .sf-live-dot {
+  display: inline-block;
   width: 0.5rem;
   height: 0.5rem;
   border-radius: 999px;
-  background: oklch(0.78 0.16 150);
-  animation: sf-pulse 2.2s ease-out infinite;
+  background: oklch(0.6 0.14 150);
+}
+
+/* ---------- Scroll reveal ----------
+ * Elements rise into place once they enter the viewport. Content stays visible
+ * unless the JS hook has armed the pass (`.sf-reveal-ready` on <html>), so a
+ * no-JS load never leaves a blank page. */
+.sf-reveal-ready [data-reveal] {
+  opacity: 0;
+  will-change: opacity, transform;
+  transition:
+    opacity 620ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 620ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.sf-reveal-ready [data-reveal='up'] { transform: translateY(20px); }
+.sf-reveal-ready [data-reveal='left'] { transform: translateX(-20px); }
+.sf-reveal-ready [data-reveal='right'] { transform: translateX(20px); }
+.sf-reveal-ready [data-reveal='scale'] { transform: scale(0.97); }
+
+.sf-reveal-ready [data-reveal].sf-in {
+  opacity: 1;
+  transform: none;
 }
 
 /* ---------- Cart drawer ---------- */
@@ -942,22 +981,8 @@
 
 @keyframes sf-fade { from { opacity: 0; } to { opacity: 1; } }
 
-.sf-drawer { animation: sf-slide-right 320ms cubic-bezier(0.22, 1, 0.36, 1) both; }
-.sf-scrim { animation: sf-fade 260ms ease both; backdrop-filter: blur(4px); }
-
-/* ---------- Marquee ribbon ---------- */
-@keyframes sf-marquee {
-  from { transform: translateX(0); }
-  to { transform: translateX(-50%); }
-}
-
-.sf-marquee {
-  display: flex;
-  width: max-content;
-  animation: sf-marquee 34s linear infinite;
-}
-
-.sf-marquee:hover { animation-play-state: paused; }
+.sf-drawer { animation: sf-slide-right 180ms ease-out both; }
+.sf-scrim { animation: sf-fade 160ms ease both; backdrop-filter: blur(4px); }
 
 /* ---------- Admin: realtime order toasts ---------- */
 @keyframes sf-toast-in {
@@ -983,27 +1008,187 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .sf-gold-text,
-  .sf-line,
-  .sf-fade-up,
-  .sf-gem,
-  .sf-gem-core::after,
-  .sf-gem-ring,
-  .sf-gem-ring-2,
-  .sf-orbit-dot,
-  .sf-marquee,
   .sf-drawer,
   .sf-scrim,
   .sf-toast,
   .sf-bell-ringing,
-  .sf-live-dot {
+  .sf-line,
+  .sf-fade-up {
     animation: none !important;
   }
-  .sf-reveal-ready [data-reveal] {
-    opacity: 1;
-    transform: none;
-    filter: none;
-    transition: none;
+  [data-reveal] {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
   }
-  .sf-card:hover { transform: none; }
+}
+
+/* ==========================================================================
+   Admin · Orders screen
+   --------------------------------------------------------------------------
+   The list has to do two jobs at once: stay calm while it is long, and make the
+   one order that needs a phone call impossible to miss. Everything here serves
+   that — a breathing marker on new orders, a gold edge that travels down the
+   row, and a hover that lifts the card off the canvas.
+   ========================================================================== */
+
+/* A new order breathes, so a screen full of identical rows still has a focus. */
+@keyframes order-need-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 oklch(0.72 0.11 78 / 0%); }
+  50% { box-shadow: 0 0 0 6px oklch(0.72 0.11 78 / 14%); }
+}
+
+.order-attention {
+  animation: order-need-pulse 2.6s ease-in-out infinite;
+}
+
+/* The gold hairline that draws itself down the left edge of an open row. */
+@keyframes order-edge-draw {
+  from { transform: scaleY(0); opacity: 0; }
+  to { transform: scaleY(1); opacity: 1; }
+}
+
+.order-edge {
+  position: absolute;
+  top: 0.6rem;
+  bottom: 0.6rem;
+  left: 0;
+  width: 3px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, var(--gold), oklch(0.72 0.11 78 / 35%));
+  transform-origin: top;
+  animation: order-edge-draw 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Row hover: the whole card lifts and picks up a warm edge. */
+.order-row {
+  position: relative;
+  transition:
+    border-color 200ms ease,
+    background 200ms ease,
+    box-shadow 200ms ease,
+    transform 200ms ease;
+}
+
+.order-row:hover {
+  border-color: oklch(0.72 0.105 78 / 45%);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+.order-row[data-open='true'] {
+  border-color: oklch(0.72 0.105 78 / 55%);
+  box-shadow: var(--shadow-md);
+}
+
+/* Status tabs: the pill count badge reads as a live tally. */
+.order-tab {
+  transition: background 180ms ease, border-color 180ms ease, color 180ms ease, transform 180ms ease;
+}
+
+.order-tab:hover { transform: translateY(-1px); }
+
+.order-tab[data-active='true'] {
+  border-color: transparent;
+  background: var(--primary);
+  color: var(--primary-foreground);
+  box-shadow: 0 8px 18px oklch(0.31 0.07 258 / 22%);
+}
+
+/* The little "how long has this been sitting" chip. */
+.order-age[data-urgent='true'] {
+  background: var(--warn-soft);
+  color: var(--warn);
+  font-weight: 600;
+}
+
+/* Detail panel slides open rather than snapping into place. */
+@keyframes order-detail-open {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.order-detail { animation: order-detail-open 260ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+@media (prefers-reduced-motion: reduce) {
+  .order-attention,
+  .order-edge,
+  .order-detail {
+    animation: none !important;
+  }
+  .order-row:hover { transform: none; }
+}
+
+/* ==========================================================================
+   Admin · Notification bell
+   --------------------------------------------------------------------------
+   The bell has one job: an order that lands while the shopkeeper is in Billing
+   must be impossible to ignore, and must stop demanding attention the moment it
+   has been looked at. Everything here serves that — a gold halo while unseen,
+   a panel that separates unread from read, and a quiet state once cleared.
+   ========================================================================== */
+
+/* The halo that marks the bell as carrying unseen orders. */
+@keyframes bell-halo {
+  0%, 100% { box-shadow: 0 0 0 0 oklch(0.72 0.11 78 / 45%); }
+  60% { box-shadow: 0 0 0 8px oklch(0.72 0.11 78 / 0%); }
+}
+
+.bell-unseen {
+  animation: bell-halo 2.4s ease-out infinite;
+}
+
+/* The badge pops in rather than appearing mid-animation. */
+@keyframes bell-badge-in {
+  from { transform: scale(0.4); opacity: 0; }
+  60% { transform: scale(1.12); opacity: 1; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.bell-badge {
+  animation: bell-badge-in 320ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+/* A notification row slides in as it arrives. */
+@keyframes bell-item-in {
+  from { opacity: 0; transform: translateX(8px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.bell-item { animation: bell-item-in 260ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+/* Unread rows carry a warm left edge, so the split is visible at a glance. */
+.bell-item[data-unread='true'] {
+  background: linear-gradient(90deg, oklch(0.72 0.11 78 / 9%), transparent 60%);
+}
+
+.bell-item[data-unread='true']::before {
+  position: absolute;
+  top: 0.55rem;
+  bottom: 0.55rem;
+  left: 0;
+  width: 3px;
+  border-radius: 999px;
+  background: var(--gold);
+  content: '';
+}
+
+/* The panel opens downward from the bell. */
+@keyframes bell-panel-in {
+  from { opacity: 0; transform: translateY(-6px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.bell-panel {
+  animation: bell-panel-in 200ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  transform-origin: top right;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bell-unseen,
+  .bell-badge,
+  .bell-item,
+  .bell-panel {
+    animation: none !important;
+  }
 }

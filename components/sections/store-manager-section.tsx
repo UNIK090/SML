@@ -164,7 +164,7 @@ export default function StoreManagerSection({ items, loading, refresh }: { items
       <WorkspaceHero
         eyebrow="Online presence"
         title="Your online store"
-        description="Choose what the public sees, set the website price, and group pieces into collections. Nothing is visible on your website until you publish it."
+        description="Choose what the public sees, set the website price, and group pieces into collections such as One-Gram Gold, Panchaloha, and Silver. Nothing is visible until you publish it."
         action={
           <div className="flex flex-wrap items-center gap-2">
             <button onClick={copyLink} className="flex items-center gap-1.5 rounded-xl border-white/15 bg-white/10 px-3 py-2 text-xs font-medium text-slate-100 backdrop-blur transition hover:bg-white/20">
@@ -325,11 +325,11 @@ export default function StoreManagerSection({ items, loading, refresh }: { items
                             placeholder={item.price}
                           />
                         </Field>
-                        <Field label="Collection" hint="The shelf customers browse — e.g. Bridal, Temple, Everyday">
+                        <Field label="Collection" hint="The shelf customers browse — e.g. One-Gram Gold, Panchaloha, Silver">
                           <Input
                             value={draft.collection}
                             onChange={(event) => setDraft({ ...draft, collection: event.target.value })}
-                            placeholder="e.g. Bridal"
+                            placeholder="e.g. One-Gram Gold"
                           />
                         </Field>
                         <Field label="Badge" hint="Optional short tag shown on the card — e.g. New, Limited">
@@ -350,7 +350,7 @@ export default function StoreManagerSection({ items, loading, refresh }: { items
                               onChange={(event) => setDraft({ ...draft, description: event.target.value })}
                               rows={3}
                               maxLength={600}
-                              placeholder="e.g. 22K hallmarked gold chain, 8g, antique finish — ideal for daily wear."
+                              placeholder="e.g. One-gram gold-look chain with antique finish — ideal for daily wear."
                               className="w-full rounded-xl border-hairline bg-card/90 px-3 py-2.5 text-sm transition"
                             />
                           </Field>

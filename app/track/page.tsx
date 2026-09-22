@@ -62,43 +62,49 @@ export default function TrackPage() {
         </Link>
 
         <div className="sf-card p-7 sm:p-9">
-          <span className="flex size-12 items-center justify-center rounded-2xl bg-champagne/12 text-champagne">
+          <span className="flex size-12 items-center justify-center rounded-full bg-cream" style={{ color: 'var(--sf-gold-deep)' }}>
             <Package className="size-5" strokeWidth={1.5} />
           </span>
 
-          <h1 className="mt-5 text-2xl font-semibold tracking-tight text-white">Track your order</h1>
-          <p className="mt-2 text-sm leading-6 text-white/55">
+          <h1 className="mt-5 text-2xl font-semibold tracking-tight">Track your order</h1>
+          <p className="mt-2 text-sm leading-6">
             Enter the order number from your confirmation. The order link you were given opens straight to this page — if you still
             have it, just tap that.
           </p>
 
           <form onSubmit={submit} className="mt-6 flex flex-col gap-4">
             <label className="flex flex-col gap-1.5">
-              <span className="text-[11px] font-semibold tracking-[0.12em] text-white/55 uppercase">Order number</span>
+              <span className="text-[11px] font-semibold tracking-[0.12em] uppercase" style={{ color: 'var(--sf-heading)' }}>
+                Order number
+              </span>
               <input
                 value={orderNumber}
                 onChange={(event) => setOrderNumber(event.target.value)}
                 placeholder="e.g. SML-8K2Q4"
                 autoCapitalize="characters"
-                className="h-11 rounded-xl border border-white/12 bg-black/25 px-3 text-sm text-white uppercase transition placeholder:text-white/30 focus:border-champagne/70"
+                className="h-11 rounded-lg border border-line bg-white px-3 text-sm uppercase transition focus:border-gold"
+                style={{ color: 'var(--sf-heading)' }}
               />
             </label>
 
             <label className="flex flex-col gap-1.5">
-              <span className="text-[11px] font-semibold tracking-[0.12em] text-white/55 uppercase">Order link code</span>
+              <span className="text-[11px] font-semibold tracking-[0.12em] uppercase" style={{ color: 'var(--sf-heading)' }}>
+                Order link code
+              </span>
               <input
                 value={token}
                 onChange={(event) => setToken(event.target.value)}
                 placeholder="Paste the code after ?t= in your link"
-                className="h-11 rounded-xl border border-white/12 bg-black/25 px-3 font-mono text-xs text-white transition placeholder:text-white/30 focus:border-champagne/70"
+                className="h-11 rounded-lg border border-line bg-white px-3 font-mono text-xs transition focus:border-gold"
+                style={{ color: 'var(--sf-heading)' }}
               />
-              <span className="text-[10px] leading-4 text-white/40">
+              <span className="text-[10px] leading-4" style={{ color: 'var(--sf-muted)' }}>
                 This code is your private key to the order, which is why the order number alone does not open it.
               </span>
             </label>
 
             {error && (
-              <p role="alert" className="rounded-xl bg-red-500/12 px-3 py-2 text-xs text-red-200">
+              <p role="alert" className="rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700">
                 {error}
               </p>
             )}
@@ -109,16 +115,16 @@ export default function TrackPage() {
           </form>
 
           {(call || whatsapp) && (
-            <p className="mt-6 border-t border-white/8 pt-5 text-xs leading-6 text-white/45">
+            <p className="mt-6 border-t border-line pt-5 text-xs leading-6" style={{ color: 'var(--sf-muted)' }}>
               Lost the code? Call the shop with your name and order number and they will read out the status.{' '}
               {call && (
-                <a href={call} className="inline-flex items-center gap-1 text-champagne hover:underline">
+                <a href={call} className="inline-flex items-center gap-1 hover:underline" style={{ color: 'var(--sf-maroon)' }}>
                   <Phone className="size-3" /> {shop?.phone}
                 </a>
               )}
               {call && whatsapp && ' or '}
               {whatsapp && (
-                <a href={whatsapp} target="_blank" rel="noreferrer" className="text-champagne hover:underline">
+                <a href={whatsapp} target="_blank" rel="noreferrer" className="hover:underline" style={{ color: 'var(--sf-maroon)' }}>
                   message us on WhatsApp
                 </a>
               )}

@@ -279,7 +279,7 @@ export default function ProfileSection({ onShopChanged, onBrandChanged }: { onSh
                 <Input
                   value={form.tagline}
                   onChange={(event) => setForm({ ...form, tagline: event.target.value })}
-                  placeholder="e.g. Hand-picked gold and diamond jewellery since 1985"
+                  placeholder="e.g. One-gram gold, panchaloha and silver designs at affordable prices"
                 />
               </Field>
             </div>

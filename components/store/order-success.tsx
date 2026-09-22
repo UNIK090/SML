@@ -29,30 +29,44 @@ export default function OrderSuccess({
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center px-4" role="dialog" aria-modal="true" aria-label="Order placed">
-      <button className="sf-scrim absolute inset-0 bg-black/78" aria-label="Close" onClick={onClose} />
+      <button className="sf-scrim absolute inset-0 bg-black/50" aria-label="Close" onClick={onClose} />
 
-      <div className="sf-toast relative w-full max-w-md overflow-hidden rounded-3xl border-white/12 bg-ink-soft p-7 text-center text-white shadow-2xl">
-        <button onClick={onClose} aria-label="Close" className="absolute top-3.5 right-3.5 flex size-8 items-center justify-center rounded-full text-white/45 transition hover:bg-white/10 hover:text-white">
+      <div className="sf-toast relative w-full max-w-md overflow-hidden rounded-xl border border-line bg-white p-7 text-center shadow-2xl" style={{ color: 'var(--sf-body)' }}>
+        <button
+          onClick={onClose}
+          aria-label="Close"
+          className="absolute top-3.5 right-3.5 flex size-8 items-center justify-center rounded-full transition hover:bg-cream"
+          style={{ color: 'var(--sf-muted)' }}
+        >
           <X className="size-4" />
         </button>
 
-        <span className="animate-ring-pop relative mx-auto mb-5 flex size-20 items-center justify-center rounded-full border-champagne/40">
-          <span className="animate-ripple absolute inset-0 rounded-full border-champagne/45" />
-          <CircleCheck className="size-10 text-champagne" strokeWidth={1.4} />
+        <span
+          className="animate-ring-pop relative mx-auto mb-5 flex size-20 items-center justify-center rounded-full"
+          style={{ border: '1px solid var(--sf-gold-line)' }}
+        >
+          <span className="animate-ripple absolute inset-0 rounded-full" style={{ border: '1px solid var(--sf-gold-line)' }} />
+          <CircleCheck className="size-10" style={{ color: 'var(--sf-gold-deep)' }} strokeWidth={1.4} />
         </span>
 
         <h2 className="text-xl font-semibold tracking-tight">Order placed</h2>
-        <p className="mt-2 text-sm leading-6 text-white/60">
+        <p className="mt-2 text-sm leading-6">
           Thank you, your pieces are reserved. The shop will call you shortly to confirm and arrange payment.
         </p>
 
-        <div className="mt-5 rounded-2xl border-white/10 bg-white/[0.04] px-4 py-3.5">
-          <p className="text-[10px] font-semibold tracking-[0.18em] text-white/45 uppercase">Your order number</p>
-          <p className="tnum mt-1 text-xl font-semibold tracking-wide text-champagne">{order.orderNumber}</p>
-          <p className="tnum mt-1.5 text-xs text-white/50">Total {rupeesExact(order.totalAtPlacement)}</p>
+        <div className="mt-5 rounded-lg border border-line bg-cream px-4 py-3.5">
+          <p className="text-[10px] font-semibold tracking-[0.18em] uppercase" style={{ color: 'var(--sf-muted)' }}>
+            Your order number
+          </p>
+          <p className="tnum mt-1 text-xl font-semibold tracking-wide" style={{ color: 'var(--sf-maroon)' }}>
+            {order.orderNumber}
+          </p>
+          <p className="tnum mt-1.5 text-xs" style={{ color: 'var(--sf-muted)' }}>
+            Total {rupeesExact(order.totalAtPlacement)}
+          </p>
         </div>
 
-        <div className="mt-5 flex-col gap-2">
+        <div className="mt-5 flex flex-col gap-2">
           <a href={trackUrl} className="sf-btn sf-btn-gold h-11 w-full text-sm">
             <ShoppingBag className="size-4" /> Track this order
           </a>
@@ -70,7 +84,7 @@ export default function OrderSuccess({
           </div>
         </div>
 
-        <p className="mt-4 text-[11px] leading-5 text-white/40">
+        <p className="mt-4 text-[11px] leading-5" style={{ color: 'var(--sf-muted)' }}>
           Keep this number. Open the tracking link any time to see whether your order is confirmed, ready, or completed.
         </p>
       </div>
