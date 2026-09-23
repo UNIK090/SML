@@ -109,8 +109,6 @@ export default function ProductPage({ code }: { code: number }) {
     )
   }
 
-  const imageCount = product.imageCount ?? (product.image ? 1 : 0)
-
   return (
     <div className="sf-canvas min-h-screen pb-16">
       {/* A thin maroon bar keeps the piece's page recognisably the same shop. */}
@@ -156,7 +154,6 @@ export default function ProductPage({ code }: { code: number }) {
               <div className="sf-card-media relative aspect-square">
                 <ProductImageSlider
                   product={product}
-                  kind="page"
                   className="size-full"
                   overlay={
                     product.badge ? (
@@ -170,7 +167,6 @@ export default function ProductPage({ code }: { code: number }) {
                   }
                 />
               </div>
-              {imageCount > 1 && <ProductThumbnailStrip product={product} />}
             </div>
 
             <div className="mt-4 flex flex-wrap items-center gap-3">
@@ -400,7 +396,6 @@ function RecommendationCard({ entry }: { entry: ProductRecommendation }) {
       <span className="sf-card-media relative block aspect-square overflow-hidden">
         <ProductImageSlider
           product={product}
-          kind="recommendation"
           className="size-full"
           overlay={
             <>
@@ -447,58 +442,5 @@ function RecommendationCard({ entry }: { entry: ProductRecommendation }) {
         </span>
       </span>
     </Link>
-  )
-}
-
-/**
- * Clickable thumbnails under the hero image on the product page.
- *
- * Uses the same URLs the slider uses so customers get a stable feel. The
- * currently selected thumbnail is framed with the shop's gold accent so it is
- * instantly obvious which view is active.
- */
-function ProductThumbnailStrip({ product }: { product: Pick<StoreProductLink['product'], 'code' | 'imageCount' | 'image' | 'imageVersion' | 'name'> }) {
-  const total = Math.max(0, product.imageCount ?? (product.image ? 1 : 0))
-  const [active, setActive] = useState(0)
-  const baseUrl = `/api/store/image?id=${product.code}&v=${encodeURIComponent(product.imageVersion)}`
-
-  useEffect(() => {
-    setActive(0)
-    const handler = (e: Event) => {
-      const ev = e as CustomEvent<{ code: number; index: number }>
-      if (ev.detail?.code === product.code) setActive(ev.detail.index)
-    }
-    window.addEventListener('pp:sync-index', handler as EventListener)
-    return () => window.removeEventListener('pp:sync-index', handler as EventListener)
-  }, [product.code])
-
-  return (
-    <div className="border-t border-line bg-secondary/40 p-3">
-      <div className="flex gap-2 overflow-x-auto pb-1">
-        {Array.from({ length: total }).map((_, i) => (
-          <button
-            key={i}
-            type="button"
-            onClick={() => {
-              setActive(i)
-              // Notify the slider up the tree. We walk up via a custom event
-              // because the slider and strip are separate components mounted
-              // in the same file — avoids prop-drilling state through the hero.
-              window.dispatchEvent(new CustomEvent('pp:set-index', { detail: { code: product.code, index: i } }))
-            }}
-            aria-label={`Show ${product.name} view ${i + 1}`}
-            className={`relative shrink-0 overflow-hidden rounded-lg border-2 transition ${i === active ? 'border-gold-deep' : 'border-transparent hover:border-gold/60'}`}
-            style={{ width: '4.25rem', height: '4.25rem' }}
-          >
-            <img
-              src={`${baseUrl}&index=${i}`}
-              alt={`${product.name} thumbnail ${i + 1}`}
-              loading="lazy"
-              className="size-full object-cover"
-            />
-          </button>
-        ))}
-      </div>
-    </div>
   )
 }

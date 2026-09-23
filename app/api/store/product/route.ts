@@ -1,12 +1,11 @@
 import { NextResponse } from 'next/server'
 import { and, eq } from 'drizzle-orm'
 import { db } from '@/lib/db'
-import { inventoryItemImages, inventoryItems } from '@/lib/db/schema'
+import { inventoryItems } from '@/lib/db/schema'
 import { isConnectionError } from '@/lib/db/errors'
 import { latestAssetVersion, listPublishedProducts, productFields, recommend, soldQuantities, toStoreProduct } from '@/lib/catalogue'
 import { getShopDetails } from '@/lib/shop'
 import type { StoreProductLink } from '@/lib/types'
-import { count } from 'drizzle-orm'
 
 // The public payload behind a shared product link: `/product/1042`.
 //
@@ -41,24 +40,12 @@ export async function GET(request: Request) {
 
     // The recommendations are ranked from real sales, so the count is fetched
     // alongside the catalogue rather than derived from anything on the client.
-    const [shop, products, sold, galleryRowsMaybe] = await Promise.all([
+    const [shop, products, sold] = await Promise.all([
       getShopDetails(),
       listPublishedProducts(),
       soldQuantities(),
-      (async () => {
-        try {
-          return await db
-            .select({ itemId: inventoryItemImages.itemId, count: count(inventoryItemImages.id) })
-            .from(inventoryItemImages)
-            .groupBy(inventoryItemImages.itemId)
-        } catch {
-          return [] as Array<{ itemId: number; count: number }>
-        }
-      })(),
     ])
-    const galleryCounts = new Map<number, number>()
-    for (const r of galleryRowsMaybe) galleryCounts.set(Number(r.itemId), Number(r.count))
-    const product = toStoreProduct(row, galleryCounts)
+    const product = toStoreProduct(row)
     const related = recommend(products, product, sold, RECOMMENDATION_LIMIT)
 
     const body: StoreProductLink = {
