@@ -1024,6 +1024,28 @@
 }
 
 /* ==========================================================================
+   Storefront · Sharing a piece
+   --------------------------------------------------------------------------
+   The share control sits on the product photo and keeps to itself until the
+   customer reaches for it, so a grid of cards stays quiet.
+   ========================================================================== */
+
+.sf-share-fab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: oklch(1 0 0 / 92%);
+  color: var(--sf-heading);
+  box-shadow: 0 4px 12px oklch(0.3 0.04 60 / 18%);
+  backdrop-filter: blur(6px);
+  transition: background 160ms ease, color 160ms ease, transform 160ms ease, opacity 180ms ease;
+}
+
+.sf-share-fab:hover { background: var(--sf-maroon); color: #fff; transform: translateY(-1px); }
+
+
+/* ==========================================================================
    Admin · Orders screen
    --------------------------------------------------------------------------
    The list has to do two jobs at once: stay calm while it is long, and make the

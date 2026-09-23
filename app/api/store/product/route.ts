@@ -1,0 +1,60 @@
+import { NextResponse } from 'next/server'
+import { and, eq } from 'drizzle-orm'
+import { db } from '@/lib/db'
+import { inventoryItems } from '@/lib/db/schema'
+import { isConnectionError } from '@/lib/db/errors'
+import { latestAssetVersion, listPublishedProducts, productFields, sameCollection, toStoreProduct } from '@/lib/catalogue'
+import { getShopDetails } from '@/lib/shop'
+import type { StoreProductLink } from '@/lib/types'
+
+// The public payload behind a shared product link: `/product/1042`.
+//
+// A customer shares one piece, not the whole shop, so the shared page must load
+// without dragging in the full catalogue. It still returns the shop details (the
+// page is a landing page for someone who has never seen the store) and a short
+// "more from this collection" rail, so the recipient has somewhere to go next.
+//
+// Same security boundary as the grid: the row must exist AND be published. An
+// unpublished code returns 404 rather than an empty product.
+
+export const dynamic = 'force-dynamic'
+
+export async function GET(request: Request) {
+  try {
+    const code = Number(new URL(request.url).searchParams.get('code'))
+    if (!Number.isInteger(code) || code <= 0) {
+      return NextResponse.json({ error: 'That product code is not valid.' }, { status: 400 })
+    }
+
+    const [row] = await db
+      .select(productFields)
+      .from(inventoryItems)
+      .where(and(eq(inventoryItems.code, code), eq(inventoryItems.published, true)))
+
+    if (!row) {
+      return NextResponse.json({ error: 'This piece is no longer available on the website.' }, { status: 404 })
+    }
+
+    const [shop, products] = await Promise.all([getShopDetails(), listPublishedProducts()])
+    const product = toStoreProduct(row)
+
+    const body: StoreProductLink = {
+      shop,
+      product,
+      related: sameCollection(products, product),
+      updatedAt: latestAssetVersion(products, null),
+    }
+
+    return NextResponse.json(body, {
+      // Prices and availability are edited from the admin desk, so this is kept
+      // as short-lived as the catalogue response rather than cached on a CDN.
+      headers: { 'Cache-Control': 'private, max-age=15, stale-while-revalidate=60' },
+    })
+  } catch (error) {
+    console.error('[store/product] Failed to load the shared product:', error)
+    if (isConnectionError(error)) {
+      return NextResponse.json({ error: 'The store is temporarily unavailable. Please try again.' }, { status: 503 })
+    }
+    return NextResponse.json({ error: 'Could not load this piece.' }, { status: 500 })
+  }
+}

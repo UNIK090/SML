@@ -149,7 +149,7 @@ function ShopWindow() {
             </span>
           </Link>
 
-          <nav className="ml-auto hidden items-center gap-1 lg:flex" aria-label="Sections">
+            <nav className="ml-auto hidden items-center gap-1 lg:flex" aria-label="Sections">
             {[
               { label: 'Collections', id: 'collections' },
               { label: 'Shop', id: 'store' },

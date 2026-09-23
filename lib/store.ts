@@ -73,3 +73,85 @@ export function telLink(value: string | null | undefined): string | null {
   const digits = value?.replace(/[^\d+]/g, '') ?? ''
   return digits.length >= 6 ? `tel:${digits}` : null
 }
+// ---------------------------------------------------------------------------
+// Sharing a piece
+// ---------------------------------------------------------------------------
+
+/**
+ * The canonical link to one catalogue piece.
+ *
+ * `/product/<code>` is a real page, not a query string on the storefront, for
+ * two reasons that matter on a phone: the recipient of a WhatsApp message sees
+ * which piece they are opening, and a link to a piece that has since been
+ * unpublished can say so instead of silently landing on an empty grid.
+ */
+export function productPath(code: number): string {
+  return `/product/${encodeURIComponent(String(code))}`
+}
+
+/** The same link as a full URL, for the clipboard, WhatsApp and the share sheet. */
+export function productLink(code: number, origin?: string): string {
+  const base = origin?.replace(/\/+$/, '')
+  const path = productPath(code)
+  return base ? `${base}${path}` : path
+}
+
+/** The message the shop's WhatsApp number is pre-filled with for one piece. */
+export function productShareMessage(product: { code: number; name: string; price: number }, shopName?: string | null): string {
+  const from = shopName?.trim() ? ` from ${shopName.trim()}` : ''
+  return `Have a look at this piece${from}: ${product.name} (item #${product.code}) at ${rupees(product.price)}. Do you like it?`
+}
+
+/**
+ * A public order-tracking link.
+ *
+ * The token is what actually authorises the read, so the order number alone is
+ * not enough — see app/api/store/order.
+ */
+export function orderTrackPath(orderNumber: string, token: string): string {
+  return `/order/${encodeURIComponent(orderNumber)}?t=${encodeURIComponent(token)}`
+}
+
+// ---------------------------------------------------------------------------
+// Browsers and their quirks
+// ---------------------------------------------------------------------------
+
+/** Clipboard writes need a secure context and an allowed permission. */
+export function canUseClipboard(): boolean {
+  return typeof navigator !== 'undefined' && typeof navigator.clipboard?.writeText === 'function' && window.isSecureContext
+}
+
+/** The native share sheet — WhatsApp, Instagram, Messages — on a phone. */
+export function canShareNatively(): boolean {
+  return typeof navigator !== 'undefined' && typeof navigator.share === 'function'
+}
+
+/**
+ * Copies text, falling back to a hidden textarea on browsers that refuse the
+ * async clipboard API (older Safari, and any page served over plain HTTP).
+ */
+export async function copyText(value: string): Promise<boolean> {
+  if (canUseClipboard()) {
+    try {
+      await navigator.clipboard.writeText(value)
+      return true
+    } catch {
+      // Fall through to the legacy path rather than failing the copy.
+    }
+  }
+  if (typeof document === 'undefined') return false
+  try {
+    const field = document.createElement('textarea')
+    field.value = value
+    field.setAttribute('readonly', '')
+    field.style.position = 'fixed'
+    field.style.opacity = '0'
+    document.body.appendChild(field)
+    field.select()
+    const copied = document.execCommand('copy')
+    document.body.removeChild(field)
+    return copied
+  } catch {
+    return false
+  }
+}

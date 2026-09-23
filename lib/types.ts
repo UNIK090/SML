@@ -44,6 +44,19 @@ export type StoreCatalogue = {
   updatedAt: string
 }
 
+/**
+ * What a shared product link (`/product/1042`) loads.
+ *
+ * One piece plus enough context to be a landing page for somebody who has never
+ * seen the shop: the shop details, and a short rail from the same collection.
+ */
+export type StoreProductLink = {
+  shop: Shop & { tagline: string | null; whatsapp: string | null; storeHours: string | null }
+  product: StoreProduct
+  related: StoreProduct[]
+  updatedAt: string
+}
+
 export type OrderStatus = 'NEW' | 'CONFIRMED' | 'READY' | 'COMPLETED' | 'CANCELLED'
 export type OrderPaymentStatus = 'PENDING' | 'PAID'
 

@@ -11,6 +11,7 @@ import { useState, type ReactNode } from 'react'
 import { ArrowRight, Check, Loader2, Minus, Plus, ShoppingBag, Trash2, X } from 'lucide-react'
 import { useCart } from '@/components/store/cart'
 import { ProductMedia } from '@/components/store/product-card'
+import ShareMenu from '@/components/store/share-menu'
 import { DELIVERY_FEE, FREE_DELIVERY_ABOVE, deliveryFeeFor, rupees, rupeesExact, telLink, whatsappLink } from '@/lib/store'
 import type { Shop, StoreProduct } from '@/lib/types'
 
@@ -37,7 +38,6 @@ export default function CartDrawer({
 
   const deliveryFee = deliveryFeeFor(cart.subtotal, form.fulfilment)
   const total = cart.subtotal + deliveryFee
-
   const set = (patch: Partial<typeof form>) => setForm((current) => ({ ...current, ...patch }))
 
   const submit = async (event: React.FormEvent) => {
@@ -179,14 +179,25 @@ export default function CartDrawer({
                       </div>
                     </div>
 
-                    <button
-                      onClick={() => cart.remove(line.code)}
-                      aria-label={`Remove ${line.name}`}
-                      className="self-start rounded-lg p-1.5 transition hover:bg-red-50 hover:text-red-600"
-                      style={{ color: 'var(--sf-muted)' }}
-                    >
-                      <Trash2 className="size-3.5" />
-                    </button>
+                    <div className="flex shrink-0 flex-col items-end gap-1 self-start">
+                      <button
+                        onClick={() => cart.remove(line.code)}
+                        aria-label={`Remove ${line.name}`}
+                        className="rounded-lg p-1.5 transition hover:bg-red-50 hover:text-red-600"
+                        style={{ color: 'var(--sf-muted)' }}
+                      >
+                        <Trash2 className="size-3.5" />
+                      </button>
+                      {product && (
+                        <ShareMenu
+                          product={product}
+                          shopName={shop?.name}
+                          whatsapp={shop?.whatsapp ?? shop?.phone}
+                          label=""
+                          buttonClassName="flex size-7 items-center justify-center rounded-lg transition hover:bg-cream"
+                        />
+                      )}
+                    </div>
                   </li>
                 )
               })}

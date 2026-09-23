@@ -10,6 +10,7 @@ import { Check, Gem, MessageCircle, Plus } from 'lucide-react'
 import type { StoreProduct } from '@/lib/types'
 import { rupees, whatsappLink } from '@/lib/store'
 import { useCart } from '@/components/store/cart'
+import ShareMenu from '@/components/store/share-menu'
 
 export function ProductMedia({ product, className = '' }: { product: StoreProduct; className?: string }) {
   if (!product.image) {
@@ -47,11 +48,19 @@ export default function ProductCard({
     whatsapp,
     `Hello ${shopName ?? ''}, I would like to know more about ${product.name} (item #${product.code}), priced at ${rupees(product.price)}.`,
   )
+  const link = `/product/${encodeURIComponent(String(product.code))}`
 
   return (
     <article className="sf-card sf-card-sheen group flex flex-col" data-reveal="up" data-reveal-delay={Math.min(index, 8) * 60}>
       <div className="sf-card-media relative aspect-[4/5] overflow-hidden">
-        <ProductMedia product={product} className="absolute inset-0 size-full" />
+        {/*
+          The image is the link to the piece's own page, so a customer who taps
+          the photo lands on something they can share — not on a grid position
+          they have to describe out loud.
+        */}
+        <a href={link} aria-label={`Open ${product.name}`} className="absolute inset-0 block">
+          <ProductMedia product={product} className="size-full" />
+        </a>
 
         {product.badge && (
           <span
@@ -61,6 +70,15 @@ export default function ProductCard({
             {product.badge}
           </span>
         )}
+
+        <ShareMenu
+          product={product}
+          shopName={shopName}
+          whatsapp={whatsapp}
+          label=""
+          className="absolute top-3 right-3"
+          buttonClassName="sf-share-fab size-8"
+        />
 
         <span
           className="absolute right-3 bottom-3 rounded-full px-2.5 py-1 text-[10px] tracking-wide"
@@ -99,6 +117,8 @@ export default function ProductCard({
           </button>
         </div>
 
+        {/* The piece's own page is where a customer asks about it, so the card
+            keeps one quiet action and the photo carries the navigation. */}
         {enquiry && (
           <a
             href={enquiry}
