@@ -30,6 +30,22 @@ export const inventoryItems = pgTable('inventory_items', {
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 })
 
+// Multiple images per catalogue item.
+//
+// The legacy `inventory_items.image_*` columns remain as the primary / first
+// image for backwards compatibility. New images live here with a `display_order`
+// so an admin can reorder the gallery. Index 0 / lowest `display_order` is the
+// hero image that also gets copied back into the legacy columns on write.
+export const inventoryItemImages = pgTable('inventory_item_images', {
+  id: serial('id').primaryKey(),
+  itemId: integer('item_id').notNull().references(() => inventoryItems.id, { onDelete: 'cascade' }),
+  displayOrder: integer('display_order').notNull().default(0),
+  mimeType: text('mime_type').notNull(),
+  data: text('data').notNull(),
+  byteSize: integer('byte_size').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+})
+
 // One row per invoice (the bill header). Line items live in invoice_items.
 //
 // The item_* columns are kept so single-item bills keep working and the rows

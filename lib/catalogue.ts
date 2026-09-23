@@ -1,6 +1,6 @@
-import { asc, desc, eq, notInArray, sql } from 'drizzle-orm'
+import { asc, count, desc, eq, notInArray, sql } from 'drizzle-orm'
 import { db } from '@/lib/db'
-import { inventoryItems, invoiceItems, shopLogo, storeOrderItems, storeOrders } from '@/lib/db/schema'
+import { inventoryItemImages, inventoryItems, invoiceItems, shopLogo, storeOrderItems, storeOrders } from '@/lib/db/schema'
 import { getShopDetails } from '@/lib/shop'
 import { sellingPrice } from '@/lib/store'
 import type { StoreCatalogue, StoreProduct } from '@/lib/types'
@@ -15,6 +15,7 @@ import type { StoreCatalogue, StoreProduct } from '@/lib/types'
 // forgot one of those rules.
 
 export const productFields = {
+  id: inventoryItems.id,
   code: inventoryItems.code,
   name: inventoryItems.name,
   category: inventoryItems.category,
@@ -30,6 +31,7 @@ export const productFields = {
 }
 
 type ProductRow = {
+  id: number
   code: number
   name: string
   category: string
@@ -43,8 +45,28 @@ type ProductRow = {
   updatedAt: Date
 }
 
+async function galleryCountsByItemId(): Promise<Map<number, number>> {
+  try {
+    const rows = await db
+      .select({ itemId: inventoryItemImages.itemId, count: count(inventoryItemImages.id) })
+      .from(inventoryItemImages)
+      .groupBy(inventoryItemImages.itemId)
+    const map = new Map<number, number>()
+    for (const row of rows) map.set(Number(row.itemId), Number(row.count))
+    return map
+  } catch {
+    // The inventory_item_images migration may not have been applied yet.
+    // Fail open so the store catalogue still loads (every product just reports
+    // its legacy primary image as its only image, matching pre-gallery behavior).
+    return new Map()
+  }
+}
+
 /** Narrows a catalogue row to what a customer is allowed to see. */
-export function toStoreProduct(row: ProductRow): StoreProduct {
+export function toStoreProduct(row: ProductRow, galleryCountByItemId?: Map<number, number>): StoreProduct {
+  const original = Number(row.price) || 0
+  const hasPrimary = Boolean(row.imageMimeType && row.imageByteSize)
+  const gallery = galleryCountByItemId?.get(row.id) ?? 0
   return {
     code: row.code,
     name: row.name,
@@ -53,19 +75,24 @@ export function toStoreProduct(row: ProductRow): StoreProduct {
     description: row.description,
     badge: row.badge,
     price: sellingPrice(row),
-    image: Boolean(row.imageMimeType && row.imageByteSize),
+    originalPrice: Number.isFinite(original) ? original : 0,
+    image: hasPrimary || gallery > 0,
     imageVersion: row.updatedAt.toISOString(),
+    imageCount: hasPrimary ? gallery + 1 : gallery,
   }
 }
 
 /** Every published piece, featured first, newest edits next. */
 export async function listPublishedProducts(): Promise<StoreProduct[]> {
-  const rows = await db
-    .select(productFields)
-    .from(inventoryItems)
-    .where(eq(inventoryItems.published, true))
-    .orderBy(asc(inventoryItems.featured), desc(inventoryItems.updatedAt))
-  return rows.map(toStoreProduct)
+  const [rows, counts] = await Promise.all([
+    db
+      .select(productFields)
+      .from(inventoryItems)
+      .where(eq(inventoryItems.published, true))
+      .orderBy(asc(inventoryItems.featured), desc(inventoryItems.updatedAt)),
+    galleryCountsByItemId(),
+  ])
+  return rows.map((row) => toStoreProduct(row, counts))
 }
 
 // ---------------------------------------------------------------------------

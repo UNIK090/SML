@@ -11,24 +11,10 @@ import type { StoreProduct } from '@/lib/types'
 import { rupees, whatsappLink } from '@/lib/store'
 import { useCart } from '@/components/store/cart'
 import ShareMenu, { WhatsAppMark } from '@/components/store/share-menu'
+import ProductImageSlider from '@/components/store/product-image-slider'
 
 export function ProductMedia({ product, className = '' }: { product: StoreProduct; className?: string }) {
-  if (!product.image) {
-    return (
-      <span className={`flex items-center justify-center ${className}`} aria-hidden style={{ color: 'var(--sf-gold-deep)' }}>
-        <Gem className="size-9" strokeWidth={1.2} />
-      </span>
-    )
-  }
-  return (
-    <img
-      src={`/api/store/image?id=${product.code}&v=${encodeURIComponent(product.imageVersion)}`}
-      alt={product.name}
-      loading="lazy"
-      decoding="async"
-      className={`object-cover ${className}`}
-    />
-  )
+  return <ProductImageSlider product={product} className={className} />
 }
 
 export default function ProductCard({
@@ -44,39 +30,53 @@ export default function ProductCard({
 }) {
   const { add, has } = useCart()
   const inBasket = has(product.code)
+  const hasDiscount = product.originalPrice > product.price
+  const discountPct = hasDiscount
+    ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
+    : 0
   const enquiry = whatsappLink(
     whatsapp,
-    `Hello ${shopName ?? ''}, I would like to know more about ${product.name} (item #${product.code}), priced at ${rupees(product.price)}.`,
+    `Hello ${shopName ?? ''}, I would like to know more about ${product.name} (item #${product.code}), priced at ${rupees(product.price)}${hasDiscount ? ` (was ${rupees(product.originalPrice)})` : ''}.`,
   )
   const link = `/product/${encodeURIComponent(String(product.code))}`
 
   return (
     <article className="sf-card sf-card-sheen group flex flex-col" data-reveal="up" data-reveal-delay={Math.min(index, 8) * 60}>
       <div className="sf-card-media relative aspect-[4/5] overflow-hidden">
-        {/*
-          The image is the link to the piece's own page, so a customer who taps
-          the photo lands on something they can share — not on a grid position
-          they have to describe out loud.
-        */}
         <a href={link} aria-label={`Open ${product.name}`} className="absolute inset-0 block">
-          <ProductMedia product={product} className="size-full" />
+          <ProductImageSlider
+            product={product}
+            className="size-full"
+            overlay={
+              <>
+                {product.badge && (
+                  <span
+                    className="absolute top-3 left-3 rounded-full px-2.5 py-1 text-[10px] font-semibold tracking-[0.14em] text-white uppercase pointer-events-none"
+                    style={{ background: 'var(--sf-maroon)' }}
+                  >
+                    {product.badge}
+                  </span>
+                )}
+
+                {hasDiscount && (
+                  <span
+                    className="absolute top-3 right-3 rounded-full px-2.5 py-1 text-[10px] font-bold tracking-wide text-white pointer-events-none"
+                    style={{ background: 'var(--sf-gold-deep)' }}
+                  >
+                    -{discountPct}%
+                  </span>
+                )}
+
+                <span
+                  className="absolute right-3 bottom-3 rounded-full px-2.5 py-1 text-[10px] tracking-wide pointer-events-none"
+                  style={{ background: 'oklch(1 0 0 / 88%)', color: 'var(--sf-heading)' }}
+                >
+                  #{product.code}
+                </span>
+              </>
+            }
+          />
         </a>
-
-        {product.badge && (
-          <span
-            className="absolute top-3 left-3 rounded-full px-2.5 py-1 text-[10px] font-semibold tracking-[0.14em] text-white uppercase"
-            style={{ background: 'var(--sf-maroon)' }}
-          >
-            {product.badge}
-          </span>
-        )}
-
-        <span
-          className="absolute right-3 bottom-3 rounded-full px-2.5 py-1 text-[10px] tracking-wide"
-          style={{ background: 'oklch(1 0 0 / 88%)', color: 'var(--sf-heading)' }}
-        >
-          #{product.code}
-        </span>
       </div>
 
       <div className="flex flex-1 flex-col p-4">
@@ -93,9 +93,23 @@ export default function ProductCard({
         )}
 
         <div className="mt-auto flex items-end justify-between gap-3 border-t border-line pt-3">
-          <p className="tnum text-lg font-semibold" style={{ color: 'var(--sf-maroon)' }}>
-            {rupees(product.price)}
-          </p>
+          <div>
+            <div className="flex items-baseline gap-2">
+              <p className="tnum text-lg font-semibold" style={{ color: 'var(--sf-maroon)' }}>
+                {rupees(product.price)}
+              </p>
+              {hasDiscount && (
+                <p className="tnum text-xs line-through decoration-1 decoration-dashed" style={{ color: 'var(--sf-muted)' }}>
+                  {rupees(product.originalPrice)}
+                </p>
+              )}
+            </div>
+            {hasDiscount && (
+              <p className="mt-0.5 text-[10px] font-semibold" style={{ color: 'var(--sf-gold-deep)' }}>
+                Save {rupees(product.originalPrice - product.price)}
+              </p>
+            )}
+          </div>
           <button
             type="button"
             onClick={() => add(product)}

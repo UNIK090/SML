@@ -11,6 +11,8 @@ export type Item = {
   /** Image bytes are never placed in catalogue JSON; this flags the image endpoint. */
   image: boolean
   imageVersion: string
+  /** Total number of images (1 = the legacy primary only; >1 includes gallery rows). */
+  imageCount: number
   // --- Storefront ---------------------------------------------------------
   /** True when the item is listed on the public website. */
   published: boolean
@@ -22,6 +24,16 @@ export type Item = {
   featured: number
 }
 
+/** Lightweight list entry returned by the per-item images endpoint. */
+export type ItemImage = {
+  id: number
+  displayOrder: number
+  byteSize: number
+  mimeType: string
+  /** ISO timestamp used as a cache-buster when fetching the bytes. */
+  version: string
+}
+
 /** A product as the public storefront is allowed to see it. */
 export type StoreProduct = {
   /** Catalogue code — the id used when adding to the basket. */
@@ -31,9 +43,14 @@ export type StoreProduct = {
   collection: string
   description: string | null
   badge: string | null
+  /** Current selling price (discounted price when on sale, else reference price). */
   price: number
+  /** Original catalogue price. Differs from `price` when a website discount is active. */
+  originalPrice: number
   image: boolean
   imageVersion: string
+  /** Total images available for the gallery slider (1 = hero only, 0 = no image). */
+  imageCount: number
 }
 
 export type StoreCatalogue = {

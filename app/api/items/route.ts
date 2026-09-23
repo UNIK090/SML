@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server'
-import { desc, eq, ilike, or, sql } from 'drizzle-orm'
+import { count, desc, eq, ilike, or, sql } from 'drizzle-orm'
 import { db } from '@/lib/db'
 import { isConnectionError, isUniqueViolation } from '@/lib/db/errors'
 import { requireAdmin } from '@/lib/db/guard'
-import { inventoryItems } from '@/lib/db/schema'
+import { inventoryItemImages, inventoryItems } from '@/lib/db/schema'
 
 // Never include base64 image data in the catalogue list: a grid of product
 // cards should stay fast even when each item has a photo. The image endpoint
@@ -47,9 +47,38 @@ type SelectedItem = {
   featured: number
 }
 
-function itemResponse(item: SelectedItem) {
+async function imageCountsByItemId(): Promise<Map<number, number>> {
+  try {
+    const rows = await db
+      .select({ itemId: inventoryItemImages.itemId, count: count(inventoryItemImages.id) })
+      .from(inventoryItemImages)
+      .groupBy(inventoryItemImages.itemId)
+    const map = new Map<number, number>()
+    for (const row of rows) map.set(Number(row.itemId), Number(row.count))
+    return map
+  } catch {
+    // Migration may not have been applied yet; fail open with zero gallery counts
+    // so the Items list loads using the legacy primary image only.
+    return new Map()
+  }
+}
+
+function baseItemResponse(item: SelectedItem) {
   const { imageMimeType, imageByteSize, updatedAt, ...safe } = item
   return { ...safe, image: Boolean(imageMimeType && imageByteSize), imageVersion: updatedAt.toISOString() }
+}
+
+async function enrichWithImageCount<T extends { id: number; image: boolean }>(rows: T[]): Promise<(T & { imageCount: number })[]> {
+  try {
+    const counts = await imageCountsByItemId()
+    return rows.map((row) => {
+      const galleryCount = counts.get(row.id) ?? 0
+      return { ...row, imageCount: row.image ? galleryCount + 1 : galleryCount }
+    })
+  } catch (error) {
+    console.error('[items] image-count enrichment failed, falling back to legacy counts:', error)
+    return rows.map((row) => ({ ...row, imageCount: row.image ? 1 : 0 }))
+  }
 }
 
 /**
@@ -97,14 +126,14 @@ export async function GET(request: Request) {
 
     if (code) {
       const rows = await db.select(itemFields).from(inventoryItems).where(eq(inventoryItems.code, Number(code)))
-      return NextResponse.json(rows.map(itemResponse))
+      return NextResponse.json(await enrichWithImageCount(rows.map(baseItemResponse)))
     }
 
     // A scanner sends the raw barcode string; match it exactly so an EAN/UPC
     // value with leading zeroes resolves to the right catalogue item.
     if (barcode) {
       const rows = await db.select(itemFields).from(inventoryItems).where(eq(inventoryItems.barcode, barcode))
-      return NextResponse.json(rows.map(itemResponse))
+      return NextResponse.json(await enrichWithImageCount(rows.map(baseItemResponse)))
     }
 
     // Free-text search across name and category, so staff are not required to
@@ -125,11 +154,11 @@ export async function GET(request: Request) {
         )
         .orderBy(inventoryItems.name)
         .limit(20)
-      return NextResponse.json(items.map(itemResponse))
+      return NextResponse.json(await enrichWithImageCount(items.map(baseItemResponse)))
     }
 
     const items = await db.select(itemFields).from(inventoryItems).orderBy(desc(inventoryItems.updatedAt))
-    return NextResponse.json(items.map(itemResponse))
+    return NextResponse.json(await enrichWithImageCount(items.map(baseItemResponse)))
   } catch (error) {
     console.error('[v0] Failed to load catalogue items:', error)
     if (isConnectionError(error)) {
@@ -160,7 +189,8 @@ export async function PATCH(request: Request) {
       .where(eq(inventoryItems.id, id))
       .returning(itemFields)
     if (!item) return NextResponse.json({ error: 'Catalogue item not found.' }, { status: 404 })
-    return NextResponse.json(itemResponse(item))
+    const [enriched] = await enrichWithImageCount([baseItemResponse(item)])
+    return NextResponse.json(enriched)
   } catch (error) {
     console.error('[v0] Failed to update catalogue item:', error)
     if (isUniqueViolation(error)) {
@@ -212,7 +242,8 @@ export async function POST(request: Request) {
       .insert(inventoryItems)
       .values({ code, barcode, name, category, price: price.toFixed(2), ...store.patch })
       .returning(itemFields)
-    return NextResponse.json(itemResponse(item), { status: 201 })
+    const [enriched] = await enrichWithImageCount([baseItemResponse(item)])
+    return NextResponse.json(enriched, { status: 201 })
   } catch (error) {
     console.error('[v0] Failed to add catalogue item:', error)
     if (isUniqueViolation(error)) {

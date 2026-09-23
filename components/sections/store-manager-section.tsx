@@ -215,7 +215,7 @@ export default function StoreManagerSection({ items, loading, refresh }: { items
       <Card className="business-primary-card">
         <SectionHeading
           title="Publish and price your pieces"
-          description="Turn a piece on to put it on the website. The website price is optional — leave it blank and the reference price is used."
+          description="Turn a piece on to put it on the website. Set a discounted/sale price below to show it on the store page with the original price struck through. Leave it blank to use the reference price."
         />
 
         <div className="mb-5 flex-wrap items-end gap-3">
@@ -282,9 +282,20 @@ export default function StoreManagerSection({ items, loading, refresh }: { items
                       </div>
 
                       <div className="shrink-0 text-right">
-                        <p className="tnum text-sm font-semibold">{money(websitePrice)}</p>
+                        <p className="tnum text-sm font-semibold">
+                          {overridden ? (
+                            <>
+                              <span>{money(websitePrice)}</span>
+                              <span className="ml-2 text-[11px] font-normal text-muted-foreground line-through decoration-1 decoration-dashed">
+                                {money(Number(item.price))}
+                              </span>
+                            </>
+                          ) : (
+                            money(websitePrice)
+                          )}
+                        </p>
                         <p className="text-[10px] text-muted-foreground">
-                          {overridden ? `Website price · ${money(Number(item.price))} in shop` : 'Using reference price'}
+                          {overridden ? `Discounted price · Original in shop: ${money(Number(item.price))}` : 'Using reference price (no discount)'}
                         </p>
                       </div>
 
@@ -315,7 +326,7 @@ export default function StoreManagerSection({ items, loading, refresh }: { items
 
                     {editing?.id === item.id && (
                       <form onSubmit={saveDraft} className="animate-rise-in mt-4 grid gap-4 rounded-2xl border-hairline bg-secondary/60 p-5 sm:grid-cols-2">
-                        <Field label="Website price" hint={`Leave blank to use ${money(Number(item.price))}`}>
+                        <Field label="Discounted / Sale Price" hint={`Set a lower price here to show a discount on the store page. Leave blank to use original price ${money(Number(item.price))}`}>
                           <Input
                             type="number"
                             min="0"
