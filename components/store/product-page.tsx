@@ -7,11 +7,12 @@
 // sent — to a mother, a husband, a group — and a shared link should show that
 // piece rather than a grid the recipient has to search inside.
 //
-// It does the three things a recipient needs, in order:
+// Does the three things a recipient needs, in order:
 //
 //   1. See the piece at a size worth looking at, with the price in the clear.
 //   2. Ask the shop about it, on WhatsApp or by phone, without leaving the page.
-//   3. Order it, or send it on to somebody else with the same link.
+//   3. Order it, or browse on — the recommendation rail underneath carries the
+//      similar pieces and the shop's real best sellers, ranked from actual sales.
 //
 // The route is public. The endpoint behind it checks `published`, so a piece the
 // shop has withdrawn says so plainly instead of 404-ing.
@@ -24,18 +25,20 @@ import {
   ArrowRight,
   BadgeCheck,
   Check,
+  Flame,
   Gem,
   Package,
   Phone,
   ShieldCheck,
   ShoppingBag,
+  Sparkles,
   Truck,
 } from 'lucide-react'
 import { ProductMedia } from '@/components/store/product-card'
-import ShareMenu from '@/components/store/share-menu'
+import ShareMenu, { WhatsAppMark } from '@/components/store/share-menu'
 import { useApi } from '@/lib/use-api'
 import { rupees, telLink, whatsappLink } from '@/lib/store'
-import type { StoreProductLink } from '@/lib/types'
+import type { ProductRecommendation, StoreProductLink } from '@/lib/types'
 
 export default function ProductPage({ code }: { code: number }) {
   const { data, isLoading, error } = useApi<StoreProductLink>(`/api/store/product?code=${code}`)
@@ -67,8 +70,8 @@ export default function ProductPage({ code }: { code: number }) {
   if (isLoading) {
     return (
       <main className="sf-canvas min-h-screen px-4 py-16 sm:px-7">
-        <div className="mx-auto grid w-full max-w-[1200px] gap-8 lg:grid-cols-2">
-          <div className="aspect-[4/5] animate-pulse rounded-xl border border-line bg-white" />
+        <div className="mx-auto grid w-full max-w-[1100px] items-start gap-8 lg:grid-cols-[minmax(0,.85fr)_minmax(0,1fr)] lg:gap-12">
+          <div className="aspect-square animate-pulse rounded-xl border border-line bg-white" />
           <div className="space-y-4">
             <div className="h-3 w-24 animate-pulse rounded bg-cream-soft" />
             <div className="h-8 w-2/3 animate-pulse rounded bg-cream-soft" />
@@ -136,12 +139,19 @@ export default function ProductPage({ code }: { code: number }) {
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-[1200px] px-4 py-10 sm:px-7">
-        <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,.92fr)] lg:gap-12">
+      <main className="mx-auto w-full max-w-[1100px] px-4 py-10 sm:px-7">
+        <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,.85fr)_minmax(0,1fr)] lg:gap-12">
           {/* ------------------------------ The piece ------------------------------ */}
           <div>
-            <div className="sf-card overflow-hidden">
-              <div className="sf-card-media relative aspect-[4/5]">
+            {/*
+              Kept to a square rather than a tall portrait. A 4:5 card pushed
+              the price, the buy button and the shop's details far enough down
+              the page that a customer on a phone had to scroll to find them,
+              and a small piece of jewellery in a large frame reads as less
+              valuable, not more.
+            */}
+            <div className="sf-card mx-auto w-full max-w-[26rem] overflow-hidden lg:max-w-none">
+              <div className="sf-card-media relative aspect-square">
                 <ProductMedia product={product} className="size-full" />
                 {product.badge && (
                   <span
@@ -162,6 +172,7 @@ export default function ProductPage({ code }: { code: number }) {
                 label="Share this piece"
                 className=""
                 buttonClassName="sf-btn sf-btn-ghost h-10 px-4 text-xs"
+                icon={<WhatsAppMark />}
               />
               {whatsapp && (
                 <a href={whatsapp} target="_blank" rel="noreferrer" className="sf-btn sf-btn-ghost h-10 px-4 text-xs">
@@ -174,8 +185,6 @@ export default function ProductPage({ code }: { code: number }) {
               {[
                 { icon: ShieldCheck, text: 'The shop confirms every order by phone' },
                 { icon: Truck, text: 'Delivery arranged by the shop' },
-                { icon: Package, text: 'Gift packing on request' },
-                { icon: Check, text: 'No payment taken on the website' },
               ].map((item) => (
                 <li key={item.text} className="flex items-start gap-2 text-xs leading-5">
                   <item.icon className="mt-0.5 size-3.5 shrink-0" style={{ color: 'var(--sf-gold-deep)' }} />
@@ -210,6 +219,18 @@ export default function ProductPage({ code }: { code: number }) {
               </button>
             </div>
 
+            <ul className="mt-4 grid gap-2 sm:grid-cols-2">
+              {[
+                { icon: Package, text: 'Gift packing on request' },
+                { icon: Check, text: 'No payment taken on the website' },
+              ].map((item) => (
+                <li key={item.text} className="flex items-start gap-2 text-xs leading-5">
+                  <item.icon className="mt-0.5 size-3.5 shrink-0" style={{ color: 'var(--sf-gold-deep)' }} />
+                  {item.text}
+                </li>
+              ))}
+            </ul>
+
             {/* The shop, so a recipient of a shared link can reach a human. */}
             <div className="sf-card mt-6 p-5">
               <p className="text-[10px] font-semibold tracking-[0.18em] uppercase" style={{ color: 'var(--sf-heading)' }}>
@@ -231,38 +252,140 @@ export default function ProductPage({ code }: { code: number }) {
               </div>
             </div>
 
-            {/* More from the same shelf, so the piece is not a dead end. */}
-            {data && data.related.length > 0 && (
-              <div className="mt-6">
-                <p className="text-[10px] font-semibold tracking-[0.18em] uppercase" style={{ color: 'var(--sf-heading)' }}>
-                  More from {product.collection}
-                </p>
-                <div className="mt-3 grid grid-cols-2 gap-3">
-                  {data.related.map((entry) => (
-                    <Link
-                      key={entry.code}
-                      href={`/product/${encodeURIComponent(String(entry.code))}`}
-                      className="sf-card group flex items-center gap-3 p-2.5"
-                    >
-                      <span className="block size-14 shrink-0 overflow-hidden rounded-lg bg-cream-soft">
-                        <ProductMedia product={entry} className="size-full" />
-                      </span>
-                      <span className="min-w-0">
-                        <span className="block truncate text-xs font-medium" style={{ color: 'var(--sf-heading)' }}>
-                          {entry.name}
-                        </span>
-                        <span className="tnum block text-[11px]" style={{ color: 'var(--sf-maroon)' }}>
-                          {rupees(entry.price)}
-                        </span>
-                      </span>
-                    </Link>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
         </div>
+
+        {/* -------------------------- Recommendations -------------------------- */}
+        <RecommendationRail recommendations={data?.related ?? []} hasSalesData={data?.hasSalesData ?? false} />
       </main>
     </div>
+  )
+}
+
+/**
+ * The rail under a piece: what is similar, and what the shop actually sells.
+ *
+ * Two rules govern the labelling, and both matter more than the layout:
+ *
+ *   1. A piece is never called a best seller unless it genuinely sold. When the
+ *      shop is new the rail is still full, but the pieces are labelled as
+ *      suggestions — a false "best seller" is a lie the shopkeeper has to answer
+ *      for at the counter.
+ *   2. The best sellers are shown as a group in their own band, above the rest,
+ *      because that is the order a customer actually wants: the thing they were
+ *      looking at, then the thing everybody else bought, then everything else.
+ *
+ * It is a horizontal scroll on a phone, where a two-column grid would either
+ * truncate the names or produce a card too small to judge a piece by, and a
+ * four-across grid from tablet up.
+ */
+function RecommendationRail({
+  recommendations,
+  hasSalesData,
+}: {
+  recommendations: ProductRecommendation[]
+  hasSalesData: boolean
+}) {
+  if (recommendations.length === 0) return null
+
+  const bestSellers = recommendations.filter((entry) => entry.reason === 'best-seller')
+  const suggestions = recommendations.filter((entry) => entry.reason !== 'best-seller')
+
+  return (
+    <section className="mt-14 border-t border-line pt-10" aria-label="More pieces to consider">
+      {bestSellers.length > 0 && (
+        <div>
+          <RailHeading
+            icon={<Flame className="size-3.5" />}
+            title="Most sold at this shop"
+            hint="Ranked from real sales, over the counter and online."
+          />
+          <Rail entries={bestSellers} className="mt-5" />
+        </div>
+      )}
+
+      <div className={bestSellers.length > 0 ? 'mt-10' : ''}>
+        <RailHeading
+          icon={hasSalesData ? <Sparkles className="size-3.5" /> : <Gem className="size-3.5" />}
+          title={hasSalesData ? 'You may also like' : 'More from this shop'}
+          hint={
+            hasSalesData
+              ? 'Similar pieces from the same shelf.'
+              : 'The shop has not recorded sales online yet, so these are suggestions rather than best sellers.'
+          }
+        />
+        <Rail entries={suggestions} className="mt-5" />
+      </div>
+    </section>
+  )
+}
+
+function RailHeading({ icon, title, hint }: { icon: React.ReactNode; title: string; hint: string }) {
+  return (
+    <header className="flex flex-wrap items-end justify-between gap-3">
+      <div>
+        <p className="sf-eyebrow">
+          {icon}
+          {title}
+        </p>
+        <p className="mt-2 text-xs leading-5" style={{ color: 'var(--sf-muted)' }}>
+          {hint}
+        </p>
+      </div>
+      <Link href="/#store" className="text-xs font-semibold transition hover:underline" style={{ color: 'var(--sf-maroon)' }}>
+        See everything <ArrowRight className="inline size-3" />
+      </Link>
+    </header>
+  )
+}
+
+function Rail({ entries, className = '' }: { entries: ProductRecommendation[]; className?: string }) {
+  if (entries.length === 0) return null
+  return (
+    <ul
+      className={`-mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-2 sm:mx-0 sm:grid sm:grid-cols-3 sm:overflow-visible sm:px-0 lg:grid-cols-4 ${className}`}
+    >
+      {entries.map((entry) => (
+        <li key={entry.product.code} className="w-[9.5rem] shrink-0 snap-start sm:w-auto">
+          <RecommendationCard entry={entry} />
+        </li>
+      ))}
+    </ul>
+  )
+}
+
+function RecommendationCard({ entry }: { entry: ProductRecommendation }) {
+  const { product, sold, reason } = entry
+
+  return (
+    <Link
+      href={`/product/${encodeURIComponent(String(product.code))}`}
+      className="sf-card sf-card-sheen group flex h-full flex-col overflow-hidden"
+    >
+      <span className="sf-card-media relative block aspect-square overflow-hidden">
+        <ProductMedia product={product} className="size-full" />
+        {reason === 'best-seller' && (
+          <span
+            className="absolute top-2 left-2 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[9px] font-semibold tracking-[0.1em] uppercase"
+            style={{ background: 'var(--sf-maroon)', color: '#fff' }}
+          >
+            <Flame className="size-2.5" />
+            {sold > 1 ? `${sold} sold` : 'Popular'}
+          </span>
+        )}
+      </span>
+
+      <span className="flex flex-1 flex-col p-3">
+        <span className="text-[9px] font-semibold tracking-[0.16em] uppercase" style={{ color: 'var(--sf-gold-deep)' }}>
+          {product.collection}
+        </span>
+        <span className="mt-1 line-clamp-2 text-xs leading-5 font-medium" style={{ color: 'var(--sf-heading)' }}>
+          {product.name}
+        </span>
+        <span className="tnum mt-auto pt-2 text-sm font-semibold" style={{ color: 'var(--sf-maroon)' }}>
+          {rupees(product.price)}
+        </span>
+      </span>
+    </Link>
   )
 }

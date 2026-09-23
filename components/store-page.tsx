@@ -477,25 +477,55 @@ function ShopWindow() {
           </header>
 
           {/* Filters */}
-          <div className="mb-8 flex flex-col gap-4" data-reveal="up">
+          <div className="mb-6 flex flex-col gap-3" data-reveal="up">
             <label className="relative block">
-              <Search className="pointer-events-none absolute top-1/2 left-4 size-4 -translate-y-1/2" style={{ color: 'var(--sf-gold-deep)' }} />
+              <Search className="pointer-events-none absolute top-1/2 left-3.5 size-3.5 -translate-y-1/2" style={{ color: 'var(--sf-gold-deep)' }} />
               <input
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
                 placeholder="Search by name, category, or code — e.g. one-gram, panchaloha, silver"
-                className="h-13 w-full rounded-lg border border-line bg-white pr-4 pl-11 text-sm transition focus:border-gold"
+                className="h-11 w-full rounded-lg border border-line bg-white pr-3.5 pl-10 text-[13px] transition focus:border-gold"
                 style={{ color: 'var(--sf-heading)' }}
               />
             </label>
 
+            {/*
+              The collection filter. Each chip carries its own count, so a
+              customer can see that a shelf has two pieces in it before tapping
+              it and finding an almost-empty grid.
+            */}
             {data && data.collections.length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                {['All', ...data.collections.map((entry) => entry.name)].map((name) => (
-                  <button key={name} onClick={() => setCollection(name)} data-active={collection === name} className="sf-chip">
-                    {name}
+              <div className="flex flex-wrap items-center gap-1.5">
+                <button
+                  onClick={() => setCollection('All')}
+                  data-active={collection === 'All'}
+                  className="sf-chip"
+                >
+                  All<span className="sf-chip-count">{products.length}</span>
+                </button>
+
+                {data.collections.map((entry) => (
+                  <button
+                    key={entry.name}
+                    onClick={() => setCollection(entry.name)}
+                    data-active={collection === entry.name}
+                    aria-pressed={collection === entry.name}
+                    className="sf-chip"
+                  >
+                    {entry.name}
+                    <span className="sf-chip-count">{entry.count}</span>
                   </button>
                 ))}
+
+                {collection !== 'All' && (
+                  <button
+                    onClick={() => setCollection('All')}
+                    className="ml-0.5 text-[11px] transition hover:underline"
+                    style={{ color: 'var(--sf-muted)' }}
+                  >
+                    Clear
+                  </button>
+                )}
               </div>
             )}
           </div>

@@ -45,15 +45,30 @@ export type StoreCatalogue = {
 }
 
 /**
+ * One entry in the recommendation rail under a piece.
+ *
+ * `reason` is carried through to the page on purpose: a shop that has not sold
+ * much yet still needs a full rail, and the label has to be true. A piece can
+ * only be called a best seller when it actually sold.
+ */
+export type ProductRecommendation = {
+  product: StoreProduct
+  sold: number
+  reason: 'similar' | 'best-seller' | 'featured'
+}
+
+/**
  * What a shared product link (`/product/1042`) loads.
  *
  * One piece plus enough context to be a landing page for somebody who has never
- * seen the shop: the shop details, and a short rail from the same collection.
+ * seen the shop: the shop details, and the recommendation rail underneath.
  */
 export type StoreProductLink = {
   shop: Shop & { tagline: string | null; whatsapp: string | null; storeHours: string | null }
   product: StoreProduct
-  related: StoreProduct[]
+  related: ProductRecommendation[]
+  /** True when at least one recommendation is backed by a real sale. */
+  hasSalesData: boolean
   updatedAt: string
 }
 

@@ -11,7 +11,7 @@ import { useState, type ReactNode } from 'react'
 import { ArrowRight, Check, Loader2, Minus, Plus, ShoppingBag, Trash2, X } from 'lucide-react'
 import { useCart } from '@/components/store/cart'
 import { ProductMedia } from '@/components/store/product-card'
-import ShareMenu from '@/components/store/share-menu'
+import ShareMenu, { WhatsAppMark } from '@/components/store/share-menu'
 import { DELIVERY_FEE, FREE_DELIVERY_ABOVE, deliveryFeeFor, rupees, rupeesExact, telLink, whatsappLink } from '@/lib/store'
 import type { Shop, StoreProduct } from '@/lib/types'
 
@@ -195,6 +195,7 @@ export default function CartDrawer({
                           whatsapp={shop?.whatsapp ?? shop?.phone}
                           label=""
                           buttonClassName="flex size-7 items-center justify-center rounded-lg transition hover:bg-cream"
+                          icon={<WhatsAppMark />}
                         />
                       )}
                     </div>

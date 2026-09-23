@@ -3,7 +3,7 @@ import { and, eq } from 'drizzle-orm'
 import { db } from '@/lib/db'
 import { inventoryItems } from '@/lib/db/schema'
 import { isConnectionError } from '@/lib/db/errors'
-import { latestAssetVersion, listPublishedProducts, productFields, sameCollection, toStoreProduct } from '@/lib/catalogue'
+import { latestAssetVersion, listPublishedProducts, productFields, recommend, soldQuantities, toStoreProduct } from '@/lib/catalogue'
 import { getShopDetails } from '@/lib/shop'
 import type { StoreProductLink } from '@/lib/types'
 
@@ -11,11 +11,14 @@ import type { StoreProductLink } from '@/lib/types'
 //
 // A customer shares one piece, not the whole shop, so the shared page must load
 // without dragging in the full catalogue. It still returns the shop details (the
-// page is a landing page for someone who has never seen the store) and a short
-// "more from this collection" rail, so the recipient has somewhere to go next.
+// page is a landing page for someone who has never seen the store) and the
+// recommendation rail underneath, so the recipient has somewhere to go next.
 //
 // Same security boundary as the grid: the row must exist AND be published. An
 // unpublished code returns 404 rather than an empty product.
+
+/** How many pieces the rail under the product offers. */
+const RECOMMENDATION_LIMIT = 8
 
 export const dynamic = 'force-dynamic'
 
@@ -35,13 +38,17 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'This piece is no longer available on the website.' }, { status: 404 })
     }
 
-    const [shop, products] = await Promise.all([getShopDetails(), listPublishedProducts()])
+    // The recommendations are ranked from real sales, so the count is fetched
+    // alongside the catalogue rather than derived from anything on the client.
+    const [shop, products, sold] = await Promise.all([getShopDetails(), listPublishedProducts(), soldQuantities()])
     const product = toStoreProduct(row)
+    const related = recommend(products, product, sold, RECOMMENDATION_LIMIT)
 
     const body: StoreProductLink = {
       shop,
       product,
-      related: sameCollection(products, product),
+      related,
+      hasSalesData: related.some((entry) => entry.sold > 0),
       updatedAt: latestAssetVersion(products, null),
     }
 

@@ -10,7 +10,7 @@ import { Check, Gem, MessageCircle, Plus } from 'lucide-react'
 import type { StoreProduct } from '@/lib/types'
 import { rupees, whatsappLink } from '@/lib/store'
 import { useCart } from '@/components/store/cart'
-import ShareMenu from '@/components/store/share-menu'
+import ShareMenu, { WhatsAppMark } from '@/components/store/share-menu'
 
 export function ProductMedia({ product, className = '' }: { product: StoreProduct; className?: string }) {
   if (!product.image) {
@@ -71,15 +71,6 @@ export default function ProductCard({
           </span>
         )}
 
-        <ShareMenu
-          product={product}
-          shopName={shopName}
-          whatsapp={whatsapp}
-          label=""
-          className="absolute top-3 right-3"
-          buttonClassName="sf-share-fab size-8"
-        />
-
         <span
           className="absolute right-3 bottom-3 rounded-full px-2.5 py-1 text-[10px] tracking-wide"
           style={{ background: 'oklch(1 0 0 / 88%)', color: 'var(--sf-heading)' }}
@@ -117,19 +108,31 @@ export default function ProductCard({
           </button>
         </div>
 
-        {/* The piece's own page is where a customer asks about it, so the card
-            keeps one quiet action and the photo carries the navigation. */}
-        {enquiry && (
-          <a
-            href={enquiry}
-            target="_blank"
-            rel="noreferrer"
-            className="mt-3 inline-flex w-fit items-center gap-1.5 text-xs font-medium transition hover:underline"
-            style={{ color: 'var(--sf-maroon)' }}
-          >
-            <MessageCircle className="size-3.5" /> Ask about this piece
-          </a>
-        )}
+        {/* Two quiet actions under the piece: ask the shop about it, or send it
+            on to somebody. The photo above keeps only its badge and code, so
+            the jewellery itself is never covered up. */}
+        <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
+          {enquiry && (
+            <a
+              href={enquiry}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex w-fit items-center gap-1.5 text-xs font-medium transition hover:underline"
+              style={{ color: 'var(--sf-maroon)' }}
+            >
+              <MessageCircle className="size-3.5" /> Ask about this piece
+            </a>
+          )}
+
+          <ShareMenu
+            product={product}
+            shopName={shopName}
+            whatsapp={whatsapp}
+            label="Share"
+            buttonClassName="inline-flex w-fit items-center gap-1.5 text-xs font-medium transition hover:underline"
+            icon={<WhatsAppMark className="size-3.5" />}
+          />
+        </div>
       </div>
     </article>
   )

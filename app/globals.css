@@ -879,12 +879,13 @@
 .sf-chip {
   display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
+  gap: 0.3rem;
   border: 1px solid var(--sf-line-strong);
   border-radius: 999px;
   background: var(--sf-surface);
-  padding: 0.42rem 0.95rem;
-  font-size: 0.75rem;
+  padding: 0.24rem 0.6rem;
+  font-size: 0.68rem;
+  line-height: 1.25;
   letter-spacing: 0.02em;
   color: var(--sf-heading);
   transition: border-color 160ms ease, background 160ms ease, color 160ms ease, transform 160ms ease;
@@ -901,6 +902,16 @@
   background: var(--sf-maroon);
   color: #fff;
 }
+
+/* The count inside a filter chip. Kept quiet so the collection name is what the
+   eye lands on, but present, because "PANCHALOHAM 2" answers "is this shelf
+   worth opening?" before the customer has to tap it. */
+.sf-chip-count {
+  opacity: 0.6;
+  font-variant-numeric: tabular-nums;
+}
+
+.sf-chip[data-active='true'] .sf-chip-count { opacity: 0.8; }
 
 /* Round "shop by" shortcuts, as every counter site uses. */
 .sf-circle {
@@ -1026,23 +1037,24 @@
 /* ==========================================================================
    Storefront · Sharing a piece
    --------------------------------------------------------------------------
-   The share control sits on the product photo and keeps to itself until the
-   customer reaches for it, so a grid of cards stays quiet.
+   The share control sits in the action row UNDER the piece, not on the photo,
+   so the jewellery itself is never covered up. It reads as a quiet text action
+   next to "Ask about this piece", and only its panel draws attention.
    ========================================================================== */
 
-.sf-share-fab {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 999px;
-  background: oklch(1 0 0 / 92%);
-  color: var(--sf-heading);
-  box-shadow: 0 4px 12px oklch(0.3 0.04 60 / 18%);
-  backdrop-filter: blur(6px);
-  transition: background 160ms ease, color 160ms ease, transform 160ms ease, opacity 180ms ease;
+/* The WhatsApp mark is a filled glyph, so it needs no stroke width and sits on
+   the text baseline without nudging the label up. */
+.sf-share-mark {
+  display: block;
+  flex-shrink: 0;
 }
 
-.sf-share-fab:hover { background: var(--sf-maroon); color: #fff; transform: translateY(-1px); }
+/* The panel is anchored to the control, which may sit anywhere in a wrapping
+   row. Aligning it left keeps it inside the card rather than hanging off it. */
+.sf-share-panel {
+  left: 0;
+  right: auto;
+}
 
 
 /* ==========================================================================
