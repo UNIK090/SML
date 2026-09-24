@@ -23,6 +23,21 @@ CREATE UNIQUE INDEX IF NOT EXISTS inventory_items_barcode_unique
 ALTER TABLE inventory_items ADD COLUMN IF NOT EXISTS image_mime_type text;
 ALTER TABLE inventory_items ADD COLUMN IF NOT EXISTS image_data text;
 ALTER TABLE inventory_items ADD COLUMN IF NOT EXISTS image_byte_size integer;
+-- Extra gallery shots for one item. These three image_* columns above are the
+-- item's PRIMARY photo and are always shown first; every other photo a shop
+-- uploads lives here, ordered by display_order. Bytes in the database for the
+-- same read-only-disk reason as above.
+CREATE TABLE IF NOT EXISTS inventory_item_images (
+  id            serial PRIMARY KEY,
+  item_id       integer NOT NULL REFERENCES inventory_items(id) ON DELETE CASCADE,
+  display_order integer NOT NULL DEFAULT 0,
+  mime_type     text NOT NULL,
+  data          text NOT NULL,
+  byte_size     integer NOT NULL,
+  created_at    timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS inventory_item_images_item_order_idx
+  ON inventory_item_images (item_id, display_order);
 
 CREATE TABLE IF NOT EXISTS billing_transactions (
   id              serial PRIMARY KEY,

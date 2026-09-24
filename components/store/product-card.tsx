@@ -63,7 +63,7 @@ export default function ProductCard({
                     className="absolute top-3 right-3 rounded-full px-2.5 py-1 text-[10px] font-bold tracking-wide text-white pointer-events-none"
                     style={{ background: 'var(--sf-gold-deep)' }}
                   >
-                    -{discountPct}%
+                    –{discountPct}%
                   </span>
                 )}
 

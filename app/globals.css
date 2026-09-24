@@ -1226,3 +1226,64 @@
     animation: none !important;
   }
 }
+/* ==========================================================================
+   Storefront · Product photo gallery
+   --------------------------------------------------------------------------
+   The large photo, its arrows and the thumbnail strip. Shown only when a piece
+   has more than one photo — a single-photo product is unchanged by all of this.
+   ========================================================================== */
+
+/* Arrows sit over the photo, faded until the pointer is on the frame, so a
+   piece of jewellery is never permanently covered by chrome. They stay visible
+   on touch devices, which have no hover to reveal them. */
+.sf-gallery-arrow {
+  position: absolute;
+  top: 50%;
+  display: flex;
+  width: 2.25rem;
+  height: 2.25rem;
+  align-items: center;
+  justify-content: center;
+  transform: translateY(-50%);
+  border: 1px solid var(--sf-line);
+  border-radius: 999px;
+  background: oklch(1 0 0 / 92%);
+  color: var(--sf-heading);
+  box-shadow: 0 6px 16px oklch(0.4 0.05 70 / 14%);
+  opacity: 0;
+  transition: opacity 180ms ease, border-color 160ms ease, background 160ms ease, color 160ms ease;
+}
+
+.sf-gallery-arrow:hover:not(:disabled) {
+  border-color: var(--sf-gold-deep);
+  background: var(--sf-gold-wash);
+  color: var(--sf-maroon);
+}
+
+/* A disabled arrow stays faintly visible rather than vanishing, so the pair
+   does not jump around as the customer reaches either end of the gallery. */
+.sf-gallery-arrow:disabled {
+  cursor: not-allowed;
+  opacity: 0.3;
+  pointer-events: none;
+}
+
+/* Reveal on hover or when the gallery has keyboard focus, so a keyboard user
+   can actually see the control they are tabbing to. */
+.sf-card-media:hover .sf-gallery-arrow,
+.group:hover .sf-gallery-arrow,
+[role='group']:hover .sf-gallery-arrow,
+[role='group']:focus-within .sf-gallery-arrow {
+  opacity: 1;
+}
+
+/* Arrows are the only gallery control, so they must never be invisible on a
+   touch device, where there is no hover to reveal them. */
+@media (hover: none) {
+  .sf-gallery-arrow {
+    opacity: 1;
+  }
+  .sf-gallery-arrow:disabled {
+    opacity: 0.3;
+  }
+}

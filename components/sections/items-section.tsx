@@ -8,6 +8,7 @@
 import { useCallback, useMemo, useState } from 'react'
 import { Gem, ImagePlus, Loader2, Pencil, Plus, Search, Trash2, X } from 'lucide-react'
 import { Button, Card, EmptyState, Field, Input, Notice, SectionHeading, Skeleton, StatCard, WorkspaceHero, money } from '@/components/ui'
+import ImageGalleryManager from '@/components/sections/image-gallery-manager'
 import { usePreferences } from '@/components/preferences'
 import type { Item } from '@/lib/types'
 
@@ -268,6 +269,16 @@ export default function ItemsSection({ items, loading, refresh }: { items: Item[
                 </div>
               </Field>
             </div>
+
+            {/*
+              Extra photos for this piece. Shown only while editing, because
+              photos cannot be attached to a catalogue row that does not exist
+              yet — the item is saved first, then the gallery appears.
+            */}
+            {editing && (
+              <ImageGalleryManager itemId={editing.id} itemName={editing.name} hasCover={editing.image} />
+            )}
+
             <div className="flex gap-2 sm:col-span-2">
               <Button type="submit" variant="gold" disabled={saving}>
                 {saving ? t('common.saving') : editing ? t('items.update') : t('items.save')}

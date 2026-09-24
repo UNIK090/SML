@@ -37,6 +37,14 @@ export type StoreProduct = {
   originalPrice: number
   image: boolean
   imageVersion: string
+  /**
+   * Total photos on this piece, counting the cover. 1 means cover only.
+   *
+   * The bytes never travel in the catalogue JSON — this is the count the
+   * gallery needs to decide whether to show thumbnails at all, and to know how
+   * many `/api/store/image?n=` positions exist.
+   */
+  imageCount: number
 }
 
 export type StoreCatalogue = {

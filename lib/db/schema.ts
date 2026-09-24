@@ -1,4 +1,4 @@
-import { boolean, date, integer, numeric, pgTable, serial, text, timestamp } from 'drizzle-orm/pg-core'
+import { boolean, date, index, integer, numeric, pgTable, serial, text, timestamp } from 'drizzle-orm/pg-core'
 
 export const inventoryItems = pgTable('inventory_items', {
   id: serial('id').primaryKey(),
@@ -9,6 +9,12 @@ export const inventoryItems = pgTable('inventory_items', {
   price: numeric('price', { precision: 12, scale: 2 }).notNull(),
   // Product artwork is stored with the catalogue record so it survives
   // serverless deployments and never needs a public file-system write.
+  //
+  // These three columns are the item's PRIMARY photo — the first image in the
+  // gallery, and the one the storefront grid, the cart and the invoice use.
+  // Extra gallery shots live in `inventoryItemImages`, ordered by displayOrder.
+  // Keeping the primary here means every existing caller (billing, invoices,
+  // the store grid) keeps working untouched.
   imageMimeType: text('image_mime_type'),
   imageData: text('image_data'),
   imageByteSize: integer('image_byte_size'),
@@ -29,6 +35,37 @@ export const inventoryItems = pgTable('inventory_items', {
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 })
+
+// Additional photographs for one inventory item.
+//
+// A piece of jewellery is judged from several angles — the face, the clasp, how
+// it sits on the hand — and one photo cannot answer "is this the piece I want?".
+// These rows power the gallery on the product page.
+//
+// Bytes live in the database, like the primary image, because a serverless
+// deployment has a read-only, ephemeral disk: a file written to public/ at
+// runtime would vanish on the next deploy.
+//
+// `displayOrder` is the customer-visible order and is authoritative — the admin
+// can reorder shots and the product page reads them back in that order. The
+// primary image (inventory_items.image_*) is always shown first and is NOT
+// duplicated here.
+export const inventoryItemImages = pgTable(
+  'inventory_item_images',
+  {
+    id: serial('id').primaryKey(),
+    /** Database id of the catalogue row, not the public item code. */
+    itemId: integer('item_id')
+      .notNull()
+      .references(() => inventoryItems.id, { onDelete: 'cascade' }),
+    displayOrder: integer('display_order').notNull().default(0),
+    mimeType: text('mime_type').notNull(),
+    data: text('data').notNull(),
+    byteSize: integer('byte_size').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index('inventory_item_images_item_order_idx').on(table.itemId, table.displayOrder)],
+)
 
 // One row per invoice (the bill header). Line items live in invoice_items.
 //

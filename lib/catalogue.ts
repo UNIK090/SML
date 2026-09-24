@@ -1,6 +1,6 @@
-import { asc, desc, eq, notInArray, sql } from 'drizzle-orm'
+import { asc, desc, eq, inArray, notInArray, sql } from 'drizzle-orm'
 import { db } from '@/lib/db'
-import { inventoryItems, invoiceItems, shopLogo, storeOrderItems, storeOrders } from '@/lib/db/schema'
+import { inventoryItemImages, inventoryItems, invoiceItems, shopLogo, storeOrderItems, storeOrders } from '@/lib/db/schema'
 import { getShopDetails } from '@/lib/shop'
 import { sellingPrice } from '@/lib/store'
 import type { StoreCatalogue, StoreProduct } from '@/lib/types'
@@ -45,8 +45,28 @@ type ProductRow = {
   updatedAt: Date
 }
 
+/**
+ * How many extra gallery photos each item has, keyed by item id.
+ *
+ * Counted in one grouped query rather than per product, so a catalogue of a
+ * hundred pieces is still two round trips. Only items that actually have extra
+ * photos appear in the map, so the common case returns nothing.
+ */
+export async function galleryCounts(itemIds: number[]): Promise<Map<number, number>> {
+  if (itemIds.length === 0) return new Map()
+  const rows = await db
+    .select({ itemId: inventoryItemImages.itemId, count: sql<number>`count(*)`.as('count') })
+    .from(inventoryItemImages)
+    .where(inArray(inventoryItemImages.itemId, itemIds))
+    .groupBy(inventoryItemImages.itemId)
+
+  const counts = new Map<number, number>()
+  for (const row of rows) counts.set(row.itemId, Number(row.count) || 0)
+  return counts
+}
+
 /** Narrows a catalogue row to what a customer is allowed to see. */
-export function toStoreProduct(row: ProductRow): StoreProduct {
+export function toStoreProduct(row: ProductRow, galleryCount = 0): StoreProduct {
   const original = Number(row.price) || 0
   const hasPrimary = Boolean(row.imageMimeType && row.imageByteSize)
   return {
@@ -60,6 +80,8 @@ export function toStoreProduct(row: ProductRow): StoreProduct {
     originalPrice: Number.isFinite(original) ? original : 0,
     image: hasPrimary,
     imageVersion: row.updatedAt.toISOString(),
+    // The cover counts as one photo, but only when there is one to show.
+    imageCount: hasPrimary ? galleryCount + 1 : galleryCount,
   }
 }
 
@@ -70,7 +92,9 @@ export async function listPublishedProducts(): Promise<StoreProduct[]> {
     .from(inventoryItems)
     .where(eq(inventoryItems.published, true))
     .orderBy(asc(inventoryItems.featured), desc(inventoryItems.updatedAt))
-  return rows.map((row) => toStoreProduct(row))
+
+  const counts = await galleryCounts(rows.map((row) => row.id))
+  return rows.map((row) => toStoreProduct(row, counts.get(row.id) ?? 0))
 }
 
 // ---------------------------------------------------------------------------

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
-import { eq } from 'drizzle-orm'
+import { asc, eq } from 'drizzle-orm'
 import { db } from '@/lib/db'
-import { inventoryItems } from '@/lib/db/schema'
+import { inventoryItemImages, inventoryItems } from '@/lib/db/schema'
 import { isConnectionError } from '@/lib/db/errors'
 
 // Public product image for the storefront.
@@ -14,6 +14,13 @@ import { isConnectionError } from '@/lib/db/errors'
 //
 // The storefront identifies pieces by their public `code` (catalogue number),
 // not the database serial id, so the endpoint accepts `code` by default.
+//
+// A product may have several photos. `n` selects which one:
+//   n omitted or 0  → the item's primary photo (inventory_items.image_*)
+//   n = 1, 2, 3 …   → the gallery shot at that position, in display order
+//
+// Numbering the gallery from 1 keeps "no n" and "n=0" meaning the same thing —
+// the cover photo — which is what every existing caller already assumes.
 
 export async function GET(request: Request) {
   try {
@@ -21,9 +28,12 @@ export async function GET(request: Request) {
     const code = Number(url.searchParams.get('code') ?? url.searchParams.get('id'))
     if (!Number.isInteger(code) || code <= 0) return new NextResponse(null, { status: 400 })
 
+    const position = Math.max(0, Math.trunc(Number(url.searchParams.get('n') ?? '0')) || 0)
+
     // Item + publish gate — always verified first so unpublished rows never leak.
     const [item] = await db
       .select({
+        id: inventoryItems.id,
         published: inventoryItems.published,
         data: inventoryItems.imageData,
         mime: inventoryItems.imageMimeType,
@@ -32,12 +42,32 @@ export async function GET(request: Request) {
       .where(eq(inventoryItems.code, code))
 
     if (!item?.published) return new NextResponse(null, { status: 404 })
-    if (!item.data || !item.mime) return new NextResponse(null, { status: 404 })
 
-    const bytes = Buffer.from(item.data, 'base64')
+    // The cover photo, straight from the catalogue row.
+    let bytes: Buffer | null = null
+    let mime: string | null = null
+
+    if (position === 0) {
+      if (!item.data || !item.mime) return new NextResponse(null, { status: 404 })
+      bytes = Buffer.from(item.data, 'base64')
+      mime = item.mime
+    } else {
+      // The position is 1-based here, so the nth gallery row is offset by one.
+      const rows = await db
+        .select({ data: inventoryItemImages.data, mime: inventoryItemImages.mimeType })
+        .from(inventoryItemImages)
+        .where(eq(inventoryItemImages.itemId, item.id))
+        .orderBy(asc(inventoryItemImages.displayOrder), asc(inventoryItemImages.id))
+
+      const row = rows[position - 1]
+      if (!row) return new NextResponse(null, { status: 404 })
+      bytes = Buffer.from(row.data, 'base64')
+      mime = row.mime
+    }
+
     return new NextResponse(new Uint8Array(bytes), {
       headers: {
-        'Content-Type': item.mime,
+        'Content-Type': mime,
         'Content-Length': String(bytes.length),
         'Cache-Control': 'public, max-age=31536000, immutable',
       },

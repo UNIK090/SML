@@ -3,7 +3,7 @@ import { and, eq } from 'drizzle-orm'
 import { db } from '@/lib/db'
 import { inventoryItems } from '@/lib/db/schema'
 import { isConnectionError } from '@/lib/db/errors'
-import { latestAssetVersion, listPublishedProducts, productFields, recommend, soldQuantities, toStoreProduct } from '@/lib/catalogue'
+import { latestAssetVersion, galleryCounts, listPublishedProducts, productFields, recommend, soldQuantities, toStoreProduct } from '@/lib/catalogue'
 import { getShopDetails } from '@/lib/shop'
 import type { StoreProductLink } from '@/lib/types'
 
@@ -45,7 +45,7 @@ export async function GET(request: Request) {
       listPublishedProducts(),
       soldQuantities(),
     ])
-    const product = toStoreProduct(row)
+    const product = toStoreProduct(row, (await galleryCounts([row.id])).get(row.id) ?? 0)
     const related = recommend(products, product, sold, RECOMMENDATION_LIMIT)
 
     const body: StoreProductLink = {

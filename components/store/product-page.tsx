@@ -27,6 +27,7 @@ import {
   Check,
   Flame,
   Gem,
+  Images,
   Package,
   Phone,
   ShieldCheck,
@@ -155,6 +156,7 @@ export default function ProductPage({ code }: { code: number }) {
                 <ProductImageSlider
                   product={product}
                   className="size-full"
+                  interactive
                   overlay={
                     product.badge ? (
                       <span
@@ -170,6 +172,17 @@ export default function ProductPage({ code }: { code: number }) {
             </div>
 
             <div className="mt-4 flex flex-wrap items-center gap-3">
+              {/* Only worth saying when true — telling a customer there is one
+                  photo adds nothing. */}
+              {product.imageCount > 1 && (
+                <span
+                  className="inline-flex items-center gap-1.5 text-xs"
+                  style={{ color: 'var(--sf-muted)' }}
+                >
+                  <Images className="size-3.5" style={{ color: 'var(--sf-gold-deep)' }} />
+                  {product.imageCount} photos · use the arrows to see them all
+                </span>
+              )}
               <ShareMenu
                 product={product}
                 shopName={shop?.name}
@@ -221,7 +234,7 @@ export default function ProductPage({ code }: { code: number }) {
                         className="rounded-full px-2.5 py-0.5 text-[11px] font-bold"
                         style={{ background: 'var(--sf-gold-deep)', color: '#fff' }}
                       >
-                        -{Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}% OFF
+                        –{Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}% OFF
                       </span>
                     </>
                   )}
@@ -413,7 +426,7 @@ function RecommendationCard({ entry }: { entry: ProductRecommendation }) {
                   className="absolute top-2 right-2 rounded-full px-2 py-0.5 text-[9px] font-bold pointer-events-none"
                   style={{ background: 'var(--sf-gold-deep)', color: '#fff' }}
                 >
-                  -{discountPct}%
+                  –{discountPct}%
                 </span>
               )}
             </>
