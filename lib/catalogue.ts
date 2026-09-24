@@ -3,7 +3,7 @@ import { db } from '@/lib/db'
 import { inventoryItemImages, inventoryItems, invoiceItems, shopLogo, storeOrderItems, storeOrders } from '@/lib/db/schema'
 import { getShopDetails } from '@/lib/shop'
 import { sellingPrice } from '@/lib/store'
-import type { StoreCatalogue, StoreProduct } from '@/lib/types'
+import type { PriceBand, StoreCatalogue, StoreCategory, StoreProduct } from '@/lib/types'
 
 // The public storefront's read rules, in one place.
 //
@@ -213,9 +213,12 @@ export function latestAssetVersion(products: StoreProduct[], brandUpdatedAt: Dat
 
 /** The full storefront payload: shop details, products, collections, categories. */
 export async function loadCatalogue(): Promise<StoreCatalogue> {
-  const [shop, products, [brand]] = await Promise.all([
+  const [shop, products, sold, [brand]] = await Promise.all([
     getShopDetails(),
     listPublishedProducts(),
+    // Best sellers are ranked from real sales. A shop that has not sold online
+    // yet simply gets no rail rather than a rail of invented "best sellers".
+    soldQuantities().catch(() => new Map<number, number>()),
     db.select({ updatedAt: shopLogo.updatedAt }).from(shopLogo).where(eq(shopLogo.id, 1)),
   ])
 
@@ -234,11 +237,109 @@ export async function loadCatalogue(): Promise<StoreCatalogue> {
     }))
     .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name))
 
+  const bestSellers = rankBestSellers(products, sold)
+
   return {
     shop,
     products,
     collections,
     categories: [...new Set(products.map((product) => product.category))].sort(),
+    categoryRails: buildCategoryRails(products),
+    bestSellers,
+    // Only the codes the shelf actually shows are sent, so the public payload
+    // never leaks how much of anything else the shop has moved.
+    soldCounts: Object.fromEntries(bestSellers.map((product) => [product.code, sold.get(product.code) ?? 0])),
+    priceBands: buildPriceBands(products),
     updatedAt: latestAssetVersion(products, brand?.updatedAt),
   }
+}
+
+// ---------------------------------------------------------------------------
+// Storefront shortcuts, all derived from the shop's own catalogue
+//
+// Every one is built from real rows. Nothing is padded out to fill a band: a
+// shop with two pieces produces two category tiles, not six empty ones. That is
+// deliberate — an empty shelf makes a small shop look closed, while a short,
+// full shelf makes it look curated.
+// ---------------------------------------------------------------------------
+
+/**
+ * The category rail — the kinds of piece the shop actually stocks.
+ *
+ * Each tile carries the code of a real photo so it shows jewellery rather than
+ * a generic icon, and categories are ranked by how much the shop has of them.
+ */
+export function buildCategoryRails(products: StoreProduct[]): StoreCategory[] {
+  const grouped = new Map<string, StoreProduct[]>()
+  for (const product of products) {
+    const key = product.category.trim()
+    if (!key) continue
+    const bucket = grouped.get(key)
+    if (bucket) bucket.push(product)
+    else grouped.set(key, [product])
+  }
+
+  return [...grouped.entries()]
+    .map(([name, list]) => {
+      const cheapest = list.reduce((best, entry) => (entry.price < best.price ? entry : best), list[0])
+      const withImage = list.find((entry) => entry.image)
+      return {
+        name,
+        count: list.length,
+        from: Math.min(...list.map((entry) => entry.price)),
+        imageCode: (withImage ?? cheapest).code,
+      }
+    })
+    .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name))
+}
+
+/**
+ * The best-seller rail, in the order a counter would show it.
+ *
+ * Only pieces that genuinely sold are included, so the heading is never a lie.
+ * A brand-new shop gets no rail at all, which is the honest outcome; the
+ * fallback that keeps the row full lives in the page, not here.
+ */
+export function rankBestSellers(products: StoreProduct[], sold: Map<number, number>, limit = 8): StoreProduct[] {
+  return products
+    .filter((product) => (sold.get(product.code) ?? 0) > 0)
+    .sort((a, b) => (sold.get(b.code) ?? 0) - (sold.get(a.code) ?? 0) || a.code - b.code)
+    .slice(0, limit)
+}
+
+/**
+ * "Shop in budget" bands, priced for a one-gram / panchaloha / silver shop.
+ *
+ * Deliberately low bands — an affordable counter sells in the hundreds and low
+ * thousands, not the tens of thousands a bridal gold site would use. A band
+ * with nothing in it is dropped, so no shortcut sends a customer to an empty
+ * grid.
+ */
+export function buildPriceBands(products: StoreProduct[], edges: number[] = [500, 1000, 2000, 3000]): PriceBand[] {
+  if (products.length === 0) return []
+
+  const bounds = [0, ...edges]
+  const bands: PriceBand[] = []
+
+  for (let index = 0; index < bounds.length; index += 1) {
+    const from = bounds[index]
+    const isLast = index === bounds.length - 1
+    const to = isLast ? Number.POSITIVE_INFINITY : bounds[index + 1]
+    const count = products.filter((product) => product.price >= from && product.price < to).length
+    if (count === 0) continue
+
+    bands.push({
+      label: isLast ? `Above ${inr(bounds[bounds.length - 1])}` : `Under ${inr(to)}`,
+      from,
+      to,
+      count,
+    })
+  }
+
+  return bands
+}
+
+/** A plain rupee label, so the band names match what the cards show. */
+function inr(value: number): string {
+  return `₹${value.toLocaleString('en-IN')}`
 }

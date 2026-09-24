@@ -47,12 +47,37 @@ export type StoreProduct = {
   imageCount: number
 }
 
+export type StoreCollection = { name: string; count: number; from: number }
+
+/** A shop category as the storefront shows it — e.g. Necklaces, Bangles. */
+export type StoreCategory = { name: string; count: number; from: number; imageCode: number | null }
+
 export type StoreCatalogue = {
   shop: Shop & { tagline: string | null; whatsapp: string | null; storeHours: string | null }
   products: StoreProduct[]
-  collections: { name: string; count: number; from: number }[]
+  collections: StoreCollection[]
   categories: string[]
+  /**
+   * Shortcuts the counter sites all carry, computed from the real catalogue
+   * rather than hard-coded: a band the shop has nothing in is simply absent,
+   * so a customer never taps through to an empty grid.
+   */
+  categoryRails: StoreCategory[]
+  bestSellers: StoreProduct[]
+  /** Units actually sold, keyed by item code. Only real sales appear here. */
+  soldCounts: Record<number, number>
+  priceBands: PriceBand[]
   updatedAt: string
+}
+
+/** A "shop in budget" shortcut — "Under ₹500", derived from real prices. */
+export type PriceBand = {
+  label: string
+  /** Inclusive lower bound; 0 for the first band. */
+  from: number
+  /** Exclusive upper bound; Infinity for the open-ended last band. */
+  to: number
+  count: number
 }
 
 /**

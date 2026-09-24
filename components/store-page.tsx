@@ -46,10 +46,19 @@ import { CartProvider, useCart } from '@/components/store/cart'
 import CartDrawer, { type PlacedOrder } from '@/components/store/cart-drawer'
 import OrderSuccess from '@/components/store/order-success'
 import ProductCard from '@/components/store/product-card'
+import {
+  BestSellersRail,
+  BudgetRail,
+  CategoryRail,
+  CollectionStories,
+  CounterNotice,
+  OrderSteps,
+  PromiseBand,
+} from '@/components/store/store-sections'
 import { useRevealOnScroll } from '@/components/store/reveal'
 import { useApi } from '@/lib/use-api'
 import { rupees, telLink, whatsappLink } from '@/lib/store'
-import type { Shop, StoreCatalogue } from '@/lib/types'
+import type { PriceBand, Shop, StoreCatalogue } from '@/lib/types'
 
 const HERO_LINES = ['Style that looks', 'like gold, priced', 'for you.']
 
@@ -70,6 +79,8 @@ function ShopWindow() {
   const [placed, setPlaced] = useState<PlacedOrder | null>(null)
   const [query, setQuery] = useState('')
   const [collection, setCollection] = useState('All')
+  const [category, setCategory] = useState('All')
+  const [band, setBand] = useState<PriceBand | null>(null)
   const [menuOpen, setMenuOpen] = useState(false)
 
   const shop = data?.shop ?? null
@@ -81,6 +92,8 @@ function ShopWindow() {
     const term = query.trim().toLowerCase()
     return products.filter((product) => {
       if (collection !== 'All' && product.collection !== collection) return false
+      if (category !== 'All' && product.category !== category) return false
+      if (band && !(product.price >= band.from && product.price < band.to)) return false
       if (!term) return true
       return (
         product.name.toLowerCase().includes(term) ||
@@ -89,7 +102,7 @@ function ShopWindow() {
         String(product.code).includes(term)
       )
     })
-  }, [products, collection, query])
+  }, [products, collection, category, band, query])
 
   const priceFrom = products.length > 0 ? Math.min(...products.map((product) => product.price)) : 0
   const categoryCount = new Set(products.map((product) => product.category)).size
@@ -99,10 +112,34 @@ function ShopWindow() {
     `Hello ${shop?.name ?? ''}, I would like to know more about your collection.`,
   )
 
+  /**
+   * The shelf of pieces the page leads with.
+   *
+   * When the shop has genuinely sold something the rail is its best sellers and
+   * says so. Otherwise it shows the newest pieces under a "New at the counter"
+   * heading — a full shelf with an honest label, never a false best seller.
+   */
+  const bestSellers = (data?.bestSellers ?? []).slice(0, 8)
+  const hasSalesData = bestSellers.length > 0
+  const soldCounts = data?.soldCounts ?? {}
+  // Two or more pieces makes a shelf worth showing; a single piece is already
+  // the whole catalogue, and repeating it as a row looks like a mistake.
+  const shelfProducts = hasSalesData ? bestSellers : products.slice(0, 8)
+  const showShelf = products.length >= 2 && shelfProducts.length >= 2
+
   const jumpTo = (id: string, filter?: string) => {
     if (filter) setCollection(filter)
     setMenuOpen(false)
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+
+  /** Clears every filter and opens the full grid. */
+  const openStore = (patch?: { collection?: string; category?: string; band?: PriceBand | null }) => {
+    setQuery('')
+    setCollection(patch?.collection ?? 'All')
+    setCategory(patch?.category ?? 'All')
+    setBand(patch?.band ?? null)
+    document.getElementById('store')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
 
   return (
@@ -368,6 +405,33 @@ function ShopWindow() {
         </section>
       )}
 
+      {/* --------------------------- Shop by category --------------------------- */}
+      {data && (
+        <CategoryRail
+          categories={data.categoryRails}
+          onSelect={(next) => openStore({ category: next })}
+          onViewAll={() => openStore()}
+        />
+      )}
+
+      {/* ---------------------- Most loved / new arrivals ---------------------- */}
+      {data && showShelf && (
+        <BestSellersRail
+          products={shelfProducts}
+          hasSalesData={hasSalesData}
+          sold={soldCounts}
+          onViewAll={() => openStore()}
+        />
+      )}
+
+      {/* ---------------------------- Shop in budget ---------------------------- */}
+      {data && <BudgetRail bands={data.priceBands} activeBand={band} onSelect={(next) => openStore({ band: next })} />}
+
+      {/* ------------------------- The collection story ------------------------- */}
+      {data && (
+        <CollectionStories collections={data.collections} onSelect={(name) => openStore({ collection: name })} />
+      )}
+
       {/* ---------------------------- Collections ---------------------------- */}
       <section id="collections" className="sf-band scroll-mt-28 border-t border-line px-4 py-16 sm:px-7">
         <div className="mx-auto w-full max-w-[1400px]">
@@ -473,6 +537,8 @@ function ShopWindow() {
             <p className="text-xs" style={{ color: 'var(--sf-muted)' }}>
               {visible.length} of {products.length} shown
               {collection !== 'All' && ` in ${collection}`}
+              {category !== 'All' && ` · ${category}`}
+              {band && ` · ${band.label}`}
             </p>
           </header>
 
@@ -528,6 +594,55 @@ function ShopWindow() {
                 )}
               </div>
             )}
+
+            {/*
+              Category chips sit under the collection chips. They are a second
+              axis — a collection is the shelf the shop arranged, a category is
+              the kind of piece — and a customer may want either, or both. Only
+              categories the shop stocks are listed, and the row is hidden when
+              the shop has just one kind of piece.
+            */}
+            {data && data.categoryRails.length > 1 && (
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span
+                  className="mr-1 text-[10px] font-semibold tracking-[0.14em] uppercase"
+                  style={{ color: 'var(--sf-muted)' }}
+                >
+                  Kind
+                </span>
+                <button onClick={() => setCategory('All')} data-active={category === 'All'} className="sf-chip">
+                  All kinds
+                </button>
+
+                {data.categoryRails.map((entry) => (
+                  <button
+                    key={entry.name}
+                    onClick={() => setCategory(entry.name)}
+                    data-active={category === entry.name}
+                    aria-pressed={category === entry.name}
+                    className="sf-chip"
+                  >
+                    {entry.name}
+                    <span className="sf-chip-count">{entry.count}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* The budget filter, shown only once a band is holding it. */}
+            {band && (
+              <div className="flex flex-wrap items-center gap-2">
+                <span
+                  className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-semibold text-white"
+                  style={{ background: 'var(--sf-maroon)' }}
+                >
+                  {band.label}
+                  <button onClick={() => setBand(null)} aria-label={`Remove the ${band.label} filter`}>
+                    ×
+                  </button>
+                </span>
+              </div>
+            )}
           </div>
 
           {isLoading && (
@@ -555,6 +670,8 @@ function ShopWindow() {
                 onClick={() => {
                   setQuery('')
                   setCollection('All')
+                  setCategory('All')
+                  setBand(null)
                 }}
                 className="sf-btn sf-btn-ghost mt-5 h-10 px-5 text-xs"
               >
@@ -590,6 +707,13 @@ function ShopWindow() {
           )}
         </div>
       </section>
+
+      {/* --------------------------- Counter notice --------------------------- */}
+      <CounterNotice
+        shop={shop as (Shop & { storeHours?: string | null }) | null}
+        whatsapp={whatsapp}
+        onBrowse={() => openStore()}
+      />
 
       {/* ------------------------------ Boutique ------------------------------ */}
       <section id="boutique" className="sf-band scroll-mt-28 border-t border-line px-4 py-16 sm:px-7">
@@ -652,6 +776,12 @@ function ShopWindow() {
           </div>
         </div>
       </section>
+
+      {/* ---------------------------- How ordering works ---------------------------- */}
+      <OrderSteps shop={shop as (Shop & { storeHours?: string | null }) | null} />
+
+      {/* ------------------------------- Promise ------------------------------- */}
+      <PromiseBand />
 
       {/* ------------------------------- Footer ------------------------------- */}
       <footer className="sf-topbar px-4 py-10 sm:px-7">
