@@ -10,7 +10,6 @@ import { Check, Gem, MessageCircle, Plus } from 'lucide-react'
 import type { StoreProduct } from '@/lib/types'
 import { rupees, whatsappLink } from '@/lib/store'
 import { useCart } from '@/components/store/cart'
-import ShareMenu, { WhatsAppMark } from '@/components/store/share-menu'
 import ProductImageSlider from '@/components/store/product-image-slider'
 
 export function ProductMedia({ product, className = '' }: { product: StoreProduct; className?: string }) {
@@ -41,8 +40,14 @@ export default function ProductCard({
   const link = `/product/${encodeURIComponent(String(product.code))}`
 
   return (
-    <article className="sf-card sf-card-sheen group flex flex-col" data-reveal="up" data-reveal-delay={Math.min(index, 8) * 60}>
-      <div className="sf-card-media relative aspect-[4/5] overflow-hidden">
+    <article className="sf-card sf-card-sheen group flex flex-col" data-reveal="up" data-reveal-delay={Math.min(index, 8) * 45}>
+      {/*
+        A square photo rather than 4:5. A tall frame stretched every card and
+        forced a customer to scroll past a lot of empty background to reach the
+        price. Jewellery photographs fill a square well, and a square keeps the
+        grid even when pieces are different shapes.
+      */}
+      <div className="sf-card-media relative aspect-square overflow-hidden">
         <a href={link} aria-label={`Open ${product.name}`} className="absolute inset-0 block">
           <ProductImageSlider
             product={product}
@@ -51,7 +56,7 @@ export default function ProductCard({
               <>
                 {product.badge && (
                   <span
-                    className="absolute top-3 left-3 rounded-full px-2.5 py-1 text-[10px] font-semibold tracking-[0.14em] text-white uppercase pointer-events-none"
+                    className="absolute top-2 left-2 rounded-full px-1.5 py-0.5 text-[9px] font-semibold tracking-[0.1em] text-white uppercase pointer-events-none"
                     style={{ background: 'var(--sf-maroon)' }}
                   >
                     {product.badge}
@@ -60,7 +65,7 @@ export default function ProductCard({
 
                 {hasDiscount && (
                   <span
-                    className="absolute top-3 right-3 rounded-full px-2.5 py-1 text-[10px] font-bold tracking-wide text-white pointer-events-none"
+                    className="absolute top-2 right-2 rounded-full px-1.5 py-0.5 text-[9px] font-bold tracking-wide text-white pointer-events-none"
                     style={{ background: 'var(--sf-gold-deep)' }}
                   >
                     –{discountPct}%
@@ -68,7 +73,7 @@ export default function ProductCard({
                 )}
 
                 <span
-                  className="absolute right-3 bottom-3 rounded-full px-2.5 py-1 text-[10px] tracking-wide pointer-events-none"
+                  className="absolute right-2 bottom-2 rounded-full px-1.5 py-0.5 text-[9px] tracking-wide pointer-events-none hidden sm:block"
                   style={{ background: 'oklch(1 0 0 / 88%)', color: 'var(--sf-heading)' }}
                 >
                   #{product.code}
@@ -79,73 +84,66 @@ export default function ProductCard({
         </a>
       </div>
 
-      <div className="flex flex-1 flex-col p-4">
-        <p className="text-[10px] font-semibold tracking-[0.18em] uppercase" style={{ color: 'var(--sf-gold-deep)' }}>
+      <div className="flex flex-1 flex-col p-2.5 sm:p-3">
+        <p className="text-[9px] font-semibold tracking-[0.16em] uppercase" style={{ color: 'var(--sf-gold-deep)' }}>
           {product.collection}
         </p>
-        <h3 className="mt-1.5 text-[15px] leading-6 font-medium" style={{ color: 'var(--sf-heading)' }}>
+        {/*
+          Two lines at most, and the description is gone. A tile is a glance,
+          not a page: the full description lives on the piece's own page, where
+          the customer has already decided to look closer.
+        */}
+        <h3 className="mt-1 line-clamp-2 text-[12px] leading-4 font-medium sm:text-[13px] sm:leading-5" style={{ color: 'var(--sf-heading)' }}>
           {product.name}
         </h3>
-        {product.description && (
-          <p className="mt-1.5 line-clamp-2 text-xs leading-5" style={{ color: 'var(--sf-muted)' }}>
-            {product.description}
-          </p>
-        )}
 
-        <div className="mt-auto flex items-end justify-between gap-3 border-t border-line pt-3">
-          <div>
-            <div className="flex items-baseline gap-2">
-              <p className="tnum text-lg font-semibold" style={{ color: 'var(--sf-maroon)' }}>
-                {rupees(product.price)}
-              </p>
-              {hasDiscount && (
-                <p className="tnum text-xs line-through decoration-1 decoration-dashed" style={{ color: 'var(--sf-muted)' }}>
-                  {rupees(product.originalPrice)}
-                </p>
-              )}
-            </div>
+        <div className="mt-auto pt-2">
+          <div className="flex flex-wrap items-baseline gap-x-1.5">
+            <p className="tnum text-sm font-semibold sm:text-[15px]" style={{ color: 'var(--sf-maroon)' }}>
+              {rupees(product.price)}
+            </p>
             {hasDiscount && (
-              <p className="mt-0.5 text-[10px] font-semibold" style={{ color: 'var(--sf-gold-deep)' }}>
-                Save {rupees(product.originalPrice - product.price)}
+              <p className="tnum text-[10px] line-through decoration-1 decoration-dashed" style={{ color: 'var(--sf-muted)' }}>
+                {rupees(product.originalPrice)}
               </p>
             )}
           </div>
-          <button
-            type="button"
-            onClick={() => add(product)}
-            aria-label={inBasket ? `${product.name} is in your basket` : `Add ${product.name} to basket`}
-            className={`sf-btn h-9 shrink-0 px-3.5 text-xs ${inBasket ? 'border border-line bg-cream' : 'sf-btn-gold'}`}
-            style={inBasket ? { color: 'var(--sf-maroon)' } : undefined}
-          >
-            {inBasket ? <Check className="size-3.5" /> : <Plus className="size-3.5" />}
-            {inBasket ? 'In basket' : 'Add'}
-          </button>
-        </div>
-
-        {/* Two quiet actions under the piece: ask the shop about it, or send it
-            on to somebody. The photo above keeps only its badge and code, so
-            the jewellery itself is never covered up. */}
-        <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
-          {enquiry && (
-            <a
-              href={enquiry}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex w-fit items-center gap-1.5 text-xs font-medium transition hover:underline"
-              style={{ color: 'var(--sf-maroon)' }}
-            >
-              <MessageCircle className="size-3.5" /> Ask about this piece
-            </a>
+          {hasDiscount && (
+            <p className="mt-0.5 text-[9px] font-semibold" style={{ color: 'var(--sf-gold-deep)' }}>
+              Save {rupees(product.originalPrice - product.price)}
+            </p>
           )}
 
-          <ShareMenu
-            product={product}
-            shopName={shopName}
-            whatsapp={whatsapp}
-            label="Share"
-            buttonClassName="inline-flex w-fit items-center gap-1.5 text-xs font-medium transition hover:underline"
-            icon={<WhatsAppMark className="size-3.5" />}
-          />
+          {/*
+            One action row: add to basket, and a way to ask about the piece.
+            Share moved to the piece's own page — on a tile it competed with the
+            buy button for a tap and made the card taller for a rare action.
+          */}
+          <div className="mt-2 flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={() => add(product)}
+              aria-label={inBasket ? `${product.name} is in your basket` : `Add ${product.name} to basket`}
+              className={`sf-btn h-7 flex-1 px-2 text-[11px] ${inBasket ? 'border border-line bg-cream' : 'sf-btn-gold'}`}
+              style={inBasket ? { color: 'var(--sf-maroon)' } : undefined}
+            >
+              {inBasket ? <Check className="size-3" /> : <Plus className="size-3" />}
+              <span className="truncate">{inBasket ? 'In basket' : 'Add'}</span>
+            </button>
+
+            {enquiry && (
+              <a
+                href={enquiry}
+                target="_blank"
+                rel="noreferrer"
+                aria-label={`Ask about ${product.name} on WhatsApp`}
+                className="flex size-7 shrink-0 items-center justify-center rounded-lg border border-line transition hover:border-gold hover:bg-cream"
+                style={{ color: 'var(--sf-maroon)' }}
+              >
+                <MessageCircle className="size-3.5" />
+              </a>
+            )}
+          </div>
         </div>
       </div>
     </article>

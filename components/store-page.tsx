@@ -463,12 +463,12 @@ function ShopWindow() {
       </section>
 
       {/* ------------------------------- Store ------------------------------- */}
-      <section id="store" className="scroll-mt-28 border-t border-line px-4 py-16 sm:px-7">
+      <section id="store" className="scroll-mt-28 border-t border-line px-3 py-12 sm:px-7 sm:py-16">
         <div className="mx-auto w-full max-w-[1400px]">
-          <header className="mb-8 flex flex-wrap items-end justify-between gap-5" data-reveal="up">
+          <header className="mb-6 flex flex-wrap items-end justify-between gap-4 sm:mb-8" data-reveal="up">
             <div className="max-w-2xl">
               <p className="sf-eyebrow">Shop the collection</p>
-              <h2 className="mt-3 text-2xl font-semibold tracking-tight sm:text-[2rem]">Beautiful jewellery at easy prices.</h2>
+              <h2 className="mt-3 text-xl font-semibold tracking-tight sm:text-[2rem]">Beautiful jewellery at easy prices.</h2>
             </div>
             <p className="text-xs" style={{ color: 'var(--sf-muted)' }}>
               {visible.length} of {products.length} shown
@@ -531,14 +531,14 @@ function ShopWindow() {
           </div>
 
           {isLoading && (
-            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-3.5 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
               {Array.from({ length: 8 }).map((_, index) => (
                 <div key={index} className="animate-pulse overflow-hidden rounded-lg border border-line bg-white">
-                  <div className="aspect-[4/5] bg-cream-soft" />
-                  <div className="space-y-2 p-4">
-                    <div className="h-3 w-16 rounded bg-cream-soft" />
-                    <div className="h-4 w-32 rounded bg-cream-soft" />
-                    <div className="h-6 w-20 rounded bg-cream-soft" />
+                  <div className="aspect-square bg-cream-soft" />
+                  <div className="space-y-2 p-3">
+                    <div className="h-2.5 w-12 rounded bg-cream-soft" />
+                    <div className="h-3.5 w-24 rounded bg-cream-soft" />
+                    <div className="h-5 w-16 rounded bg-cream-soft" />
                   </div>
                 </div>
               ))}
@@ -564,7 +564,19 @@ function ShopWindow() {
           )}
 
           {visible.length > 0 && (
-            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            /*
+              A denser, Amazon-style grid.
+
+              The tiles were nearly double-height before: a 4:5 photo, then a
+              description, a "save" line and two action links stacked inside.
+              On a phone that meant roughly one-and-a-half products per screen.
+
+              The grid now steps up the columns much earlier — 2 on the
+              smallest phones, 3 on a large phone, then 4, 5 and 6 — because a
+              jewellery catalogue is scanned by photo, and more pieces on
+              screen is what makes a shop look stocked.
+            */
+            <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-3.5 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
               {visible.map((product, index) => (
                 <ProductCard
                   key={product.code}
