@@ -207,6 +207,35 @@ export type CartLine = {
 
 export type DailyRow = { businessDay: string; total: number; count: number }
 
+/** One slice of a breakdown chart — a category or a payment status. */
+export type ReportSlice = {
+  label: string
+  total: number
+  count: number
+  /** Share of the period's income, 0–100. Computed server-side so the client
+   *  never re-derives a number the shopkeeper might see differently. */
+  share: number
+}
+
+/**
+ * One weekday's average across the month.
+ *
+ * "Which day do I actually sell most?" is the question a shopkeeper asks when
+ * planning stock and staffing, and a per-day bar chart cannot answer it — there
+ * are only four or five of each weekday in a month, and one big Saturday would
+ * simply be that Saturday. Averaging per weekday is what makes the pattern
+ * visible.
+ */
+export type WeekdayStat = {
+  /** 0 = Sunday … 6 = Saturday, matching Date.getDay(). */
+  weekday: number
+  label: string
+  total: number
+  count: number
+  /** Mean income on this weekday across the month. */
+  average: number
+}
+
 export type MonthlyReport = {
   month: string
   from: string
@@ -217,6 +246,28 @@ export type MonthlyReport = {
   average: number
   bestDay: DailyRow
   days: DailyRow[]
+  // --- Analytics added for the visual report -------------------------------
+  /** Average income per day that had any sales. */
+  averageActiveDay: number
+  /** Mean invoice value across the month; 0 when nothing was sold. */
+  averageInvoice: number
+  /** Highest single invoice value in the month. */
+  highestInvoice: number
+  /** Daily income split by category of the pieces sold. */
+  categories: ReportSlice[]
+  /** Daily income split by PAID / pending. */
+  payments: ReportSlice[]
+  /** Average income for each weekday, Sunday first. */
+  weekdays: WeekdayStat[]
+  /**
+   * Income in the same month last year, and the percentage change against it.
+   * `null` when last year had no sales at all — a percentage against zero is
+   * not a number, and showing "+∞%" would be worse than showing nothing.
+   */
+  previousYearTotal: number
+  yearChangePct: number | null
+  /** Days in the month that had at least one invoice. */
+  activeDays: number
 }
 
 export type Shop = {
