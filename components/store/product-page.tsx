@@ -40,6 +40,7 @@ import { useApi } from '@/lib/use-api'
 import { rupees, telLink, whatsappLink } from '@/lib/store'
 import type { ProductRecommendation, StoreProductLink } from '@/lib/types'
 import ProductImageSlider from '@/components/store/product-image-slider'
+import { OfferBanner } from '@/components/store/store-sections'
 
 export default function ProductPage({ code }: { code: number }) {
   const { data, isLoading, error } = useApi<StoreProductLink>(`/api/store/product?code=${code}`)
@@ -139,6 +140,13 @@ export default function ProductPage({ code }: { code: number }) {
           </span>
         </div>
       </header>
+
+      {/*
+        A shared link is often somebody's first sight of the shop, so the live
+        festival offer travels with the piece. It browses the whole shop rather
+        than a filtered shelf, because this page has no grid to scroll to.
+      */}
+      {data?.offer && <OfferBanner offer={data.offer} onShop={() => { window.location.href = '/#store' }} />}
 
       <main className="mx-auto w-full max-w-[1100px] px-4 py-10 sm:px-7">
         <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,.85fr)_minmax(0,1fr)] lg:gap-12">

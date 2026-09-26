@@ -67,6 +67,23 @@ export type StoreCatalogue = {
   /** Units actually sold, keyed by item code. Only real sales appear here. */
   soldCounts: Record<number, number>
   priceBands: PriceBand[]
+  /**
+   * The festival offer the site leads with, when the shop is running one.
+   *
+   * The state is decided server-side against the shop's business day, so a
+   * visitor whose own clock is a day ahead cannot see a finished offer.
+   * `null` when nothing is scheduled — the banner is then simply absent.
+   */
+  offer: PublicOffer | null
+  /**
+   * Every offer worth showing in the Offers section, best first.
+   *
+   * A festival season can have more than one running at once — a gold offer and
+   * a silver offer — and the section is designed as a row of cards, so it needs
+   * the whole set rather than only the lead one. Finished offers are excluded:
+   * an expired promise is worse than an empty section.
+   */
+  offers: PublicOffer[]
   updatedAt: string
 }
 
@@ -105,6 +122,8 @@ export type StoreProductLink = {
   related: ProductRecommendation[]
   /** True when at least one recommendation is backed by a real sale. */
   hasSalesData: boolean
+  /** The live festival offer, when one is running. See StoreCatalogue.offer. */
+  offer: PublicOffer | null
   updatedAt: string
 }
 
@@ -279,6 +298,92 @@ export type Shop = {
   tagline?: string | null
   whatsapp?: string | null
   storeHours?: string | null
+}
+
+/** How a festival offer discounts: a percentage or a flat rupee amount. */
+export type OfferDiscountType = 'percent' | 'flat'
+
+/** The card colours an offer can take on the website. */
+export type OfferAccent = 'red' | 'gold' | 'green' | 'maroon'
+
+/**
+ * One festival offer, as the admin Offers screen edits it.
+ *
+ * An offer is an advertisement, not a price change: it tells the customer what
+ * the shop is running, and the advertised shelf price is untouched. The dates
+ * decide when it shows, so an offer cannot be left up after the festival.
+ */
+export type Offer = {
+  id: number
+  title: string
+  description: string | null
+  /** Coupon / announcement code the customer quotes at the counter. */
+  code: string | null
+  discountType: OfferDiscountType
+  discountValue: string
+  /** Inclusive first day it shows, as YYYY-MM-DD. */
+  startsOn: string
+  /** Inclusive last day it shows, as YYYY-MM-DD. */
+  endsOn: string
+  active: boolean
+  /**
+   * Card colour on the website: 'red' (festive, the default), 'gold', 'green'
+   * or 'maroon'.
+   *
+   * A fixed set rather than free-form colour: the storefront cards are built
+   * with white text on a solid field, and a shopkeeper picking pale yellow would
+   * make the offer name unreadable. Four colours that all carry white text keep
+   * every combination legible.
+   */
+  accent: OfferAccent
+  /**
+   * Whether the offer also appears as a card in the website's Offers section.
+   *
+   * Separate from `active` so a shop can run a small announcement without also
+   * filling a large card — the two are different sizes of promise, and a
+   * one-line offer can look thin as a full card.
+   */
+  showInSection: boolean
+  /** True when festival artwork has been uploaded. Bytes stay in the database. */
+  hasBanner: boolean
+  /**
+   * When the banner photo was last replaced, or null when there is none.
+   *
+   * Used as a cache-buster on the image URL, so the endpoint can cache the
+   * bytes immutably for a year and a fresh upload still appears immediately.
+   */
+  bannerVersion: string | null
+}
+
+/**
+ * An offer narrowed for the storefront.
+ *
+ * `savingsLabel` is computed server-side — "10% off" or "₹200 off" — so the
+ * public page never has to re-derive a number the shopkeeper might see framed
+ * differently, and the `running` / `startsSoon` / `expired` state is decided
+ * against the shop's business day rather than the visitor's clock.
+ */
+export type PublicOffer = {
+  /** Database id — needed to build the banner image URL. */
+  id: number
+  title: string
+  description: string | null
+  code: string | null
+  discountType: OfferDiscountType
+  discountValue: number
+  savingsLabel: string
+  /** Card colour on the website. */
+  accent: OfferAccent
+  startsOn: string
+  endsOn: string
+  /** ACTIVE = showing now, UPCOMING = starts later, EXPIRED = finished. */
+  state: 'ACTIVE' | 'UPCOMING' | 'EXPIRED'
+  /** Whole days left including today; 0 on the final day, null when not live. */
+  daysLeft: number | null
+  /** True when the shop uploaded festival artwork to lead the banner with. */
+  hasBanner: boolean
+  /** Cache-buster for the banner URL; null when there is no photo. */
+  bannerVersion: string | null
 }
 
 export type BrandAssets = {

@@ -37,7 +37,8 @@ import {
 import ProductImageSlider from '@/components/store/product-image-slider'
 import { useCart } from '@/components/store/cart'
 import { rupees, telLink } from '@/lib/store'
-import type { PriceBand, Shop, StoreCategory, StoreProduct } from '@/lib/types'
+import { offerBannerUrl, offerDate } from '@/lib/offers'
+import type { PriceBand, PublicOffer, Shop, StoreCategory, StoreProduct } from '@/lib/types'
 
 /* ---------------------------------------------------------------------------
    The rail shell
@@ -161,6 +162,256 @@ export function Rail({
         </div>
       )}
     </div>
+  )
+}
+
+/* ---------------------------------------------------------------------------
+   The festival offer
+   --------------------------------------------------------------------------- */
+
+/**
+ * The festival offer band.
+ *
+ * A jewellery shop's year is shaped by its festivals, and an offer is the one
+ * message that has to reach the customer today — before it expires. So it is
+ * given its own band directly under the banner, in the shop's own maroon, with
+ * the saving as the largest thing in the row.
+ *
+ * It renders nothing at all when there is no offer, which is the common state:
+ * an empty "no offers" strip would make the shop look like it is always
+ * discounting, or worse, broken. `state` and `daysLeft` are decided on the
+ * server against the shop's business day, so a visitor in another timezone
+ * cannot be shown a finished sale.
+ */
+export function OfferBanner({ offer, onShop }: { offer: PublicOffer; onShop: () => void }) {
+  const running = offer.state === 'ACTIVE'
+  const startsToday = offer.startsOn === offer.endsOn
+
+  /**
+   * The urgency line, and it is never allowed to overstate.
+   *
+   * "Last day" is said only on the actual last day, and a sale that has not
+   * started yet is framed as coming up rather than running — a shop that cries
+   * wolf about a deadline stops being believed when the deadline is real.
+   */
+  const timing = !running
+    ? `Starts ${offerDate(offer.startsOn)}`
+    : offer.daysLeft === 0
+      ? startsToday
+        ? 'Today only'
+        : 'Last day today'
+      : offer.daysLeft === 1
+        ? 'Ends tomorrow'
+        : `Ends in ${offer.daysLeft} days`
+
+  const banner = offer.hasBanner ? offerBannerUrl(offer.id, offer.bannerVersion) : null
+
+  return (
+    <section
+      className={`sf-offer-band px-4 sm:px-7 ${banner ? 'sf-offer-band-photo py-0' : 'py-6'}`}
+      aria-label={running ? 'Current offer' : 'Upcoming offer'}
+    >
+      <div className="mx-auto flex w-full max-w-[1400px] flex-wrap items-center gap-x-6 gap-y-4">
+        {/*
+          The uploaded festival photograph, when there is one.
+
+          The frame keeps a fixed HEIGHT and follows the photo's own width, so a
+          landscape festival banner stays landscape instead of being cropped to a
+          square — which would cut the artwork off at both edges. Because the
+          height is fixed, a tall upload cannot shove the collection off the
+          first screen either.
+        */}
+        {banner && (
+          <a
+            href="#store"
+            onClick={(event) => {
+              event.preventDefault()
+              onShop()
+            }}
+            className="sf-offer-photo"
+            aria-label={`See the pieces in the ${offer.title}`}
+          >
+            <img src={banner} alt="" loading="lazy" />
+          </a>
+        )}
+
+        <span className="sf-offer-badge">
+          <Tag className="size-3.5" strokeWidth={2} />
+          {running ? 'Offer' : 'Coming up'}
+        </span>
+
+        <div className="sf-offer-copy">
+          <h2 className="text-lg font-semibold tracking-tight sm:text-xl" style={{ color: 'var(--sf-heading)' }}>
+            {offer.title}
+          </h2>
+          {offer.description && (
+            <p className="mt-1 max-w-2xl text-xs leading-6 sm:text-sm" style={{ color: 'var(--sf-muted)' }}>
+              {offer.description}
+            </p>
+          )}
+        </div>
+
+        {/* The saving, then the deadline — the two facts a customer acts on. */}
+        <div className="sf-offer-action">
+          <div className="text-left sm:text-right">
+            <p className="sf-offer-saving tnum">{offer.savingsLabel || offer.title}</p>
+            <p className="mt-0.5 text-[10px] font-semibold tracking-[0.1em] uppercase" style={{ color: 'var(--sf-muted)' }}>
+              {timing}
+            </p>
+          </div>
+
+          <button onClick={onShop} className="sf-btn sf-btn-gold h-10 shrink-0 px-4 text-xs">
+            Shop the offer <ArrowRight className="size-3.5" />
+          </button>
+        </div>
+
+        {/* The code, when the shop uses one — copied, not invented. */}
+        {offer.code && (
+          <p className="w-full text-[11px]" style={{ color: 'var(--sf-muted)' }}>
+            Quote{' '}
+            <span className="sf-offer-code tnum">{offer.code}</span> at the counter.
+          </p>
+        )}
+      </div>
+    </section>
+  )
+}
+
+/* ---------------------------------------------------------------------------
+   The Offers section
+   --------------------------------------------------------------------------- */
+
+/**
+ * The Offers section: a row of bold festival cards.
+ *
+ * This is the section a jewellery site is expected to have during a festival —
+ * big, loud, coloured cards a customer can scan in one pass and tap. Each card
+ * carries the three things that decide whether an offer is worth acting on: the
+ * size of the saving, the name of the festival, and how long is left.
+ *
+ * The banner above stays as it is: the banner is one line of shop news, this is
+ * the shop's offer board. They read from the same data, so a shop that runs a
+ * single offer simply sees it twice the way a real counter would — once in the
+ * strip and once on the board.
+ *
+ * The section renders nothing when no offer belongs in it. An empty "no offers"
+ * row would advertise that the shop is not running anything, and a permanent
+ * discount section in the off-season makes the shop look like it never sells at
+ * full price.
+ */
+export function OfferCards({
+  offers,
+  onSelect,
+}: {
+  offers: PublicOffer[]
+  onSelect: (offer: PublicOffer) => void
+}) {
+  if (offers.length === 0) return null
+
+  return (
+    <section id="offers" className="scroll-mt-28 border-t border-line px-4 py-14 sm:px-7 sm:py-16">
+      <div className="mx-auto w-full max-w-[1400px]">
+        <header className="mb-8 text-center" data-reveal="up">
+          <p className="sf-eyebrow">Festival offers</p>
+          <h2 className="mt-3 text-2xl font-semibold tracking-tight sm:text-3xl">Celebrate for less</h2>
+          <p className="mx-auto mt-3 max-w-xl text-sm leading-7" style={{ color: 'var(--sf-muted)' }}>
+            Limited-time savings on the pieces you have been looking at. Tap an offer to see what is included.
+          </p>
+        </header>
+
+        {/*
+          One, two or three cards per row — never more.
+
+          These cards are large on purpose: the percentage has to be readable at
+          a glance from across a room, the way a printed festival board is. Four
+          across would shrink the number that is the whole point.
+        */}
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {offers.map((offer, index) => (
+            <OfferCard key={offer.id} offer={offer} index={index} onSelect={() => onSelect(offer)} />
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+/**
+ * One festival offer card.
+ *
+ * The saving is the largest element and the festival name sits above it, which
+ * is the reading order a banner of this kind uses: "DIWALI OFFER — 20% OFF".
+ * The uploaded artwork, when there is any, is the card's background rather than
+ * a separate thumbnail, because that is what makes a festival board feel like
+ * artwork instead of a coupon.
+ */
+function OfferCard({
+  offer,
+  index,
+  onSelect,
+}: {
+  offer: PublicOffer
+  index: number
+  onSelect: () => void
+}) {
+  const banner = offer.hasBanner ? offerBannerUrl(offer.id, offer.bannerVersion) : null
+
+  /**
+   * The saving, split so the unit can be set smaller.
+   *
+   * "20%" next to a small "OFF" reads far better at this size than "20% off"
+   * set as one line, and it is the pattern every festival board already uses.
+   */
+  const amount = offer.discountType === 'flat' ? rupees(offer.discountValue) : `${Math.round(offer.discountValue * 100) / 100}%`
+
+  /**
+   * The deadline line, phrased so it can never overstate.
+   *
+   * "Last day" appears only on the actual last day, and an offer ending tomorrow
+   * says so rather than claiming hours remain when a full day does.
+   */
+  const timing =
+    offer.daysLeft === 0
+      ? offer.startsOn === offer.endsOn
+        ? 'Today only'
+        : 'Last day today'
+      : offer.daysLeft === 1
+        ? 'Ends tomorrow'
+        : `Ends in ${offer.daysLeft} days`
+
+  return (
+    <article
+      className="sf-offer-card"
+      data-accent={offer.accent}
+      data-reveal="up"
+      data-reveal-delay={Math.min(index, 4) * 80}
+    >
+      {/* The uploaded artwork, if any, sits behind the text as a soft wash. */}
+      {banner && <img src={banner} alt="" loading="lazy" className="sf-offer-card-art" />}
+
+      <div className="sf-offer-card-body">
+        <p className="sf-offer-card-label">{offer.title}</p>
+
+        <p className="sf-offer-card-amount">
+          <span className="tnum">{amount}</span>{' '}
+          <span className="sf-offer-card-unit">OFF</span>
+        </p>
+
+        {offer.description && <p className="sf-offer-card-desc">{offer.description}</p>}
+
+        <p className="sf-offer-card-timing">{timing}</p>
+
+        <div className="sf-offer-card-foot">
+          <button onClick={onSelect} className="sf-offer-card-btn">
+            Shop Now <ArrowRight className="size-3.5" />
+          </button>
+
+          {offer.code && (
+            <span className="sf-offer-card-code tnum">CODE: {offer.code}</span>
+          )}
+        </div>
+      </div>
+    </article>
   )
 }
 

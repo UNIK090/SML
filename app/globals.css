@@ -647,6 +647,18 @@
   --sf-gold-line: oklch(0.87 0.07 82);
   --sf-gold-wash: oklch(0.968 0.028 85);
 
+  /*
+   * Offers section card colours.
+   *
+   * All four are dark enough to carry white text at the large sizes the cards
+   * use — that is the constraint, not decoration. A pale festival yellow with
+   * white type is unreadable at a counter in daylight, so the gold offered here
+   * is a deep antique tone rather than the bright accent gold above.
+   */
+  --sf-offer-red: oklch(0.5 0.19 27);
+  --sf-offer-gold: oklch(0.55 0.12 68);
+  --sf-offer-green: oklch(0.45 0.11 152);
+
   /* Kept so older markup referencing these names keeps working. */
   --sf-ink-soft: var(--sf-surface);
   --sf-night: var(--sf-cream);
@@ -713,6 +725,314 @@
 .sf-header {
   background: var(--sf-surface);
   box-shadow: 0 1px 0 var(--sf-line), 0 4px 14px oklch(0.3 0.03 60 / 5%);
+}
+
+/* ---------- Festival offer band ---------- */
+/*
+ * The one place the shop speaks in its own maroon, directly under the banner:
+ * an offer is the message a customer has to act on before it expires, so it is
+ * louder than every ordinary section. The gold rule down the left ties it to
+ * the rest of the page rather than reading as a stock discount strip.
+ */
+.sf-offer-band {
+  position: relative;
+  background: linear-gradient(100deg, var(--sf-gold-wash), var(--sf-cream) 60%, oklch(0.99 0.006 85));
+  border-bottom: 1px solid var(--sf-gold-line);
+}
+
+.sf-offer-band::before {
+  position: absolute;
+  inset-block: 0;
+  left: 0;
+  width: 4px;
+  background: var(--sf-maroon);
+  content: '';
+}
+
+.sf-offer-badge {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.45rem 0.85rem;
+  border-radius: 999px;
+  background: var(--sf-maroon);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.sf-offer-badge svg {
+  color: var(--sf-gold-ink);
+}
+
+/* The saving is the largest thing in the row — it is the reason to look. */
+.sf-offer-saving {
+  font-size: 1.35rem;
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+  color: var(--sf-maroon);
+}
+
+.sf-offer-code {
+  display: inline-block;
+  margin-inline: 0.15rem;
+  padding: 0.1rem 0.45rem;
+  border: 1px dashed var(--sf-gold-line);
+  border-radius: 4px;
+  background: var(--sf-surface);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--sf-heading);
+}
+
+/*
+ * The uploaded festival photograph.
+ *
+ * The frame does NOT force a square. A shop's festival banner is usually a
+ * landscape design — text on the left, artwork on the right — and centre-cropping
+ * that to a square cuts the artwork off at both edges. Instead the frame keeps a
+ * fixed HEIGHT and lets the photo take its own width up to a cap, so a wide
+ * banner stays a wide banner and a square one stays square.
+ *
+ * The fixed height is what keeps the page stable: whatever shape is uploaded,
+ * the band is the same height, so a tall image cannot shove the collection off
+ * the first screen.
+ */
+.sf-offer-photo {
+  flex-shrink: 0;
+  overflow: hidden;
+  height: 5rem;
+  border: 1px solid var(--sf-gold-line);
+  border-radius: 10px;
+  background: var(--sf-surface);
+  box-shadow: 0 6px 16px oklch(0.4 0.05 70 / 12%);
+  transition: transform 200ms ease, box-shadow 200ms ease;
+}
+
+@media (min-width: 640px) {
+  .sf-offer-photo {
+    height: 6.5rem;
+  }
+}
+
+.sf-offer-photo:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 24px oklch(0.4 0.05 70 / 18%);
+}
+
+/*
+ * `cover` rather than `contain`: a photo that is slightly the wrong shape should
+ * fill its frame edge to edge rather than sitting in letterbox bars. Because the
+ * frame now follows the photo's own proportions, this trims a little rather than
+ * cutting a wide banner in half.
+ */
+.sf-offer-photo img {
+  height: 100%;
+  width: auto;
+  max-width: 18rem;
+  object-fit: cover;
+}
+
+/*
+ * The copy block: badge, title and description.
+ *
+ * It is given a real minimum width rather than being left to `flex: 1`, so a
+ * long offer name wraps onto two readable lines instead of being crushed into a
+ * narrow column beside the buttons.
+ */
+.sf-offer-copy {
+  flex: 1 1 18rem;
+  min-width: 0;
+}
+
+/*
+ * The action block: the saving, the deadline and the button.
+ *
+ * Pushed to the right end of the row on wide screens where it reads as the
+ * decision, and left-aligned underneath on a phone where there is no room for
+ * two columns.
+ */
+.sf-offer-action {
+  display: flex;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+}
+
+@media (min-width: 640px) {
+  .sf-offer-action {
+    margin-left: auto;
+  }
+}
+
+/*
+ * With a photo present the band grows to fit the frame, and the text is given
+ * room to breathe beside it rather than being squeezed into one line.
+ */
+.sf-offer-band-photo {
+  padding-block: 1.25rem;
+}
+
+/* ---------- Offers section: the festival card board ---------- */
+/*
+ * These are the loud cards a jewellery site leads with during a festival: a
+ * solid colour field, white text, the percentage as the biggest thing on the
+ * card, and one clear Shop Now button.
+ *
+ * The colour is driven by a data attribute rather than an inline style so the
+ * four choices live here, in one readable list, instead of being scattered
+ * through the component as hex values.
+ */
+.sf-offer-card {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border-radius: 16px;
+  background: var(--sf-offer-red);
+  box-shadow: 0 14px 30px oklch(0.4 0.05 70 / 16%);
+  transition: transform 220ms ease, box-shadow 220ms ease;
+}
+
+.sf-offer-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 22px 44px oklch(0.4 0.05 70 / 22%);
+}
+
+/* The four card colours. Every one is dark enough to carry white text. */
+.sf-offer-card[data-accent='red'] {
+  background: var(--sf-offer-red);
+}
+.sf-offer-card[data-accent='maroon'] {
+  background: var(--sf-maroon);
+}
+.sf-offer-card[data-accent='gold'] {
+  background: var(--sf-offer-gold);
+}
+.sf-offer-card[data-accent='green'] {
+  background: var(--sf-offer-green);
+}
+
+/*
+ * Uploaded artwork, if the shop added any.
+ *
+ * It is a wash behind the text, not a picture beside it: the card is a poster, so
+ * the words have to win. Held well back in opacity so any photo stays legible
+ * under white text, and blended so it tints the colour instead of replacing it.
+ */
+.sf-offer-card-art {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.22;
+  mix-blend-mode: luminosity;
+}
+
+.sf-offer-card::after {
+  /* A subtle diagonal sheen keeps a flat colour field from looking dead. */
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(135deg, oklch(1 0 0 / 14%), transparent 55%);
+  content: '';
+}
+
+.sf-offer-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1.75rem 1.5rem;
+  color: #fff;
+}
+
+/* The festival name, set as a quiet label above the number. */
+.sf-offer-card-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: oklch(1 0 0 / 82%);
+}
+
+/* The percentage — the reason the card exists, and the largest thing on it. */
+.sf-offer-card-amount {
+  display: flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  font-size: 3.1rem;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.03em;
+}
+
+.sf-offer-card-unit {
+  font-size: 1.2rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.sf-offer-card-desc {
+  font-size: 0.82rem;
+  line-height: 1.6;
+  color: oklch(1 0 0 / 88%);
+}
+
+.sf-offer-card-timing {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: oklch(1 0 0 / 80%);
+}
+
+.sf-offer-card-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+/*
+ * The one action on the card: white on the colour field, so it is unmistakable
+ * against the busy card behind it.
+ */
+.sf-offer-card-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  height: 2.5rem;
+  padding-inline: 1.25rem;
+  border-radius: 999px;
+  background: var(--sf-surface);
+  color: var(--sf-heading);
+  font-size: 0.78rem;
+  font-weight: 700;
+  transition: transform 180ms ease, box-shadow 180ms ease;
+}
+
+.sf-offer-card-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px oklch(0.2 0.03 60 / 25%);
+}
+
+/* The coupon code, pushed to the far end as a dashed ticket stub. */
+.sf-offer-card-code {
+  padding: 0.3rem 0.6rem;
+  border: 1px dashed oklch(1 0 0 / 55%);
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: oklch(1 0 0 / 92%);
 }
 
 /* ---------- Hero: a short cream banner, not a full-height dark hero ---------- */

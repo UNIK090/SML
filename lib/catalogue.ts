@@ -2,6 +2,7 @@ import { asc, desc, eq, inArray, notInArray, sql } from 'drizzle-orm'
 import { db } from '@/lib/db'
 import { inventoryItemImages, inventoryItems, invoiceItems, shopLogo, storeOrderItems, storeOrders } from '@/lib/db/schema'
 import { getShopDetails } from '@/lib/shop'
+import { loadFeaturedOffer, loadSectionOffers } from '@/lib/offers-data'
 import { sellingPrice } from '@/lib/store'
 import type { PriceBand, StoreCatalogue, StoreCategory, StoreProduct } from '@/lib/types'
 
@@ -213,13 +214,19 @@ export function latestAssetVersion(products: StoreProduct[], brandUpdatedAt: Dat
 
 /** The full storefront payload: shop details, products, collections, categories. */
 export async function loadCatalogue(): Promise<StoreCatalogue> {
-  const [shop, products, sold, [brand]] = await Promise.all([
+  const [shop, products, sold, [brand], offer, offers] = await Promise.all([
     getShopDetails(),
     listPublishedProducts(),
     // Best sellers are ranked from real sales. A shop that has not sold online
     // yet simply gets no rail rather than a rail of invented "best sellers".
     soldQuantities().catch(() => new Map<number, number>()),
     db.select({ updatedAt: shopLogo.updatedAt }).from(shopLogo).where(eq(shopLogo.id, 1)),
+    // The festival offer the page leads with, already narrowed to today's
+    // business day. It resolves to null rather than throwing when nothing runs.
+    loadFeaturedOffer(),
+    // The cards in the Offers section. Read separately from the banner because
+    // a shop can keep a small announcement out of the card grid.
+    loadSectionOffers(),
   ])
 
   const grouped = new Map<string, StoreProduct[]>()
@@ -250,6 +257,8 @@ export async function loadCatalogue(): Promise<StoreCatalogue> {
     // never leaks how much of anything else the shop has moved.
     soldCounts: Object.fromEntries(bestSellers.map((product) => [product.code, sold.get(product.code) ?? 0])),
     priceBands: buildPriceBands(products),
+    offer,
+    offers,
     updatedAt: latestAssetVersion(products, brand?.updatedAt),
   }
 }

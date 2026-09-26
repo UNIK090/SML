@@ -52,6 +52,8 @@ import {
   CategoryRail,
   CollectionStories,
   CounterNotice,
+  OfferBanner,
+  OfferCards,
   OrderSteps,
   PromiseBand,
 } from '@/components/store/store-sections'
@@ -111,6 +113,25 @@ function ShopWindow() {
     shop?.whatsapp ?? shop?.phone,
     `Hello ${shop?.name ?? ''}, I would like to know more about your collection.`,
   )
+
+  /**
+   * The festival offer, when one is running.
+   *
+   * Nothing is derived here beyond the browse target: the server has already
+   * decided whether it is live and how long is left, against the shop's own
+   * business day.
+   */
+  const offer = data?.offer ?? null
+
+  /**
+   * The offers that belong on the card board.
+   *
+   * Served separately from the banner offer because a shop can keep a small
+   * announcement out of the card grid, and only one of these is used as the
+   * leading strip. Tapping a card opens the full collection filtered to what
+   * the shop sells — no offer can link to a shelf that does not exist.
+   */
+  const offerCards = data?.offers ?? []
 
   /**
    * The shelf of pieces the page leads with.
@@ -189,6 +210,9 @@ function ShopWindow() {
             <nav className="ml-auto hidden items-center gap-1 lg:flex" aria-label="Sections">
             {[
               { label: 'Collections', id: 'collections' },
+              // Offers is placed second: during a festival it is the reason most
+              // customers came, and it is the section that changes fastest.
+              { label: 'Offers', id: 'offers' },
               { label: 'Shop', id: 'store' },
               { label: 'Boutique', id: 'boutique' },
             ].map((item) => (
@@ -252,6 +276,7 @@ function ShopWindow() {
           <nav className="animate-rise-in border-t border-line px-4 py-3 lg:hidden" aria-label="Sections">
             {[
               { label: 'Collections', id: 'collections' },
+              { label: 'Offers', id: 'offers' },
               { label: 'Shop the collection', id: 'store' },
               { label: 'Visit the boutique', id: 'boutique' },
             ].map((item) => (
@@ -345,6 +370,12 @@ function ShopWindow() {
           </div>
         </div>
       </section>
+
+      {/* --------------------------- Festival offer --------------------------- */}
+      {offer && <OfferBanner offer={offer} onShop={() => openStore()} />}
+
+      {/* ---------------------------- Offer board ---------------------------- */}
+      <OfferCards offers={offerCards} onSelect={() => openStore()} />
 
       {/* ------------------------------ Trust strip ------------------------------ */}
       <div className="sf-trust-strip px-4 py-4 sm:px-7">

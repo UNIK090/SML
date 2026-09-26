@@ -18,6 +18,7 @@ import {
   Moon,
   PanelLeftClose,
   PanelLeftOpen,
+  Percent,
   ReceiptText,
   Settings,
   Sparkles,
@@ -30,7 +31,7 @@ import { usePreferences } from '@/components/preferences'
 import { LANGUAGES, type TranslationKey } from '@/lib/i18n'
 import type { BrandAssets } from '@/lib/types'
 
-export type SectionKey = 'billing' | 'orders' | 'payments' | 'items' | 'store' | 'reports' | 'profile'
+export type SectionKey = 'billing' | 'orders' | 'payments' | 'items' | 'store' | 'offers' | 'reports' | 'profile'
 
 type Section = {
   key: SectionKey
@@ -47,6 +48,9 @@ const SECTIONS: Section[] = [
   { key: 'payments', labelKey: 'nav.payments', hintKey: 'nav.payments.hint', icon: Wallet },
   { key: 'items', labelKey: 'nav.items', hintKey: 'nav.items.hint', icon: Gem },
   { key: 'store', labelKey: 'nav.store', hintKey: 'nav.store.hint', icon: Store },
+  // Offers sits directly under Store: a festival banner is part of the same job
+  // of running the website, and the shopkeeper needs it while the festival is on.
+  { key: 'offers', labelKey: 'nav.offers', hintKey: 'nav.offers.hint', icon: Percent },
   { key: 'reports', labelKey: 'nav.reports', hintKey: 'nav.reports.hint', icon: ChartColumn },
   { key: 'profile', labelKey: 'nav.profile', hintKey: 'nav.profile.hint', icon: Settings },
 ]

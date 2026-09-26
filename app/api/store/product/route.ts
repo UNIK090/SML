@@ -5,6 +5,7 @@ import { inventoryItems } from '@/lib/db/schema'
 import { isConnectionError } from '@/lib/db/errors'
 import { latestAssetVersion, galleryCounts, listPublishedProducts, productFields, recommend, soldQuantities, toStoreProduct } from '@/lib/catalogue'
 import { getShopDetails } from '@/lib/shop'
+import { loadFeaturedOffer } from '@/lib/offers-data'
 import type { StoreProductLink } from '@/lib/types'
 
 // The public payload behind a shared product link: `/product/1042`.
@@ -40,10 +41,13 @@ export async function GET(request: Request) {
 
     // The recommendations are ranked from real sales, so the count is fetched
     // alongside the catalogue rather than derived from anything on the client.
-    const [shop, products, sold] = await Promise.all([
+    const [shop, products, sold, offer] = await Promise.all([
       getShopDetails(),
       listPublishedProducts(),
       soldQuantities(),
+      // A shared piece is a landing page, so it carries the same live festival
+      // offer as the grid — a customer arriving from WhatsApp sees the sale too.
+      loadFeaturedOffer(),
     ])
     const product = toStoreProduct(row, (await galleryCounts([row.id])).get(row.id) ?? 0)
     const related = recommend(products, product, sold, RECOMMENDATION_LIMIT)
@@ -53,6 +57,7 @@ export async function GET(request: Request) {
       product,
       related,
       hasSalesData: related.some((entry) => entry.sold > 0),
+      offer,
       updatedAt: latestAssetVersion(products, null),
     }
 

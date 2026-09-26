@@ -216,6 +216,78 @@ export const storeOrderItems = pgTable('store_order_items', {
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 })
 
+// Festival offers advertised on the storefront.
+//
+// A jewellery counter lives on the festival calendar — Akshaya Tritiya, Diwali,
+// Ugadi, Varalakshmi Vratham — and each one is a short, dated promise: "10% off
+// this week". Keeping it as a row rather than a field on the shop profile is
+// what makes it safe to run: the dates decide when it shows, so an offer cannot
+// be left up by accident after the festival has passed.
+//
+// `startsOn`/`endsOn` are plain calendar dates in the shop's own timezone (India
+// business time), compared against the business day, not a timestamp — an offer
+// ends at midnight on its last day, not at an hour that depends on the server.
+//
+// Only one offer is ever promoted on the site at a time, so `active` is an
+// explicit switch the shopkeeper controls and the newest active offer wins.
+export const festivalOffers = pgTable(
+  'festival_offers',
+  {
+    id: serial('id').primaryKey(),
+    /** Customer-facing name, e.g. "Diwali Offer". */
+    title: text('title').notNull(),
+    /** One line under the title, e.g. "Flat 10% off on all silver pieces". */
+    description: text('description'),
+    /** Optional coupon/announcement code the customer quotes at the counter. */
+    code: text('code'),
+    /**
+     * `percent` = a percentage off, `flat` = a rupee amount off.
+     * Either way it is advertised only — no price is rewritten by an offer, so
+     * the catalogue price a customer sees stays the price the shop set.
+     */
+    discountType: text('discount_type').notNull().default('percent'),
+    /** Percent (0–100) or a flat rupee amount, depending on `discountType`. */
+    discountValue: numeric('discount_value', { precision: 12, scale: 2 }).notNull().default('0'),
+    /** Inclusive first day the offer shows on the website. */
+    startsOn: date('starts_on').notNull(),
+    /** Inclusive last day the offer shows on the website. */
+    endsOn: date('ends_on').notNull(),
+    /** Master switch — an offer past its dates never shows even when active. */
+    active: boolean('active').notNull().default(true),
+    /**
+     * Card colour on the website: red, gold, green or maroon. A short, closed
+     * set rather than a free colour, so every card keeps readable white text.
+     */
+    accent: text('accent').notNull().default('red'),
+    /**
+     * Whether the offer also appears as a card in the Offers section.
+     *
+     * Separate from `active` so a shop can run a small announcement strip
+     * without also filling a card in the grid — the two are different sizes of
+     * promise, and a one-line offer looks thin as a big card.
+     */
+    showInSection: boolean('show_in_section').notNull().default(true),
+    // --- Banner artwork ------------------------------------------------------
+    // The festival photograph the landing page leads with.
+    //
+    // Bytes are stored in the database as base64 rather than on disk, for the
+    // same reason product photos are: a serverless deployment has a read-only,
+    // ephemeral filesystem, so a file written at runtime would vanish on the
+    // next deploy. The image is served by /api/offers/image.
+    //
+    // `bannerUpdatedAt` doubles as the client's cache-buster. The endpoint can
+    // then cache the bytes immutably for a year, because the URL changes the
+    // moment the photo is replaced — the same trick product images use.
+    bannerMimeType: text('banner_mime_type'),
+    bannerData: text('banner_data'),
+    bannerByteSize: integer('banner_byte_size'),
+    bannerUpdatedAt: timestamp('banner_updated_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index('festival_offers_window_idx').on(table.active, table.startsOn, table.endsOn)],
+)
+
 // Append-only feed that powers the realtime order alerts and the bell history.
 // Written inside the same transaction as the order, so an alert can never be
 // lost even if no admin browser is open when the order arrives.
