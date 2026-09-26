@@ -67,17 +67,17 @@ export default function BillingSection({
     return () => { cancelled = true; clearTimeout(timer) }
   }, [search])
 
-  // `customerPrice` lets the barcode scanner hand back an operator-entered price;
-  // when omitted the catalogue price is used, which is the search/quick-add path.
+  // `customerPrice` lets the barcode scanner hand back an operator-entered price.
+  // Otherwise the line starts at 0 — the operator types the amount in the bill.
   const addToCart = (item: Item, customerPrice?: number) => {
     setMessage('')
     setError('')
-    const unitPrice = customerPrice !== undefined && Number.isFinite(customerPrice) && customerPrice >= 0 ? customerPrice : Number(item.price)
+    const unitPrice = customerPrice !== undefined && Number.isFinite(customerPrice) && customerPrice >= 0 ? customerPrice : 0
     setCart((prev) => {
       const existing = prev.find((line) => line.code === item.code)
       // Each add inserts exactly one row at qty 1. Re-adding the same code only
       // refreshes its price — it never bumps the quantity or duplicates the row.
-      if (existing) return prev.map((line) => (line.code === item.code ? { ...line, unitPrice } : line))
+      if (existing) return prev.map((line) => (line.code === item.code ? { ...line, unitPrice: unitPrice || line.unitPrice } : line))
       return [
         ...prev,
         { code: item.code, name: item.name, category: item.category, cataloguePrice: Number(item.price), unitPrice, quantity: 1 },
@@ -102,10 +102,26 @@ export default function BillingSection({
   const discountValue = Math.max(0, Number(discount) || 0)
   const total = Math.max(0, subtotal - discountValue)
 
+  // One representative item per kind of piece, so the quick-add panel shows a
+  // single Ring, Earrings, Chain, Bracelet, Necklace … instead of the whole
+  // catalogue. The first item of each category wins; ties keep catalogue order.
+  const categoryPicks = useMemo(() => {
+    const firstOfCategory = new Map<string, Item>()
+    for (const item of items) {
+      const key = item.category.trim()
+      if (!key) continue
+      if (!firstOfCategory.has(key)) firstOfCategory.set(key, item)
+    }
+    return [...firstOfCategory.entries()]
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([category, item]) => ({ category, item }))
+  }, [items])
+
   const createBill = async () => {
     setMessage('')
     setError('')
     if (cart.length === 0) return setError('Add at least one item to the bill.')
+    if (cart.some((line) => line.unitPrice <= 0)) return setError('Enter an amount for every item.')
     if (discountValue > subtotal) return setError('The discount cannot be more than the subtotal.')
 
     setSaving(true)
@@ -277,10 +293,11 @@ export default function BillingSection({
                     <Field label={t('billing.customerPrice')}>
                       <Input
                         type="number"
-                        min="0.01"
+                        min="0"
                         step="0.01"
-                        value={line.unitPrice}
-                        onChange={(event) => updateLine(line.code, { unitPrice: Number(event.target.value) })}
+                        value={line.unitPrice === 0 ? '' : line.unitPrice}
+                        placeholder="Enter amount"
+                        onChange={(event) => updateLine(line.code, { unitPrice: Math.max(0, Number(event.target.value) || 0) })}
                       />
                     </Field>
                     <Field label={t('billing.lineTotal')}>
@@ -354,20 +371,20 @@ export default function BillingSection({
             <EmptyState icon={ShoppingBag} title={t('billing.catalogueEmpty')} description={t('billing.catalogueEmpty.hint')} />
           ) : (
             <div className="flex max-h-[26rem] flex-col gap-2 overflow-y-auto pr-1">
-              {items.slice(0, 30).map((item) => (
+              {categoryPicks.map(({ category, item }) => (
                 <button
-                  key={item.id}
+                  key={category}
                   onClick={() => addToCart(item)}
                   className="business-list-row flex items-center justify-between rounded-2xl px-3 py-2.5 text-left"
                 >
                   <span className="flex min-w-0 items-center gap-3">
                     <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-secondary text-xs font-semibold">{item.code}</span>
                     <span className="min-w-0">
-                      <span className="block truncate text-sm font-medium">{item.name}</span>
-                      <span className="block text-xs text-muted-foreground">{item.category}</span>
+                      <span className="block truncate text-sm font-medium">{category}</span>
+                      <span className="block truncate text-xs text-muted-foreground">{item.name}</span>
                     </span>
                   </span>
-                  <span className="tnum shrink-0 text-sm font-medium">{money(Number(item.price))}</span>
+                  <Plus className="size-4 shrink-0 text-gold-deep" />
                 </button>
               ))}
             </div>
