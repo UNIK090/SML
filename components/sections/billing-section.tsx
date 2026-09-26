@@ -75,8 +75,9 @@ export default function BillingSection({
     const unitPrice = customerPrice !== undefined && Number.isFinite(customerPrice) && customerPrice >= 0 ? customerPrice : Number(item.price)
     setCart((prev) => {
       const existing = prev.find((line) => line.code === item.code)
-      // Re-adding the same code bumps quantity instead of duplicating the row.
-      if (existing) return prev.map((line) => (line.code === item.code ? { ...line, quantity: line.quantity + 1, unitPrice } : line))
+      // Each add inserts exactly one row at qty 1. Re-adding the same code only
+      // refreshes its price — it never bumps the quantity or duplicates the row.
+      if (existing) return prev.map((line) => (line.code === item.code ? { ...line, unitPrice } : line))
       return [
         ...prev,
         { code: item.code, name: item.name, category: item.category, cataloguePrice: Number(item.price), unitPrice, quantity: 1 },
