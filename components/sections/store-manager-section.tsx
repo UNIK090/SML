@@ -218,12 +218,12 @@ export default function StoreManagerSection({ items, loading, refresh }: { items
           description="Turn a piece on to put it on the website. Set a discounted/sale price below to show it on the store page with the original price struck through. Leave it blank to use the reference price."
         />
 
-        <div className="mb-5 flex-wrap items-end gap-3">
-          <label className="relative min-w-[16rem] flex-1">
+        <div className="mb-5 flex flex-wrap items-end gap-3">
+          <label className="relative min-w-0 w-full flex-1 sm:min-w-[16rem]">
             <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input value={filter} onChange={(event) => setFilter(event.target.value)} placeholder="Filter by name, code, category or collection" className="!pl-9" />
           </label>
-          <Select value={scope} onChange={(event) => setScope(event.target.value as typeof scope)} className="!w-44">
+          <Select value={scope} onChange={(event) => setScope(event.target.value as typeof scope)} className="!w-full sm:!w-44">
             <option value="all">All items ({items.length})</option>
             <option value="live">Live only ({published.length})</option>
             <option value="hidden">Not published ({items.length - published.length})</option>

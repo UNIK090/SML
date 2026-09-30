@@ -12,7 +12,13 @@ export const metadata: Metadata = {
     apple: [{ url: '/api/brand?kind=favicon', type: 'image/png' }],
   },
 }
-export const viewport: Viewport = { colorScheme: 'light', themeColor: '#f7f8fa' }
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover',
+  colorScheme: 'light',
+  themeColor: '#f7f8fa',
+}
 // Applies the stored theme before first paint, so a dark-mode user never sees a
 // flash of the light theme. Runs inline and synchronously, before React hydrates.
 const APPLY_THEME = `

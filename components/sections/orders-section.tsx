@@ -330,7 +330,7 @@ export default function OrdersSection({ onRaiseBill }: { onRaiseBill?: () => voi
             )}
           </div>
 
-          <label className="relative min-w-[14rem] flex-1">
+          <label className="relative min-w-0 w-full flex-1 sm:min-w-[14rem]">
             <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               value={query}

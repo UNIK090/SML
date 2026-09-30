@@ -24,7 +24,7 @@ export default async function PublicInvoicePage({ params }: { params: Promise<{ 
   const discount = Number(invoice.discount || 0)
 
   return (
-    <main className="invoice-print-root dashboard-canvas min-h-screen px-4 py-10 text-foreground sm:py-14">
+    <main className="invoice-print-root dashboard-canvas min-h-screen px-4 pt-[max(2.5rem,calc(env(safe-area-inset-top)+1rem))] pb-[max(2.5rem,env(safe-area-inset-bottom))] text-foreground sm:py-14">
       <article className="invoice-print-sheet business-invoice mx-auto w-full max-w-xl rounded-3xl border-hairline bg-card p-6 sm:p-8">
         <p className="text-center text-xs font-medium tracking-[0.24em] text-gold-deep uppercase">Invoice receipt</p>
         <h1 className="mt-2 text-center text-xl font-semibold tracking-tight">{shop.name.toUpperCase()}</h1>
@@ -38,20 +38,22 @@ export default async function PublicInvoicePage({ params }: { params: Promise<{ 
           <p className="sm:text-right"><span className="text-muted-foreground">Payment:</span> <span className="font-medium">{invoice.paymentStatus}</span></p>
         </div>
 
-        <table className="mt-5 w-full text-left text-sm">
-          <thead className="border-b border-hairline text-xs text-muted-foreground">
-            <tr><th className="pb-2 font-medium">Item</th><th className="pb-2 text-center font-medium">Qty</th><th className="pb-2 text-right font-medium">Amount</th></tr>
-          </thead>
-          <tbody>
-            {lines.map((line) => (
-              <tr key={line.id} className="border-b border-hairline">
-                <td className="py-3"><p className="font-medium">{line.itemName}</p><p className="text-xs text-muted-foreground">{line.category}</p></td>
-                <td className="py-3 text-center">{line.quantity}</td>
-                <td className="py-3 text-right font-medium">{rupees(line.lineTotal)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <div className="-mx-1 mt-5 overflow-x-auto overscroll-x-contain px-1">
+          <table className="min-w-[22rem] w-full text-left text-sm">
+            <thead className="border-b border-hairline text-xs text-muted-foreground">
+              <tr><th className="pb-2 font-medium">Item</th><th className="pb-2 text-center font-medium">Qty</th><th className="pb-2 text-right font-medium">Amount</th></tr>
+            </thead>
+            <tbody>
+              {lines.map((line) => (
+                <tr key={line.id} className="border-b border-hairline">
+                  <td className="py-3"><p className="font-medium">{line.itemName}</p><p className="text-xs text-muted-foreground">{line.category}</p></td>
+                  <td className="py-3 text-center">{line.quantity}</td>
+                  <td className="py-3 text-right font-medium">{rupees(line.lineTotal)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
 
         <div className="ml-auto mt-5 max-w-xs space-y-1 text-sm">
           <p className="flex justify-between text-muted-foreground"><span>Subtotal</span><span>{rupees(subtotal)}</span></p>

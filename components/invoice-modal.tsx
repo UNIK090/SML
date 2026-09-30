@@ -116,29 +116,31 @@ export default function InvoiceModal({
           <p className="sm:text-right"><span className="text-muted-foreground">{t('invoice.time')}</span> <span className="font-medium">{new Date(invoice.createdAt).toLocaleTimeString('en-IN')}</span></p>
         </div>
 
-        <table className="mt-5 w-full text-left text-xs">
-          <thead>
-            <tr className="border-y border-hairline text-muted-foreground">
-              <th className="py-2 font-medium">{t('invoice.col.item')}</th>
-              <th className="py-2 text-center font-medium">{t('invoice.col.qty')}</th>
-              <th className="py-2 text-right font-medium">{t('invoice.col.rate')}</th>
-              <th className="py-2 text-right font-medium">{t('invoice.col.amount')}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {lines.map((line) => (
-              <tr key={line.id} className="border-b border-hairline">
-                <td className="py-2">
-                  <span className="font-medium">{line.itemName}</span>
-                  <span className="ml-1 text-muted-foreground">({line.category})</span>
-                </td>
-                <td className="py-2 text-center">{line.quantity}</td>
-                <td className="tnum py-2 text-right">{money(Number(line.unitPrice))}</td>
-                <td className="tnum py-2 text-right font-medium">{money(Number(line.lineTotal))}</td>
+        <div className="-mx-1 mt-5 overflow-x-auto overscroll-x-contain px-1">
+          <table className="min-w-[29rem] w-full text-left text-xs">
+            <thead>
+              <tr className="border-y border-hairline text-muted-foreground">
+                <th className="py-2 font-medium">{t('invoice.col.item')}</th>
+                <th className="py-2 text-center font-medium">{t('invoice.col.qty')}</th>
+                <th className="py-2 text-right font-medium">{t('invoice.col.rate')}</th>
+                <th className="py-2 text-right font-medium">{t('invoice.col.amount')}</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {lines.map((line) => (
+                <tr key={line.id} className="border-b border-hairline">
+                  <td className="py-2">
+                    <span className="font-medium">{line.itemName}</span>
+                    <span className="ml-1 text-muted-foreground">({line.category})</span>
+                  </td>
+                  <td className="py-2 text-center">{line.quantity}</td>
+                  <td className="tnum py-2 text-right">{money(Number(line.unitPrice))}</td>
+                  <td className="tnum py-2 text-right font-medium">{money(Number(line.lineTotal))}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
 
         {customerPhotos.length > 0 && (
           <section className="mt-5 rounded-2xl border border-dashed border-gold/45 bg-gold-soft/30 p-4 print:hidden">

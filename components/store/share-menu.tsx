@@ -127,7 +127,7 @@ export default function ShareMenu({
           // stopPropagation keeps the card's own click behaviour (opening the
           // piece) from firing when the customer is only picking a channel.
           onClick={(event) => event.stopPropagation()}
-          className="bell-panel sf-share-panel absolute z-30 mt-2 w-60 overflow-hidden rounded-xl border border-line bg-white p-2 text-left shadow-xl"
+          className="bell-panel sf-share-panel absolute right-0 z-30 mt-2 w-60 max-w-[calc(100vw-2rem)] overflow-hidden rounded-xl border border-line bg-white p-2 text-left shadow-xl"
           style={{ color: 'var(--sf-body)' }}
           role="menu"
           aria-label={`Share ${product.name}`}

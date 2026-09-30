@@ -93,7 +93,7 @@ export default function CartDrawer({
     <div className="fixed inset-0 z-50 flex justify-end" role="dialog" aria-modal="true" aria-label="Your basket">
       <button className="sf-scrim absolute inset-0 bg-black/45" aria-label="Close basket" onClick={onClose} />
 
-      <aside className="sf-drawer relative flex h-full w-full max-w-[27rem] flex-col border-l border-line bg-white shadow-2xl" style={{ color: 'var(--sf-body)' }}>
+      <aside className="sf-drawer relative flex h-[100dvh] w-full max-w-[27rem] flex-col border-l border-line bg-white pt-[env(safe-area-inset-top)] shadow-2xl" style={{ color: 'var(--sf-body)' }}>
         <header className="flex items-center justify-between gap-3 border-b border-line px-5 py-4">
           <div className="flex items-center gap-2.5">
             <ShoppingBag className="size-4" style={{ color: 'var(--sf-maroon)' }} />
@@ -267,7 +267,7 @@ export default function CartDrawer({
         </div>
 
         {cart.lines.length > 0 && (
-          <footer className="border-t border-line px-5 py-4">
+          <footer className="border-t border-line px-5 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
             <dl className="mb-3 flex flex-col gap-1.5 text-xs">
               <div className="flex justify-between" style={{ color: 'var(--sf-body)' }}>
                 <dt>Subtotal</dt>
@@ -362,7 +362,7 @@ function Field({
         inputMode={inputMode}
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
-        className="h-11 rounded-lg border border-line bg-white px-3 text-sm transition focus:border-gold"
+        className="h-11 w-full rounded-lg border border-line bg-white px-3 text-sm transition focus:border-gold"
         style={{ color: 'var(--sf-heading)' }}
       />
       {hint && (

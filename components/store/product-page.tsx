@@ -114,7 +114,7 @@ export default function ProductPage({ code }: { code: number }) {
   return (
     <div className="sf-canvas min-h-screen pb-16">
       {/* A thin maroon bar keeps the piece's page recognisably the same shop. */}
-      <div className="sf-topbar px-4 py-2 text-[11px] sm:px-7">
+      <div className="sf-topbar px-4 pt-[max(0.5rem,env(safe-area-inset-top))] pb-2 text-[11px] sm:px-7 sm:py-2">
         <div className="mx-auto flex w-full max-w-[1200px] items-center justify-between gap-4">
           <Link href="/" className="truncate font-semibold tracking-[0.1em] uppercase transition hover:text-white">
             {shop?.name ?? 'Jewellery'}

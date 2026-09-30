@@ -213,7 +213,7 @@ export function Notice({ children, tone = 'gold' }: { children: ReactNode; tone?
 
 export function Table({ head, children }: { head: string[]; children: ReactNode }) {
   return (
-    <div className="overflow-x-auto">
+    <div className="-mx-1 overflow-x-auto overscroll-x-contain px-1">
       <table className="w-full text-left text-sm">
         <thead>
           <tr className="border-b border-hairline text-xs tracking-wider text-muted-foreground uppercase">

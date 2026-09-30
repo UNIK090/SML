@@ -55,7 +55,7 @@ export default function TrackPage() {
   }
 
   return (
-    <main className="sf-canvas flex min-h-screen items-center justify-center px-5 py-14">
+    <main className="sf-canvas flex min-h-screen items-center justify-center px-5 pt-[max(3.5rem,calc(env(safe-area-inset-top)+1.5rem))] pb-[max(3.5rem,calc(env(safe-area-inset-bottom)+1.5rem))]">
       <div className="w-full max-w-lg">
         <Link href="/" className="sf-btn sf-btn-ghost mb-7 h-9 px-4 text-xs">
           <ArrowLeft className="size-3.5" /> Back to the store
@@ -82,7 +82,7 @@ export default function TrackPage() {
                 onChange={(event) => setOrderNumber(event.target.value)}
                 placeholder="e.g. SML-8K2Q4"
                 autoCapitalize="characters"
-                className="h-11 rounded-lg border border-line bg-white px-3 text-sm uppercase transition focus:border-gold"
+                className="h-11 w-full rounded-lg border border-line bg-white px-3 text-sm uppercase transition focus:border-gold"
                 style={{ color: 'var(--sf-heading)' }}
               />
             </label>
@@ -95,7 +95,7 @@ export default function TrackPage() {
                 value={token}
                 onChange={(event) => setToken(event.target.value)}
                 placeholder="Paste the code after ?t= in your link"
-                className="h-11 rounded-lg border border-line bg-white px-3 font-mono text-xs transition focus:border-gold"
+                className="h-11 w-full rounded-lg border border-line bg-white px-3 font-mono text-xs transition focus:border-gold"
                 style={{ color: 'var(--sf-heading)' }}
               />
               <span className="text-[10px] leading-4" style={{ color: 'var(--sf-muted)' }}>

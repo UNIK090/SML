@@ -28,10 +28,10 @@ export default function OrderSuccess({
   const trackUrl = `/order/${encodeURIComponent(order.orderNumber)}?t=${encodeURIComponent(order.token)}`
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center px-4" role="dialog" aria-modal="true" aria-label="Order placed">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center overflow-y-auto px-4 pt-[max(1rem,env(safe-area-inset-top))] pb-[max(1rem,env(safe-area-inset-bottom))]" role="dialog" aria-modal="true" aria-label="Order placed">
       <button className="sf-scrim absolute inset-0 bg-black/50" aria-label="Close" onClick={onClose} />
 
-      <div className="sf-toast relative w-full max-w-md overflow-hidden rounded-xl border border-line bg-white p-7 text-center shadow-2xl" style={{ color: 'var(--sf-body)' }}>
+      <div className="sf-toast relative my-auto w-full max-w-md overflow-hidden rounded-xl border border-line bg-white p-6 text-center shadow-2xl sm:p-7" style={{ color: 'var(--sf-body)' }}>
         <button
           onClick={onClose}
           aria-label="Close"

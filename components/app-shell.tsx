@@ -272,7 +272,7 @@ export default function AppShell({
 
         {/* ---------- Content ---------- */}
         <div className="flex min-w-0 flex-1 flex-col">
-          <header className="sticky top-0 z-30 border-b border-hairline bg-background/82 px-4 py-3.5 backdrop-blur-xl sm:px-7 sm:py-4 print:hidden">
+          <header className="sticky top-0 z-30 border-b border-hairline bg-background/82 px-4 pt-[max(0.875rem,env(safe-area-inset-top))] pb-3.5 backdrop-blur-xl sm:px-7 sm:py-4 print:hidden">
             <div className="mx-auto flex max-w-[1540px] items-center justify-between gap-3">
               <div className="flex min-w-0 items-center gap-3">
                 <button
@@ -359,7 +359,7 @@ export default function AppShell({
             </div>
           </header>
 
-          <main className="dashboard-canvas flex-1 px-4 py-6 sm:px-7 sm:py-8">
+          <main className="dashboard-canvas flex-1 px-4 pt-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:px-7 sm:py-8">
             <div className="mx-auto w-full max-w-[1540px]">{children}</div>
           </main>
         </div>
@@ -369,7 +369,7 @@ export default function AppShell({
       {drawerOpen && (
         <div className="fixed inset-0 z-50 lg:hidden" role="dialog" aria-modal="true">
           <button className="absolute inset-0 bg-slate-950/60 backdrop-blur-sm" aria-hidden onClick={() => setDrawerOpen(false)} />
-          <nav className="app-sidebar animate-slide-in absolute inset-y-0 left-0 flex w-72 flex-col border-r border-sidebar-border px-4 py-5">
+          <nav className="app-sidebar animate-slide-in absolute inset-y-0 left-0 flex w-[min(18rem,calc(100vw-2rem))] flex-col overflow-y-auto border-r border-sidebar-border px-4 pt-[max(1.25rem,env(safe-area-inset-top))] pb-[max(1.25rem,env(safe-area-inset-bottom))]">
             <div className="flex items-center gap-3">
               {brand?.logo ? (
                 <img src={logoUrl} alt="Shop logo" className="size-10 shrink-0 rounded-2xl border border-white/12 bg-white/8 object-contain p-1 shadow-[0_10px_24px_rgb(0_0_0_/_22%)]" />

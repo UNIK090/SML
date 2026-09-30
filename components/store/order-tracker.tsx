@@ -50,7 +50,7 @@ export default function OrderTracker({ orderNumber, token }: { orderNumber: stri
   const cancelled = order?.status === 'CANCELLED'
 
   return (
-    <main className="sf-canvas min-h-screen px-5 py-10 sm:px-8 sm:py-14">
+    <main className="sf-canvas min-h-screen px-5 pt-[max(2.5rem,calc(env(safe-area-inset-top)+1rem))] pb-[max(2.5rem,env(safe-area-inset-bottom))] sm:px-8 sm:py-14">
       <div className="mx-auto w-full max-w-3xl">
         <Link href="/" className="sf-btn sf-btn-ghost mb-7 h-9 px-4 text-xs">
           <ArrowLeft className="size-3.5" /> Back to the store

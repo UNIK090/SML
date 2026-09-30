@@ -166,7 +166,7 @@ function ShopWindow() {
   return (
     <div className="sf-canvas min-h-screen">
       {/* ---------------------------- Utility bar ---------------------------- */}
-      <div className="sf-topbar px-4 py-2 text-[11px] sm:px-7">
+      <div className="sf-topbar px-4 pt-[max(0.5rem,env(safe-area-inset-top))] pb-2 text-[11px] sm:px-7 sm:py-2">
         <div className="mx-auto flex w-full max-w-[1400px] items-center justify-between gap-4">
           <p className="truncate">One-gram gold · Panchaloha · Silver · Beautiful designs at affordable prices</p>
           <div className="hidden shrink-0 items-center gap-5 sm:flex">
@@ -815,7 +815,7 @@ function ShopWindow() {
       <PromiseBand />
 
       {/* ------------------------------- Footer ------------------------------- */}
-      <footer className="sf-topbar px-4 py-10 sm:px-7">
+      <footer className="sf-topbar px-4 pt-10 pb-[max(2.5rem,env(safe-area-inset-bottom))] sm:px-7 sm:py-10">
         <div className="mx-auto flex w-full max-w-[1400px] flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="text-sm font-semibold tracking-[0.12em] text-white uppercase">{shop?.name ?? 'Sri Maha Laxmi Jewellers'}</p>

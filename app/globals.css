@@ -399,13 +399,27 @@
  */
 
 @layer base {
+  html {
+    max-width: 100%;
+    overflow-x: clip;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
   * {
     @apply border-border outline-ring/50;
   }
   body {
     @apply bg-background text-foreground;
+    max-width: 100%;
+    min-width: 0;
+    overflow-x: clip;
     font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
     -webkit-font-smoothing: antialiased;
+  }
+  img,
+  video,
+  canvas {
+    max-width: 100%;
   }
   /* Tabular figures keep money columns aligned in tables and totals. */
   .tnum {
@@ -422,6 +436,41 @@
     outline: none;
     box-shadow: 0 0 0 3px oklch(0.72 0.11 78 / 22%);
     border-color: var(--gold);
+  }
+}
+
+/* Phone-sized viewports need panels to stay inside the visual viewport, not
+   just the layout viewport. This also gives wide datasets an intentional
+   horizontal scroll rather than allowing a popover or table to widen the page. */
+@media (max-width: 639px) {
+  input,
+  select,
+  textarea {
+    /* Prevent iOS Safari from zooming the whole page when a compact form field
+       receives focus. The visual size still comes from each component. */
+    font-size: 16px !important;
+  }
+
+  .bell-panel:not(.sf-share-panel) {
+    position: fixed;
+    top: max(4.25rem, calc(env(safe-area-inset-top) + 3.75rem));
+    right: 1rem;
+    left: 1rem;
+    width: auto;
+    max-height: calc(100dvh - max(5.5rem, calc(env(safe-area-inset-top) + 5rem)));
+  }
+
+  .sf-share-panel {
+    width: min(15rem, calc(100vw - 2rem));
+  }
+
+  .receipt-modal {
+    border-radius: 1.25rem;
+  }
+
+  .invoice-print-root.fixed {
+    padding-top: max(1rem, env(safe-area-inset-top));
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
   }
 }
 

@@ -124,7 +124,7 @@ export default function ProductCard({
               type="button"
               onClick={() => add(product)}
               aria-label={inBasket ? `${product.name} is in your basket` : `Add ${product.name} to basket`}
-              className={`sf-btn h-7 flex-1 px-2 text-[11px] ${inBasket ? 'border border-line bg-cream' : 'sf-btn-gold'}`}
+              className={`sf-btn h-9 flex-1 px-2 text-[11px] sm:h-7 ${inBasket ? 'border border-line bg-cream' : 'sf-btn-gold'}`}
               style={inBasket ? { color: 'var(--sf-maroon)' } : undefined}
             >
               {inBasket ? <Check className="size-3" /> : <Plus className="size-3" />}
@@ -137,7 +137,7 @@ export default function ProductCard({
                 target="_blank"
                 rel="noreferrer"
                 aria-label={`Ask about ${product.name} on WhatsApp`}
-                className="flex size-7 shrink-0 items-center justify-center rounded-lg border border-line transition hover:border-gold hover:bg-cream"
+                className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-line transition hover:border-gold hover:bg-cream sm:size-7"
                 style={{ color: 'var(--sf-maroon)' }}
               >
                 <MessageCircle className="size-3.5" />

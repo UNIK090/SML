@@ -50,10 +50,10 @@ function AdminLoginForm() {
   }
 
   return (
-    <main className="login-canvas flex min-h-screen items-center justify-center px-5 py-8 sm:px-8 sm:py-12">
+    <main className="login-canvas flex min-h-screen items-center justify-center px-5 pt-[max(2rem,env(safe-area-inset-top))] pb-[max(2rem,env(safe-area-inset-bottom))] sm:px-8 sm:py-12">
       <div className="card-shadow-lg grid w-full max-w-5xl overflow-hidden rounded-[2rem] border border-white/12 bg-card md:grid-cols-[1.08fr_.92fr]">
         {/* Brand panel */}
-        <div className="relative flex min-h-[33rem] flex-col justify-between overflow-hidden bg-primary p-8 text-primary-foreground sm:p-10">
+        <div className="relative flex min-h-[25rem] flex-col justify-between overflow-hidden bg-primary p-7 text-primary-foreground sm:min-h-[33rem] sm:p-10">
           <div className="absolute -top-24 -right-28 size-80 rounded-full border border-white/10" />
           <div className="absolute -bottom-32 -left-24 size-72 rounded-full border border-white/10" />
           <div className="relative z-10">
@@ -61,7 +61,7 @@ function AdminLoginForm() {
               <Sparkles className="size-6" />
             </div>
             <p className="text-xs font-semibold tracking-[0.2em] text-gold uppercase">Sri Maha Laxmi Jewellers</p>
-            <h1 className="mt-5 text-4xl leading-[1.1] font-semibold tracking-tight">{t('login.title')}</h1>
+            <h1 className="mt-5 text-3xl leading-[1.1] font-semibold tracking-tight sm:text-4xl">{t('login.title')}</h1>
             <p className="mt-5 max-w-sm text-sm leading-6 text-slate-300">
               {t('login.hint')}
             </p>
@@ -76,14 +76,14 @@ function AdminLoginForm() {
               </div>
             </div>
           </div>
-          <div className="relative z-10 mt-16 flex items-center gap-3 text-sm text-slate-300">
+          <div className="relative z-10 mt-10 flex items-center gap-3 text-sm text-slate-300 sm:mt-16">
             <ShieldCheck className="size-5 text-gold" />
             <span>{t('login.admin')} · protected business workspace</span>
           </div>
         </div>
 
         {/* Form panel */}
-        <div className="bg-card p-8 sm:p-10">
+        <div className="bg-card p-6 sm:p-10">
           <div className="mb-8">
             <div className="mb-4 flex size-11 items-center justify-center rounded-xl bg-gold-soft text-gold-deep shadow-sm">
               <KeyRound className="size-5" />

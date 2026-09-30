@@ -121,11 +121,11 @@ export default function PaymentSuccess({
       role="dialog"
       aria-modal="true"
       aria-label={title}
-      className={`success-dialog-backdrop fixed inset-0 z-[60] flex items-center justify-center bg-primary/45 p-4 backdrop-blur-sm ${isInvoice ? 'invoice-success-backdrop' : ''}`}
+      className={`success-dialog-backdrop fixed inset-0 z-[60] flex items-center justify-center overflow-y-auto bg-primary/45 px-4 pt-[max(1rem,env(safe-area-inset-top))] pb-[max(1rem,env(safe-area-inset-bottom))] backdrop-blur-sm ${isInvoice ? 'invoice-success-backdrop' : ''}`}
       onClick={onDone}
     >
       <div
-        className={`animate-rise-in card-shadow-lg w-full max-w-sm rounded-3xl bg-card p-8 text-center ${isInvoice ? 'invoice-success-card' : ''}`}
+        className={`animate-rise-in card-shadow-lg my-auto w-full max-w-sm rounded-3xl bg-card p-6 text-center sm:p-8 ${isInvoice ? 'invoice-success-card' : ''}`}
         onClick={(event) => event.stopPropagation()}
       >
         {isInvoice && (
