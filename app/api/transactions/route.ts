@@ -1,6 +1,6 @@
 import { after, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-import { billingTransactions, inventoryItems, invoiceItems, invoiceSends } from '@/lib/db/schema'
+import { billingTransactions, inventoryItems, invoiceItemPhotos, invoiceItems, invoiceSends } from '@/lib/db/schema'
 import { isConnectionError, isUniqueViolation } from '@/lib/db/errors'
 import { requireAdmin } from '@/lib/db/guard'
 import { inArray } from 'drizzle-orm'
@@ -9,8 +9,43 @@ import { getShopDetails } from '@/lib/shop'
 import { randomBytes } from 'node:crypto'
 import { publicInvoiceUrl } from '@/lib/public-url'
 import { businessDate } from '@/lib/business-time'
+import { detectImage, MAX_IMAGE_BYTES } from '@/lib/item-images'
 
-type IncomingLine = { code: unknown; quantity: unknown; billedPrice: unknown }
+type IncomingLine = { code: unknown; quantity: unknown; billedPrice: unknown; customerPhoto?: unknown }
+
+type CustomerPhoto = { data: string; mime: string; byteSize: number }
+
+const MAX_CUSTOMER_PHOTOS_PER_INVOICE = 8
+
+/**
+ * Customer photos arrive with the rest of the bill as base64 JSON. Validate
+ * their actual bytes here — browser MIME types and file extensions can both be
+ * forged, and these images must stay safe to render later in the admin desk.
+ */
+function parseCustomerPhoto(value: unknown): { photo: CustomerPhoto | null } | { error: string } {
+  if (value === undefined || value === null) return { photo: null }
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return { error: 'Upload a valid customer item photo.' }
+
+  const data = (value as { data?: unknown }).data
+  if (typeof data !== 'string' || !data) return { error: 'Upload a valid customer item photo.' }
+  // Base64 expands raw bytes by roughly one third. Check the string before
+  // decoding, then verify the final byte length below.
+  if (data.length > Math.ceil(MAX_IMAGE_BYTES * 4 / 3) + 4) {
+    return { error: `Each customer item photo must be under ${MAX_IMAGE_BYTES / 1024} KB.` }
+  }
+  if (data.length % 4 !== 0 || !/^[A-Za-z0-9+/]*={0,2}$/.test(data)) {
+    return { error: 'Upload a PNG, JPEG, GIF, or WebP customer item photo.' }
+  }
+
+  const bytes = Buffer.from(data, 'base64')
+  if (bytes.length === 0 || bytes.length > MAX_IMAGE_BYTES || Buffer.from(bytes).toString('base64') !== data) {
+    return { error: `Each customer item photo must be a valid image under ${MAX_IMAGE_BYTES / 1024} KB.` }
+  }
+  const mime = detectImage(bytes)
+  if (!mime) return { error: 'Upload a PNG, JPEG, GIF, or WebP customer item photo.' }
+
+  return { photo: { data, mime, byteSize: bytes.length } }
+}
 
 /** Builds a readable invoice number that will not collide across restarts. */
 function makeInvoiceNumber(): string {
@@ -45,11 +80,20 @@ export async function POST(request: Request) {
 
     // Validate every line before touching the database, so a bad row cannot
     // leave a half-written invoice behind.
-    const parsed = rawLines.map((line) => ({
-      code: Number(line.code),
-      quantity: Number(line.quantity),
-      billedPrice: Number(line.billedPrice),
-    }))
+    const parsed: { code: number; quantity: number; billedPrice: number; customerPhoto: CustomerPhoto | null }[] = []
+    for (const line of rawLines) {
+      const customerPhoto = parseCustomerPhoto(line.customerPhoto)
+      if ('error' in customerPhoto) return NextResponse.json({ error: customerPhoto.error }, { status: 400 })
+      parsed.push({
+        code: Number(line.code),
+        quantity: Number(line.quantity),
+        billedPrice: Number(line.billedPrice),
+        customerPhoto: customerPhoto.photo,
+      })
+    }
+    if (parsed.filter((line) => line.customerPhoto).length > MAX_CUSTOMER_PHOTOS_PER_INVOICE) {
+      return NextResponse.json({ error: `A bill can include up to ${MAX_CUSTOMER_PHOTOS_PER_INVOICE} customer item photos.` }, { status: 400 })
+    }
     for (const line of parsed) {
       if (!Number.isInteger(line.code) || !Number.isInteger(line.quantity) || line.quantity < 1 || !Number.isFinite(line.billedPrice) || line.billedPrice <= 0) {
         return NextResponse.json({ error: 'Enter a valid item code, quantity, and customer price for every item.' }, { status: 400 })
@@ -112,6 +156,13 @@ export async function POST(request: Request) {
       }).returning()
 
       const lines = await tx.insert(invoiceItems).values(lineRows.map((row) => ({ ...row, invoiceNumber }))).returning()
+      const photos = lines.flatMap((line, index) => {
+        const photo = parsed[index]?.customerPhoto
+        return photo
+          ? [{ invoiceItemId: line.id, mimeType: photo.mime, data: photo.data, byteSize: photo.byteSize }]
+          : []
+      })
+      if (photos.length > 0) await tx.insert(invoiceItemPhotos).values(photos)
       return { header, lines }
     })
 

@@ -80,6 +80,20 @@ CREATE TABLE IF NOT EXISTS invoice_items (
 
 CREATE INDEX IF NOT EXISTS invoice_items_invoice_number_idx ON invoice_items (invoice_number);
 
+-- A private customer-supplied reference photo for a billed item. This is kept
+-- separate from catalogue artwork so it is never exposed on the storefront.
+CREATE TABLE IF NOT EXISTS invoice_item_photos (
+  id              serial PRIMARY KEY,
+  invoice_item_id integer NOT NULL REFERENCES invoice_items(id) ON DELETE CASCADE,
+  mime_type       text NOT NULL,
+  data            text NOT NULL,
+  byte_size       integer NOT NULL,
+  created_at      timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS invoice_item_photos_invoice_item_idx
+  ON invoice_item_photos (invoice_item_id);
+
 CREATE TABLE IF NOT EXISTS daily_earnings (
   business_day      date PRIMARY KEY,
   total_amount      numeric(12, 2) NOT NULL DEFAULT '0',

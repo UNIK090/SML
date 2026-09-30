@@ -211,6 +211,8 @@ export type InvoiceLine = {
   unitPrice: string
   quantity: number
   lineTotal: string
+  /** Private photo submitted at the counter; never placed in public receipts. */
+  customerPhoto: { id: number; byteSize: number } | null
 }
 
 export type Invoice = Transaction & { lines: InvoiceLine[] }
@@ -222,6 +224,12 @@ export type CartLine = {
   cataloguePrice: number
   unitPrice: number
   quantity: number
+  /** One optional reference image a customer shared for this billed item. */
+  customerPhoto?: {
+    data: string
+    mime: string
+    byteSize: number
+  }
 }
 
 export type DailyRow = { businessDay: string; total: number; count: number }

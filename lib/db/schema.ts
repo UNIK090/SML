@@ -105,6 +105,25 @@ export const invoiceItems = pgTable('invoice_items', {
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 })
 
+// A customer will sometimes show the counter a photo of the exact piece they
+// want repaired, matched, or billed. These photos are attached to the invoice
+// line rather than the catalogue item: they are a private sales reference, not
+// product artwork that should appear in the public storefront.
+export const invoiceItemPhotos = pgTable(
+  'invoice_item_photos',
+  {
+    id: serial('id').primaryKey(),
+    invoiceItemId: integer('invoice_item_id')
+      .notNull()
+      .references(() => invoiceItems.id, { onDelete: 'cascade' }),
+    mimeType: text('mime_type').notNull(),
+    data: text('data').notNull(),
+    byteSize: integer('byte_size').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index('invoice_item_photos_invoice_item_idx').on(table.invoiceItemId)],
+)
+
 export const dailyEarnings = pgTable('daily_earnings', {
   businessDay: date('business_day').primaryKey(),
   totalAmount: numeric('total_amount', { precision: 12, scale: 2 }).notNull().default('0'),

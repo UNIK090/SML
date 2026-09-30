@@ -6,7 +6,7 @@
 // shell owns navigation and the sign-out control.
 
 import { useEffect, useMemo, useState } from 'react'
-import { FileText, Loader2, Minus, Plus, ReceiptText, Search, ShoppingBag, Trash2, X } from 'lucide-react'
+import { Camera, FileText, ImagePlus, Loader2, Minus, Plus, ReceiptText, Search, ShoppingBag, Trash2, X } from 'lucide-react'
 import { Badge, Button, Card, EmptyState, Field, Input, Notice, SectionHeading, Skeleton, SkeletonRows, Select, WorkspaceHero, money } from '@/components/ui'
 import BarcodeScanner from '@/components/barcode-scanner'
 import { usePreferences } from '@/components/preferences'
@@ -41,8 +41,12 @@ export default function BillingSection({
   const [customerPhone, setCustomerPhone] = useState('')
   const [paymentStatus, setPaymentStatus] = useState('PAID')
   const [saving, setSaving] = useState(false)
+  const [photoLoadingCodes, setPhotoLoadingCodes] = useState<number[]>([])
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
+
+  const customerPhotoLimit = 700 * 1024
+  const allowedCustomerPhotoTypes = new Set(['image/jpeg', 'image/png', 'image/gif', 'image/webp'])
 
   // Debounced free-text search across name, category and code.
   useEffect(() => {
@@ -90,12 +94,44 @@ export default function BillingSection({
   const updateLine = (code: number, patch: Partial<CartLine>) =>
     setCart((prev) => prev.map((line) => (line.code === code ? { ...line, ...patch } : line)))
   const removeLine = (code: number) => setCart((prev) => prev.filter((line) => line.code !== code))
+  const attachCustomerPhoto = (code: number, file: File | undefined) => {
+    if (!file) return
+    setMessage('')
+    setError('')
+    if (!allowedCustomerPhotoTypes.has(file.type)) {
+      setError('Use a PNG, JPEG, GIF, or WebP customer item photo.')
+      return
+    }
+    if (file.size === 0 || file.size > customerPhotoLimit) {
+      setError(`Each customer item photo must be under ${customerPhotoLimit / 1024} KB.`)
+      return
+    }
+
+    setPhotoLoadingCodes((codes) => [...codes, code])
+    const reader = new FileReader()
+    reader.onerror = () => {
+      setPhotoLoadingCodes((codes) => codes.filter((value) => value !== code))
+      setError('Could not read that customer item photo. Please try another image.')
+    }
+    reader.onload = () => {
+      setPhotoLoadingCodes((codes) => codes.filter((value) => value !== code))
+      const result = typeof reader.result === 'string' ? reader.result : ''
+      const match = /^data:(image\/(?:jpeg|png|gif|webp));base64,([A-Za-z0-9+/]+={0,2})$/.exec(result)
+      if (!match) {
+        setError('Could not read that customer item photo. Use a PNG, JPEG, GIF, or WebP image.')
+        return
+      }
+      updateLine(code, { customerPhoto: { mime: match[1], data: match[2], byteSize: file.size } })
+    }
+    reader.readAsDataURL(file)
+  }
   const clearCart = () => {
     setCart([])
     setDiscount('')
     setCustomerName('')
     setCustomerPhone('')
     setPaymentStatus('PAID')
+    setPhotoLoadingCodes([])
   }
 
   const subtotal = useMemo(() => cart.reduce((sum, line) => sum + line.unitPrice * line.quantity, 0), [cart])
@@ -121,6 +157,7 @@ export default function BillingSection({
     setMessage('')
     setError('')
     if (cart.length === 0) return setError('Add at least one item to the bill.')
+    if (photoLoadingCodes.length > 0) return setError('Wait for the customer item photo to finish loading.')
     if (cart.some((line) => line.unitPrice <= 0)) return setError('Enter an amount for every item.')
     if (discountValue > subtotal) return setError('The discount cannot be more than the subtotal.')
 
@@ -130,7 +167,12 @@ export default function BillingSection({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          items: cart.map((line) => ({ code: line.code, quantity: line.quantity, billedPrice: line.unitPrice })),
+          items: cart.map((line) => ({
+            code: line.code,
+            quantity: line.quantity,
+            billedPrice: line.unitPrice,
+            customerPhoto: line.customerPhoto ? { data: line.customerPhoto.data } : undefined,
+          })),
           discount: discountValue,
           paymentStatus,
           customerName,
@@ -304,6 +346,65 @@ export default function BillingSection({
                       <p className="tnum flex h-11 items-center text-sm font-semibold">{money(line.unitPrice * line.quantity)}</p>
                     </Field>
                   </div>
+                  <div className="mt-3 rounded-xl border border-dashed border-gold/50 bg-gold-soft/30 p-3">
+                    {line.customerPhoto ? (
+                      <div className="flex items-center gap-3">
+                        <img
+                          src={`data:${line.customerPhoto.mime};base64,${line.customerPhoto.data}`}
+                          alt={`Customer photo for ${line.name}`}
+                          className="size-14 rounded-lg border-hairline bg-card object-cover"
+                        />
+                        <div className="min-w-0 flex-1">
+                          <p className="text-xs font-semibold">Customer item photo attached</p>
+                          <p className="mt-0.5 text-[11px] text-muted-foreground">Private reference for this invoice only</p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => updateLine(line.code, { customerPhoto: undefined })}
+                          className="rounded-lg px-2 py-1 text-xs font-medium text-muted-foreground transition hover:bg-card hover:text-destructive"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    ) : (
+                      <div className={photoLoadingCodes.includes(line.code) ? 'pointer-events-none opacity-60' : ''}>
+                        {photoLoadingCodes.includes(line.code) ? (
+                          <p className="flex min-h-12 items-center gap-2 text-xs font-medium text-gold-deep"><Loader2 className="size-4 animate-spin" /> Preparing customer photo…</p>
+                        ) : (
+                          <div className="flex flex-wrap items-center gap-2">
+                            <label className="inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-lg bg-card px-3 text-xs font-semibold text-gold-deep shadow-sm transition hover:bg-white dark:hover:bg-secondary">
+                              <ImagePlus className="size-3.5" /> Upload photo
+                              <input
+                                className="sr-only"
+                                type="file"
+                                accept="image/png,image/jpeg,image/gif,image/webp"
+                                onChange={(event) => {
+                                  const file = event.target.files?.[0]
+                                  event.target.value = ''
+                                  attachCustomerPhoto(line.code, file)
+                                }}
+                              />
+                            </label>
+                            <label className="inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-lg bg-gold px-3 text-xs font-semibold text-slate-950 shadow-sm transition hover:opacity-90">
+                              <Camera className="size-3.5" /> Capture photo
+                              <input
+                                className="sr-only"
+                                type="file"
+                                accept="image/png,image/jpeg,image/gif,image/webp"
+                                capture="environment"
+                                onChange={(event) => {
+                                  const file = event.target.files?.[0]
+                                  event.target.value = ''
+                                  attachCustomerPhoto(line.code, file)
+                                }}
+                              />
+                            </label>
+                          </div>
+                        )}
+                        <p className="mt-2 text-[11px] text-muted-foreground">Optional · Capture opens the rear camera on supported phones · PNG, JPEG, GIF, or WebP · up to 700 KB</p>
+                      </div>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
@@ -349,7 +450,7 @@ export default function BillingSection({
               </div>
             </div>
 
-            <Button onClick={createBill} disabled={saving} variant="gold" className="mt-6 w-full">
+            <Button onClick={createBill} disabled={saving || photoLoadingCodes.length > 0} variant="gold" className="mt-6 w-full">
               {saving ? <Loader2 className="size-4 animate-spin" /> : <ReceiptText className="size-4" />}
               {saving ? t('common.saving') : t('billing.saveInvoice')}
             </Button>

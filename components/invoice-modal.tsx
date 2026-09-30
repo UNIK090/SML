@@ -35,6 +35,7 @@ export default function InvoiceModal({
   const [qrCode, setQrCode] = useState('')
 
   const lines = invoice.lines ?? []
+  const customerPhotos = lines.filter((line) => line.customerPhoto)
   const subtotal = lines.reduce((sum, line) => sum + Number(line.lineTotal), 0)
   const discount = Number(invoice.discount || 0)
   const hasShopDetails = Boolean(shop?.address || shop?.phone || shop?.email || shop?.gstin)
@@ -138,6 +139,25 @@ export default function InvoiceModal({
             ))}
           </tbody>
         </table>
+
+        {customerPhotos.length > 0 && (
+          <section className="mt-5 rounded-2xl border border-dashed border-gold/45 bg-gold-soft/30 p-4 print:hidden">
+            <p className="text-sm font-semibold">Customer item photos</p>
+            <p className="mt-1 text-xs text-muted-foreground">Private counter references — they are not included on the customer&apos;s receipt.</p>
+            <div className="mt-3 flex flex-wrap gap-3">
+              {customerPhotos.map((line) => (
+                <figure key={line.id} className="w-24">
+                  <img
+                    src={`/api/invoice/photo?id=${line.customerPhoto!.id}`}
+                    alt={`Customer photo for ${line.itemName}`}
+                    className="size-24 rounded-xl border-hairline bg-card object-cover"
+                  />
+                  <figcaption className="mt-1 truncate text-[11px] text-muted-foreground">{line.itemName}</figcaption>
+                </figure>
+              ))}
+            </div>
+          </section>
+        )}
 
         <div className="mt-4 flex-col items-end gap-1 text-sm">
           <div className="tnum flex w-full max-w-xs justify-between text-muted-foreground">

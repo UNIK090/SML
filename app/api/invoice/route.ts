@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
-import { asc, eq } from 'drizzle-orm'
+import { asc, eq, inArray } from 'drizzle-orm'
 import { db } from '@/lib/db'
-import { billingTransactions, invoiceItems } from '@/lib/db/schema'
+import { billingTransactions, invoiceItemPhotos, invoiceItems } from '@/lib/db/schema'
 import { isConnectionError } from '@/lib/db/errors'
 import { requireAdmin } from '@/lib/db/guard'
 
@@ -19,7 +19,15 @@ export async function GET(request: Request) {
       db.select().from(invoiceItems).where(eq(invoiceItems.invoiceNumber, invoiceNumber)).orderBy(asc(invoiceItems.id)),
     ])
     if (!header) return NextResponse.json({ error: 'Invoice not found.' }, { status: 404 })
-    return NextResponse.json({ ...header, lines })
+    const lineIds = lines.map((line) => line.id)
+    const photos = lineIds.length > 0
+      ? await db
+        .select({ id: invoiceItemPhotos.id, invoiceItemId: invoiceItemPhotos.invoiceItemId, byteSize: invoiceItemPhotos.byteSize })
+        .from(invoiceItemPhotos)
+        .where(inArray(invoiceItemPhotos.invoiceItemId, lineIds))
+      : []
+    const photoByLine = new Map(photos.map((photo) => [photo.invoiceItemId, { id: photo.id, byteSize: photo.byteSize }]))
+    return NextResponse.json({ ...header, lines: lines.map((line) => ({ ...line, customerPhoto: photoByLine.get(line.id) ?? null })) })
   } catch (error) {
     console.error('[v0] Failed to load invoice:', error)
     if (isConnectionError(error)) {
