@@ -16,6 +16,7 @@ import Link from 'next/link'
 import {
   BellRing,
   Check,
+  CheckSquare,
   ChevronDown,
   ChevronUp,
   Clock3,
@@ -28,7 +29,9 @@ import {
   Phone,
   RefreshCw,
   Search,
+  Square,
   Store,
+  Trash2,
   Truck,
   X,
   Zap,
@@ -160,6 +163,16 @@ export default function OrdersSection({ onRaiseBill }: { onRaiseBill?: () => voi
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
 
+  /**
+   * Orders ticked for deletion, held as a set of order numbers.
+   *
+   * Kept as a Set rather than an array so toggling one row is O(1) and the
+   * "is this row selected" check during render does not scan a list — with a
+   * busy fortnight on screen that would be a scan per row, per keystroke.
+   */
+  const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [deleting, setDeleting] = useState(false)
+
   const today = useMemo(() => {
     const start = new Date()
     start.setHours(0, 0, 0, 0)
@@ -169,6 +182,74 @@ export default function OrdersSection({ onRaiseBill }: { onRaiseBill?: () => voi
   const todayValue = today.reduce((sum, order) => sum + Number(order.totalAmount), 0)
   const waiting = realtime.orders.filter((order) => order.status === 'NEW').length
   const now = useNow()
+
+  /**
+   * Selection is reconciled against the live list on every render pass.
+   *
+   * A realtime refresh can drop a row — another desk cancelled the order, or a
+   * filter changed — and a stale order number left in the set would silently
+   * inflate the count and be sent to the server on the next delete. Deriving the
+   * effective selection from the orders actually on screen keeps the two honest.
+   */
+  const selectedOnScreen = useMemo(
+    () => realtime.orders.filter((order) => selected.has(order.orderNumber)).map((order) => order.orderNumber),
+    [realtime.orders, selected],
+  )
+  const allOnScreenSelected = realtime.orders.length > 0 && selectedOnScreen.length === realtime.orders.length
+
+  const toggleSelected = (orderNumber: string) => {
+    setSelected((current) => {
+      const next = new Set(current)
+      if (next.has(orderNumber)) next.delete(orderNumber)
+      else next.add(orderNumber)
+      return next
+    })
+  }
+
+  const toggleAll = () => {
+    setSelected(allOnScreenSelected ? new Set() : new Set(realtime.orders.map((order) => order.orderNumber)))
+  }
+
+  /**
+   * Deletes every ticked order.
+   *
+   * The confirmation names the exact count, because this is irreversible and the
+   * most likely caller is a shopkeeper clearing spam on a tablet at the counter.
+   * The list is only cleared of the selection after the server confirms, so a
+   * failed delete cannot leave rows missing from the screen but alive in the
+   * database.
+   */
+  const deleteSelected = async () => {
+    const orderNumbers = selectedOnScreen
+    if (orderNumbers.length === 0) return
+    const noun = orderNumbers.length === 1 ? 'order' : 'orders'
+    if (!window.confirm(`Delete ${orderNumbers.length} ${noun}? The customer's tracking link will stop working. This cannot be undone.`)) return
+
+    setDeleting(true)
+    setMessage('')
+    setError('')
+    try {
+      const response = await fetch('/api/orders', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderNumbers }),
+      })
+      const text = await response.text()
+      const result = text ? JSON.parse(text) : {}
+      if (!response.ok) {
+        setError(result.error ?? 'Could not delete the selected orders.')
+        return
+      }
+      setSelected(new Set())
+      setExpanded((current) => (current && orderNumbers.includes(current) ? null : current))
+      setMessage(`${result.deleted ?? orderNumbers.length} ${noun} deleted.`)
+      realtime.refresh()
+    } catch {
+      setError('Could not delete the selected orders.')
+    } finally {
+      setDeleting(false)
+    }
+  }
 
   /** Live tally per status, so the tabs double as a dashboard. */
   const counts = useMemo(() => {
@@ -353,6 +434,44 @@ export default function OrdersSection({ onRaiseBill }: { onRaiseBill?: () => voi
           )}
         </div>
 
+        {/*
+          The selection bar.
+
+          "Select all" acts on what is on screen, not on the whole table, so a
+          filter plus select-all can never delete orders the shopkeeper cannot
+          see. It is the same rule the delete itself follows.
+        */}
+        {realtime.orders.length > 0 && (
+          <div className="mb-4 flex flex-wrap items-center gap-3 rounded-2xl border-hairline bg-secondary/50 px-3.5 py-2.5">
+            <button
+              type="button"
+              onClick={toggleAll}
+              className="flex items-center gap-2 text-xs font-medium transition hover:text-gold-deep"
+            >
+              {allOnScreenSelected ? <CheckSquare className="size-4 text-gold-deep" /> : <Square className="size-4 text-muted-foreground" />}
+              {allOnScreenSelected ? 'Clear selection' : 'Select all'}
+            </button>
+
+            <span className="text-xs text-muted-foreground">
+              {selectedOnScreen.length === 0
+                ? 'Tick orders to delete several at once'
+                : `${selectedOnScreen.length} of ${realtime.orders.length} selected`}
+            </span>
+
+            {selectedOnScreen.length > 0 && (
+              <button
+                type="button"
+                onClick={() => void deleteSelected()}
+                disabled={deleting}
+                className="ml-auto flex h-9 items-center gap-1.5 rounded-xl border border-red-200 bg-red-50 px-3 text-xs font-semibold text-red-700 transition hover:bg-red-100 disabled:opacity-60 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-300 dark:hover:bg-red-950/50"
+              >
+                {deleting ? <Loader2 className="size-3.5 animate-spin" /> : <Trash2 className="size-3.5" />}
+                {deleting ? 'Deleting…' : `Delete ${selectedOnScreen.length === 1 ? 'order' : `${selectedOnScreen.length} orders`}`}
+              </button>
+            )}
+          </div>
+        )}
+
         <div className="flex-col gap-3">
           {message && <Notice tone="success">{message}</Notice>}
           {error && <Notice tone="danger">{error}</Notice>}
@@ -404,6 +523,31 @@ export default function OrdersSection({ onRaiseBill }: { onRaiseBill?: () => voi
                     {open && <span className="order-edge" aria-hidden />}
 
                     <div className="flex flex-wrap items-center gap-x-4 gap-y-3 py-4 pr-4 pl-5">
+                      {/*
+                        The row tick.
+
+                        A plain button rather than a checkbox input: the whole
+                        row is already a control for expanding the order, and a
+                        nested interactive element would fight it. `stopPropagation`
+                        keeps a tick from also opening the row.
+                      */}
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          event.stopPropagation()
+                          toggleSelected(order.orderNumber)
+                        }}
+                        aria-pressed={selected.has(order.orderNumber)}
+                        aria-label={`${selected.has(order.orderNumber) ? 'Unselect' : 'Select'} order ${order.orderNumber} for deletion`}
+                        className="flex size-6 shrink-0 items-center justify-center rounded-md border-hairline bg-card transition hover:border-gold"
+                      >
+                        {selected.has(order.orderNumber) ? (
+                          <CheckSquare className="size-4 text-gold-deep" />
+                        ) : (
+                          <Square className="size-4 text-muted-foreground" />
+                        )}
+                      </button>
+
                       <span
                         className={`flex size-11 shrink-0 items-center justify-center rounded-xl ${
                           order.status === 'NEW' ? 'bg-gold text-slate-950' : 'bg-secondary text-muted-foreground'

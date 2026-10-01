@@ -218,6 +218,10 @@ export function useRealtimeOrders(options: Options = {}): RealtimeState {
     source.addEventListener('order-updated', () => {
       void load(true)
     })
+    // A deleted order must disappear here too, not linger until the next poll.
+    source.addEventListener('order-deleted', () => {
+      void load(true)
+    })
     source.onerror = () => {
       // EventSource reconnects on its own; surface the state honestly and let
       // the polling layer keep the screen current in the meantime.

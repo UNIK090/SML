@@ -165,6 +165,79 @@ export async function PATCH(request: Request) {
 }
 
 /**
+ * Deletes selected online orders.
+ *
+ * Takes a list of order numbers so the Orders screen can remove several at once
+ * — a batch of spam requests, or test orders placed before the shop went live.
+ *
+ * Deliberately a POST-style body rather than a DELETE with a query string: the
+ * selection can be long enough to blow past a URL length limit once a shop has a
+ * busy fortnight it wants to clear.
+ *
+ * Line items are removed first. The public token dies with the order, so any
+ * customer holding a tracking link sees "not found" afterwards — which is the
+ * honest answer once the shop has deleted the record.
+ */
+export async function DELETE(request: Request) {
+  const denied = await requireAdmin()
+  if (denied) return denied
+  try {
+    const body = await request.json().catch(() => null)
+
+    // Accept either a list (multi-select) or a single number.
+    const raw: unknown[] = Array.isArray(body?.orderNumbers)
+      ? body.orderNumbers
+      : typeof body?.orderNumber === 'string'
+        ? [body.orderNumber]
+        : []
+
+    const orderNumbers = [...new Set(
+      raw
+        .filter((value: unknown): value is string => typeof value === 'string')
+        .map((value: string) => value.trim())
+        .filter(Boolean),
+    )]
+
+    if (orderNumbers.length === 0) {
+      return NextResponse.json({ error: 'Select at least one order to delete.' }, { status: 400 })
+    }
+    if (orderNumbers.length > 200) {
+      return NextResponse.json({ error: 'Delete up to 200 orders at a time.' }, { status: 400 })
+    }
+
+    const deleted = await db.transaction(async (tx) => {
+      const found = await tx
+        .select({ orderNumber: storeOrders.orderNumber })
+        .from(storeOrders)
+        .where(inArray(storeOrders.orderNumber, orderNumbers))
+      const present = found.map((row) => row.orderNumber)
+      if (present.length === 0) return []
+
+      // Lines first, so this stays valid if a foreign key is added later.
+      await tx.delete(storeOrderItems).where(inArray(storeOrderItems.orderNumber, present))
+      await tx.delete(storeOrders).where(inArray(storeOrders.orderNumber, present))
+      return present
+    })
+
+    if (deleted.length === 0) {
+      return NextResponse.json({ error: 'Those orders were already removed.' }, { status: 404 })
+    }
+
+    // Tell every other open desk so a deleted order vanishes from their list too,
+    // rather than sitting there until the next full refresh.
+    for (const orderNumber of deleted) {
+      publish({ event: 'order-deleted', data: { orderNumber, createdAt: new Date().toISOString() } })
+    }
+
+    return NextResponse.json({ success: true, deleted: deleted.length, orderNumbers: deleted })
+  } catch (error) {
+    console.error('[v0] Failed to delete orders:', error)
+    if (isConnectionError(error)) return NextResponse.json({ error: 'Could not reach the database. Please try again.' }, { status: 503 })
+    return NextResponse.json({ error: 'Could not delete those orders.' }, { status: 500 })
+  }
+}
+
+/**
  * Marks every open order as seen by this device, which clears the bell badge.
  * Called when the admin opens the notification panel.
  */
