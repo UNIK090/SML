@@ -45,6 +45,7 @@ import {
 import { CartProvider, useCart } from '@/components/store/cart'
 import CartDrawer, { type PlacedOrder } from '@/components/store/cart-drawer'
 import OrderSuccess from '@/components/store/order-success'
+import OfferPopup from '@/components/store/offer-popup'
 import ProductCard from '@/components/store/product-card'
 import {
   BestSellersRail,
@@ -374,6 +375,19 @@ function ShopWindow() {
       {/* --------------------------- Festival offer --------------------------- */}
       {offer && <OfferBanner offer={offer} onShop={() => openStore()} />}
 
+      {/*
+        The same offer, as a pop-up.
+
+        Held until the visitor has had a moment with the shop, and shown only to
+        someone who is genuinely browsing: a customer who arrived on a search or
+        a filter link is already mid-task, and interrupting them to advertise the
+        sale is the one case where this dialog would be in the way.
+      */}
+      <OfferPopup
+        offer={query || collection !== 'All' || category !== 'All' || band ? null : offer}
+        shopName={shop?.name}
+        onShop={() => openStore()}
+      />
       {/* ---------------------------- Offer board ---------------------------- */}
       <OfferCards offers={offerCards} onSelect={() => openStore()} />
 

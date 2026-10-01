@@ -124,6 +124,31 @@ export const invoiceItemPhotos = pgTable(
   (table) => [index('invoice_item_photos_invoice_item_idx').on(table.invoiceItemId)],
 )
 
+// One photograph of the WHOLE set of items on a bill.
+//
+// Distinct from `invoiceItemPhotos`, which hangs one photo off each line. The
+// counter lays everything being billed out together and takes a single frame —
+// that is the reference an admin wants later ("what exactly left the shop on
+// this bill?"), and it is deliberately one image per invoice rather than one per
+// item, so it is captured, stored and read back as a single unit.
+//
+// Attached to the invoice header rather than a line item, because it depicts the
+// bill as a whole and must survive any later line-item change. Bytes live in the
+// database for the same reason product photos do: a serverless deployment has a
+// read-only, ephemeral disk.
+export const invoiceBillPhotos = pgTable(
+  'invoice_bill_photos',
+  {
+    id: serial('id').primaryKey(),
+    invoiceNumber: text('invoice_number').notNull().unique(),
+    mimeType: text('mime_type').notNull(),
+    data: text('data').notNull(),
+    byteSize: integer('byte_size').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index('invoice_bill_photos_invoice_idx').on(table.invoiceNumber)],
+)
+
 export const dailyEarnings = pgTable('daily_earnings', {
   businessDay: date('business_day').primaryKey(),
   totalAmount: numeric('total_amount', { precision: 12, scale: 2 }).notNull().default('0'),

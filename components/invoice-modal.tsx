@@ -142,6 +142,25 @@ export default function InvoiceModal({
           </table>
         </div>
 
+        {/*
+          The whole-bill photo, when the counter took one.
+
+          Shown large and on its own because its whole purpose is to let the
+          admin confirm at a glance what left the shop on this bill — the same
+          reason it is captured as one frame rather than an image per line.
+        */}
+        {invoice.billPhoto && (
+          <section className="mt-5 rounded-2xl border border-dashed border-gold/45 bg-gold-soft/30 p-4 print:hidden">
+            <p className="text-sm font-semibold">Bill photo — items on this invoice</p>
+            <p className="mt-1 text-xs text-muted-foreground">Private counter reference of the whole bill — not included on the customer&apos;s receipt.</p>
+            <img
+              src={`/api/invoice/bill-photo?id=${invoice.billPhoto.id}`}
+              alt="Photo of every item on this bill"
+              className="mt-3 max-h-80 w-full rounded-xl border-hairline bg-card object-contain"
+            />
+          </section>
+        )}
+
         {customerPhotos.length > 0 && (
           <section className="mt-5 rounded-2xl border border-dashed border-gold/45 bg-gold-soft/30 p-4 print:hidden">
             <p className="text-sm font-semibold">Customer item photos</p>

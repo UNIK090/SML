@@ -4,7 +4,7 @@
 // never imports the database driver, and the admin API never re-implements the
 // business day.
 
-import { and, desc, gte, lte, eq } from 'drizzle-orm'
+import { and, desc, gte, eq } from 'drizzle-orm'
 import { db } from '@/lib/db'
 import { festivalOffers } from '@/lib/db/schema'
 import { businessDate } from '@/lib/business-time'
@@ -61,9 +61,17 @@ export async function listOffers(): Promise<Offer[]> {
  *
  * One read serves the whole page: the leading banner takes the first entry and
  * the Offers section takes the rest, so the storefront never queries twice for
- * the same rows. The date window is narrowed in SQL — only offers that could
- * possibly be live are read — and the business day is applied here, the one
- * place that knows what "today" means for this shop.
+ * the same rows. The date window is narrowed in SQL — offers that have already
+ * finished are never read — and the business day is applied here, the one place
+ * that knows what "today" means for this shop.
+ *
+ * Offers that have not started yet ARE included. A festival offer is written up
+ * days in advance, and a shop that has scheduled Diwali for next week should see
+ * it on its own website rather than a blank space — the state (ACTIVE / UPCOMING)
+ * is carried through and every surface phrases it honestly ("Starts 20 Oct").
+ * Dropping them in SQL would make a scheduled offer invisible until midnight on
+ * its start date, which is exactly when the shopkeeper stops being able to check
+ * their own work.
  *
  * Ordering is deliberate: the offer with the furthest end date comes first,
  * because that is the longest-running promise and the one worth leading with.
@@ -74,7 +82,7 @@ export async function loadStorefrontOffers(): Promise<PublicOffer[]> {
     const rows = await db
       .select()
       .from(festivalOffers)
-      .where(and(eq(festivalOffers.active, true), lte(festivalOffers.startsOn, today), gte(festivalOffers.endsOn, today)))
+      .where(and(eq(festivalOffers.active, true), gte(festivalOffers.endsOn, today)))
       .orderBy(desc(festivalOffers.endsOn), desc(festivalOffers.id))
 
     return rows
@@ -104,9 +112,11 @@ export async function loadFeaturedOffer(): Promise<PublicOffer | null> {
  * The offers that belong in the Offers section.
  *
  * The shop can take a small announcement out of the card grid with
- * `showInSection`, so this filters rather than returning every live offer. The
- * offers that are not chosen are still returned by `loadStorefrontOffers` so the
- * banner can pick them up.
+ * `showInSection`, so this filters rather than returning every offer. Upcoming
+ * offers are kept — the cards say "Starts 20 Oct" — so a shop that has scheduled
+ * a festival sees it on its own site before the day arrives. The offers that are
+ * not chosen are still returned by `loadStorefrontOffers` so the banner can pick
+ * them up.
  */
 export async function loadSectionOffers(): Promise<PublicOffer[]> {
   const today = businessDate()
@@ -114,7 +124,7 @@ export async function loadSectionOffers(): Promise<PublicOffer[]> {
     const rows = await db
       .select()
       .from(festivalOffers)
-      .where(and(eq(festivalOffers.active, true), lte(festivalOffers.startsOn, today), gte(festivalOffers.endsOn, today)))
+      .where(and(eq(festivalOffers.active, true), gte(festivalOffers.endsOn, today)))
       .orderBy(desc(festivalOffers.endsOn), desc(festivalOffers.id))
 
     return rows

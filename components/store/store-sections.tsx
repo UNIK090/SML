@@ -368,16 +368,21 @@ function OfferCard({
    * The deadline line, phrased so it can never overstate.
    *
    * "Last day" appears only on the actual last day, and an offer ending tomorrow
-   * says so rather than claiming hours remain when a full day does.
+   * says so rather than claiming hours remain when a full day does. An offer that
+   * has not started yet says when it starts — `daysLeft` is null for it, so the
+   * UPCOMING case is handled first rather than falling through to "Ends in null
+   * days".
    */
   const timing =
-    offer.daysLeft === 0
-      ? offer.startsOn === offer.endsOn
-        ? 'Today only'
-        : 'Last day today'
-      : offer.daysLeft === 1
-        ? 'Ends tomorrow'
-        : `Ends in ${offer.daysLeft} days`
+    offer.state === 'UPCOMING'
+      ? `Starts ${offerDate(offer.startsOn)}`
+      : offer.daysLeft === 0
+        ? offer.startsOn === offer.endsOn
+          ? 'Today only'
+          : 'Last day today'
+        : offer.daysLeft === 1
+          ? 'Ends tomorrow'
+          : `Ends in ${offer.daysLeft} days`
 
   return (
     <article

@@ -201,6 +201,14 @@ export type Transaction = {
   discount: string
   quantity: number
   publicToken: string | null
+  /**
+   * The single photo of every item on this bill, taken at the counter.
+   *
+   * Null when no photo was captured. Bytes are served by /api/invoice/bill-photo,
+   * so only the id and size travel in the list JSON. Optional because older
+   * cached payloads predate it.
+   */
+  billPhoto?: { id: number; byteSize: number } | null
 }
 
 export type InvoiceLine = {
@@ -215,7 +223,16 @@ export type InvoiceLine = {
   customerPhoto: { id: number; byteSize: number } | null
 }
 
-export type Invoice = Transaction & { lines: InvoiceLine[] }
+export type Invoice = Transaction & {
+  lines: InvoiceLine[]
+  /**
+   * The single photo of every item on this bill, taken at the counter.
+   *
+   * Null when the counter did not take one. Bytes are served separately by
+   * /api/invoice/bill-photo; only the id and size travel in the invoice JSON.
+   */
+  billPhoto: { id: number; byteSize: number } | null
+}
 
 export type CartLine = {
   code: number
@@ -224,12 +241,19 @@ export type CartLine = {
   cataloguePrice: number
   unitPrice: number
   quantity: number
-  /** One optional reference image a customer shared for this billed item. */
-  customerPhoto?: {
-    data: string
-    mime: string
-    byteSize: number
-  }
+}
+
+/**
+ * The single reference photo taken of every item on a bill, at the counter.
+ *
+ * Kept as one image for the whole invoice rather than one per line: the admin
+ * reviewing a bill wants to see the transaction as it left the shop, and a bill
+ * is one event.
+ */
+export type BillPhoto = {
+  data: string
+  mime: string
+  byteSize: number
 }
 
 export type DailyRow = { businessDay: string; total: number; count: number }

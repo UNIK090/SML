@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { asc, eq, inArray } from 'drizzle-orm'
 import { db } from '@/lib/db'
-import { billingTransactions, invoiceItemPhotos, invoiceItems } from '@/lib/db/schema'
+import { billingTransactions, invoiceBillPhotos, invoiceItemPhotos, invoiceItems } from '@/lib/db/schema'
 import { isConnectionError } from '@/lib/db/errors'
 import { requireAdmin } from '@/lib/db/guard'
 
@@ -13,10 +13,15 @@ export async function GET(request: Request) {
     const invoiceNumber = new URL(request.url).searchParams.get('invoiceNumber')
     if (!invoiceNumber) return NextResponse.json({ error: 'An invoice number is required.' }, { status: 400 })
 
-    // Header and lines have the same lookup key, so fetch them together.
-    const [[header], lines] = await Promise.all([
+    // Header and lines have the same lookup key, so fetch them together. The
+    // whole-bill photo is fetched alongside as it hangs off the header.
+    const [[header], lines, [billPhoto]] = await Promise.all([
       db.select().from(billingTransactions).where(eq(billingTransactions.invoiceNumber, invoiceNumber)),
       db.select().from(invoiceItems).where(eq(invoiceItems.invoiceNumber, invoiceNumber)).orderBy(asc(invoiceItems.id)),
+      db
+        .select({ id: invoiceBillPhotos.id, byteSize: invoiceBillPhotos.byteSize })
+        .from(invoiceBillPhotos)
+        .where(eq(invoiceBillPhotos.invoiceNumber, invoiceNumber)),
     ])
     if (!header) return NextResponse.json({ error: 'Invoice not found.' }, { status: 404 })
     const lineIds = lines.map((line) => line.id)
@@ -27,7 +32,11 @@ export async function GET(request: Request) {
         .where(inArray(invoiceItemPhotos.invoiceItemId, lineIds))
       : []
     const photoByLine = new Map(photos.map((photo) => [photo.invoiceItemId, { id: photo.id, byteSize: photo.byteSize }]))
-    return NextResponse.json({ ...header, lines: lines.map((line) => ({ ...line, customerPhoto: photoByLine.get(line.id) ?? null })) })
+    return NextResponse.json({
+      ...header,
+      billPhoto: billPhoto ?? null,
+      lines: lines.map((line) => ({ ...line, customerPhoto: photoByLine.get(line.id) ?? null })),
+    })
   } catch (error) {
     console.error('[v0] Failed to load invoice:', error)
     if (isConnectionError(error)) {

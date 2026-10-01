@@ -1,6 +1,6 @@
 import { after, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-import { billingTransactions, inventoryItems, invoiceItemPhotos, invoiceItems, invoiceSends } from '@/lib/db/schema'
+import { billingTransactions, inventoryItems, invoiceBillPhotos, invoiceItemPhotos, invoiceItems, invoiceSends } from '@/lib/db/schema'
 import { isConnectionError, isUniqueViolation } from '@/lib/db/errors'
 import { requireAdmin } from '@/lib/db/guard'
 import { inArray } from 'drizzle-orm'
@@ -16,6 +16,36 @@ type IncomingLine = { code: unknown; quantity: unknown; billedPrice: unknown; cu
 type CustomerPhoto = { data: string; mime: string; byteSize: number }
 
 const MAX_CUSTOMER_PHOTOS_PER_INVOICE = 8
+
+/**
+ * Validates the single whole-bill photo.
+ *
+ * It is the same byte-level check the per-line photos used: a browser-declared
+ * MIME type can be forged, so the actual bytes are sniffed before anything is
+ * stored. Returns `null` for "no photo", which is the normal case.
+ */
+function parseBillPhoto(value: unknown): { photo: CustomerPhoto | null } | { error: string } {
+  if (value === undefined || value === null) return { photo: null }
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return { error: 'Upload a valid bill photo.' }
+
+  const data = (value as { data?: unknown }).data
+  if (typeof data !== 'string' || !data) return { error: 'Upload a valid bill photo.' }
+  if (data.length > Math.ceil(MAX_IMAGE_BYTES * 4 / 3) + 4) {
+    return { error: `The bill photo must be under ${MAX_IMAGE_BYTES / 1024} KB.` }
+  }
+  if (data.length % 4 !== 0 || !/^[A-Za-z0-9+/]*={0,2}$/.test(data)) {
+    return { error: 'Upload a PNG, JPEG, GIF, or WebP bill photo.' }
+  }
+
+  const bytes = Buffer.from(data, 'base64')
+  if (bytes.length === 0 || bytes.length > MAX_IMAGE_BYTES || Buffer.from(bytes).toString('base64') !== data) {
+    return { error: `The bill photo must be a valid image under ${MAX_IMAGE_BYTES / 1024} KB.` }
+  }
+  const mime = detectImage(bytes)
+  if (!mime) return { error: 'Upload a PNG, JPEG, GIF, or WebP bill photo.' }
+
+  return { photo: { data, mime, byteSize: bytes.length } }
+}
 
 /**
  * Customer photos arrive with the rest of the bill as base64 JSON. Validate
@@ -100,6 +130,11 @@ export async function POST(request: Request) {
       }
     }
 
+    // The whole-bill photo is validated here, before any write, so an invalid
+    // image can never leave a half-written invoice behind.
+    const billPhoto = parseBillPhoto(body.billPhoto)
+    if ('error' in billPhoto) return NextResponse.json({ error: billPhoto.error }, { status: 400 })
+
     const codes = [...new Set(parsed.map((line) => line.code))]
     const found = await db.select().from(inventoryItems).where(inArray(inventoryItems.code, codes))
     const byCode = new Map(found.map((item) => [item.code, item]))
@@ -163,6 +198,17 @@ export async function POST(request: Request) {
           : []
       })
       if (photos.length > 0) await tx.insert(invoiceItemPhotos).values(photos)
+
+      // The whole-bill reference photo, one per invoice, attached to the header.
+      if (billPhoto.photo) {
+        await tx.insert(invoiceBillPhotos).values({
+          invoiceNumber,
+          mimeType: billPhoto.photo.mime,
+          data: billPhoto.photo.data,
+          byteSize: billPhoto.photo.byteSize,
+        })
+      }
+
       return { header, lines }
     })
 

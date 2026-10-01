@@ -51,9 +51,16 @@ export async function GET(request: Request) {
     if (!offer?.data || !offer.mime) return new NextResponse(null, { status: 404 })
 
     if (!isAdmin) {
-      // The public sees the artwork only while the offer is genuinely running.
+      // The public sees the artwork while the offer is running OR about to run.
+      //
+      // EXPIRED is the only state that is withheld: an offer that has finished
+      // must stop showing, or a customer could pull up last season's banner from
+      // a cached URL in March. An UPCOMING offer is deliberately published — the
+      // shop scheduled it and every surface labels it "Starts 20 Oct" — so its
+      // artwork has to load, otherwise the announcement renders with a broken
+      // image on the day it is meant to build anticipation.
       const state = checkOfferBanner(offer)
-      if (state !== 'ACTIVE') return new NextResponse(null, { status: 404 })
+      if (state === 'EXPIRED') return new NextResponse(null, { status: 404 })
     }
 
     const bytes = Buffer.from(offer.data, 'base64')

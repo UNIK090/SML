@@ -94,6 +94,22 @@ CREATE TABLE IF NOT EXISTS invoice_item_photos (
 CREATE INDEX IF NOT EXISTS invoice_item_photos_invoice_item_idx
   ON invoice_item_photos (invoice_item_id);
 
+-- One photograph of the whole set of items on a bill, taken at the counter.
+-- Attached to the invoice header rather than a single line, because it depicts
+-- the entire bill and is read back as one image ("what left the shop on this
+-- bill?"). Private, like invoice_item_photos, and never shown to the customer.
+CREATE TABLE IF NOT EXISTS invoice_bill_photos (
+  id             serial PRIMARY KEY,
+  invoice_number text NOT NULL UNIQUE,
+  mime_type      text NOT NULL,
+  data           text NOT NULL,
+  byte_size      integer NOT NULL,
+  created_at     timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS invoice_bill_photos_invoice_idx
+  ON invoice_bill_photos (invoice_number);
+
 CREATE TABLE IF NOT EXISTS daily_earnings (
   business_day      date PRIMARY KEY,
   total_amount      numeric(12, 2) NOT NULL DEFAULT '0',

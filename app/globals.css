@@ -1084,6 +1084,263 @@
   color: oklch(1 0 0 / 92%);
 }
 
+/* ---------- The pop-up festival offer ---------- */
+
+/*
+ * The overlay the popup lives in.
+ *
+ * Fixed and above the sticky header (z-40), so the offer lands over the whole
+ * shop rather than behind the navigation. `sf-popup-root` itself is only a
+ * positioning frame — the backdrop below it is what dims the page.
+ */
+.sf-popup-root {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.sf-popup-backdrop {
+  position: absolute;
+  inset: 0;
+  background: oklch(0.2 0.02 60 / 62%);
+  backdrop-filter: blur(3px);
+  animation: sf-popup-fade 220ms ease both;
+}
+
+/*
+ * The card itself.
+ *
+ * Deliberately the same colour language as the offer board: the shop already
+ * chose an accent for this festival, and the popup is the same offer seen from a
+ * different place on the page. It must never look like a different sale.
+ */
+.sf-popup {
+  position: relative;
+  z-index: 1;
+  isolation: isolate;
+  overflow: hidden;
+  width: 100%;
+  max-width: 26rem;
+  max-height: calc(100dvh - 2rem);
+  overflow-y: auto;
+  border-radius: 20px;
+  background: var(--sf-surface);
+  box-shadow: 0 30px 70px oklch(0.2 0.03 60 / 38%);
+  animation: sf-popup-rise 260ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* The festival artwork, when the shop uploaded any, leads the card. */
+.sf-popup-art {
+  position: relative;
+  aspect-ratio: 16 / 7;
+  overflow: hidden;
+  background: var(--sf-cream);
+}
+
+.sf-popup-art img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/*
+ * The body carries the accent colour, exactly as the board cards do.
+ *
+ * With no artwork the whole card is this colour; with artwork the colour starts
+ * below the photo. Either way the saving is white on a dark field, which is the
+ * only combination this shop's offer colours are chosen for.
+ */
+.sf-popup-body {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1.5rem;
+  background: var(--sf-offer-red);
+  color: #fff;
+}
+
+.sf-popup[data-accent='red'] .sf-popup-body { background: var(--sf-offer-red); }
+.sf-popup[data-accent='maroon'] .sf-popup-body { background: var(--sf-maroon); }
+.sf-popup[data-accent='gold'] .sf-popup-body { background: var(--sf-offer-gold); }
+.sf-popup[data-accent='green'] .sf-popup-body { background: var(--sf-offer-green); }
+
+/* A soft sheen so a flat festival colour does not look dead. */
+.sf-popup-body::after {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(135deg, oklch(1 0 0 / 14%), transparent 55%);
+  content: '';
+}
+
+.sf-popup-close {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.1rem;
+  height: 2.1rem;
+  border-radius: 999px;
+  background: oklch(0.2 0.02 60 / 45%);
+  color: #fff;
+  backdrop-filter: blur(4px);
+  transition: background 160ms ease;
+}
+
+.sf-popup-close:hover {
+  background: oklch(0.2 0.02 60 / 70%);
+}
+
+.sf-popup-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: oklch(1 0 0 / 84%);
+}
+
+.sf-popup-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+/* The saving is the reason this dialog exists, so it is the largest thing in it. */
+.sf-popup-amount {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  font-size: 2.7rem;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.03em;
+}
+
+.sf-popup-unit {
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.sf-popup-desc {
+  font-size: 0.8rem;
+  line-height: 1.6;
+  color: oklch(1 0 0 / 90%);
+}
+
+.sf-popup-timing {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: oklch(1 0 0 / 82%);
+}
+
+/* The code, as a dashed ticket stub — the same treatment the board uses. */
+.sf-popup-code {
+  align-self: flex-start;
+  margin-top: 0.15rem;
+  padding: 0.3rem 0.6rem;
+  border: 1px dashed oklch(1 0 0 / 55%);
+  border-radius: 6px;
+  font-size: 11px;
+  color: oklch(1 0 0 / 92%);
+}
+
+.sf-popup-code .tnum {
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.sf-popup-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 0.75rem;
+}
+
+/*
+ * The primary action is white on the colour field.
+ *
+ * It has to be the most obvious thing in the dialog after the number itself — a
+ * customer who acts on the offer is the entire point of interrupting them.
+ */
+.sf-popup-shop {
+  display: inline-flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  height: 2.75rem;
+  padding-inline: 1.25rem;
+  border-radius: 999px;
+  background: var(--sf-surface);
+  color: var(--sf-heading);
+  font-size: 0.82rem;
+  font-weight: 700;
+  transition: transform 180ms ease, box-shadow 180ms ease;
+}
+
+.sf-popup-shop:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px oklch(0.2 0.03 60 / 25%);
+}
+
+.sf-popup-later {
+  height: 2.75rem;
+  padding-inline: 1rem;
+  border: 1px solid oklch(1 0 0 / 45%);
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: oklch(1 0 0 / 92%);
+  transition: background 160ms ease;
+}
+
+.sf-popup-later:hover {
+  background: oklch(1 0 0 / 14%);
+}
+
+.sf-popup-note {
+  margin-top: 0.35rem;
+  font-size: 10px;
+  color: oklch(1 0 0 / 72%);
+}
+
+@keyframes sf-popup-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes sf-popup-rise {
+  from { opacity: 0; transform: translateY(14px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* A customer who prefers less motion gets the offer without the movement. */
+@media (prefers-reduced-motion: reduce) {
+  .sf-popup,
+  .sf-popup-backdrop {
+    animation: none;
+  }
+}
+
 /* ---------- Hero: a short cream banner, not a full-height dark hero ---------- */
 .sf-hero {
   position: relative;
