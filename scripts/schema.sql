@@ -212,6 +212,11 @@ CREATE TABLE IF NOT EXISTS store_orders (
   status          text NOT NULL DEFAULT 'NEW',
   item_count      integer NOT NULL DEFAULT 0,
   subtotal        numeric(12, 2) NOT NULL DEFAULT '0',
+  -- The offer discount actually given on this order, plus the offer that gave
+  -- it. Kept because offers expire: the order must keep saying what the customer
+  -- was promised even after the festival is over.
+  discount_amount numeric(12, 2) NOT NULL DEFAULT '0',
+  offer_title     text,
   delivery_fee    numeric(12, 2) NOT NULL DEFAULT '0',
   total_amount    numeric(12, 2) NOT NULL DEFAULT '0',
   invoice_number  text,
@@ -220,6 +225,14 @@ CREATE TABLE IF NOT EXISTS store_orders (
   created_at      timestamptz NOT NULL DEFAULT now(),
   updated_at      timestamptz NOT NULL DEFAULT now()
 );
+
+-- Existing databases predate the discount columns; add them in place so a
+-- re-run of this script brings an old database up to date without a wipe.
+ALTER TABLE store_orders
+ADD COLUMN IF NOT EXISTS discount_amount NUMERIC(12, 2) NOT NULL DEFAULT 0;
+
+ALTER TABLE store_orders
+ADD COLUMN IF NOT EXISTS offer_title TEXT;
 
 CREATE INDEX IF NOT EXISTS store_orders_created_at_idx ON store_orders (created_at DESC);
 CREATE INDEX IF NOT EXISTS store_orders_status_idx     ON store_orders (status, created_at DESC);

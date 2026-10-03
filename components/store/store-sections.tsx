@@ -208,71 +208,81 @@ export function OfferBanner({ offer, onShop }: { offer: PublicOffer; onShop: () 
 
   return (
     <section
-      className={`sf-offer-band px-4 sm:px-7 ${banner ? 'sf-offer-band-photo py-0' : 'py-6'}`}
+      className="sf-offer-band px-4 py-6 sm:px-7"
       aria-label={running ? 'Current offer' : 'Upcoming offer'}
     >
-      <div className="mx-auto flex w-full max-w-[1400px] flex-wrap items-center gap-x-6 gap-y-4">
-        {/*
-          The uploaded festival photograph, when there is one.
+      {/*
+        The coupon.
 
-          The frame keeps a fixed HEIGHT and follows the photo's own width, so a
-          landscape festival banner stays landscape instead of being cropped to a
-          square — which would cut the artwork off at both edges. Because the
-          height is fixed, a tall upload cannot shove the collection off the
-          first screen either.
+        An offer is a dated promise — a thing you hand over, not a page of the
+        site. So it is drawn as a coupon: a narrow card, centred, with the same
+        width as a column of products rather than the full bleed of the page.
+        A full-width strip reads as another page section; a coupon reads as
+        something the shop is giving you.
+      */}
+      <article className={`sf-offer-coupon ${banner ? 'sf-offer-coupon-art' : ''}`} data-accent={offer.accent}>
+        {/*
+          The uploaded artwork, as the coupon's background.
+
+          A scrim sits over it so the copy stays readable whatever the shop
+          uploads. A festival design can be pale, busy, or full of gold foil, and
+          white type dropped straight onto that becomes unreadable; the scrim is
+          what makes "any image" a safe thing for the shopkeeper to choose.
         */}
         {banner && (
-          <a
-            href="#store"
-            onClick={(event) => {
-              event.preventDefault()
-              onShop()
-            }}
-            className="sf-offer-photo"
-            aria-label={`See the pieces in the ${offer.title}`}
-          >
-            <img src={banner} alt="" loading="lazy" />
-          </a>
+          <>
+            <img src={banner} alt="" className="sf-offer-band-bg" aria-hidden />
+            <span className="sf-offer-band-scrim" aria-hidden />
+          </>
         )}
 
-        <span className="sf-offer-badge">
-          <Tag className="size-3.5" strokeWidth={2} />
-          {running ? 'Offer' : 'Coming up'}
-        </span>
+        {/* Left: badge, name, description and the code. */}
+        <div className="sf-offer-coupon-main">
+          <span className="sf-offer-badge">
+            <Tag className="size-3.5" strokeWidth={2} />
+            {running ? 'Offer' : 'Coming up'}
+          </span>
 
-        <div className="sf-offer-copy">
-          <h2 className="text-lg font-semibold tracking-tight sm:text-xl" style={{ color: 'var(--sf-heading)' }}>
-            {offer.title}
-          </h2>
-          {offer.description && (
-            <p className="mt-1 max-w-2xl text-xs leading-6 sm:text-sm" style={{ color: 'var(--sf-muted)' }}>
-              {offer.description}
+          <div className="sf-offer-copy">
+            <h2 className="text-base font-semibold tracking-tight sm:text-lg" style={{ color: 'var(--sf-heading)' }}>
+              {offer.title}
+            </h2>
+            {offer.description && (
+              <p className="mt-1 text-xs leading-6" style={{ color: 'var(--sf-muted)' }}>
+                {offer.description}
+              </p>
+            )}
+          </div>
+
+          {offer.code && (
+            <p className="sf-offer-code-line">
+              Quote <span className="sf-offer-code tnum">{offer.code}</span> at the counter.
             </p>
           )}
         </div>
 
-        {/* The saving, then the deadline — the two facts a customer acts on. */}
-        <div className="sf-offer-action">
-          <div className="text-left sm:text-right">
+        {/*
+          The perforation.
+
+          A dashed rule with a notch cut out at each end is what makes a card
+          read as a coupon rather than a panel. Decorative only — the dashed
+          divider already separates the two halves for a sighted reader, and the
+          heading and saving above and below carry the meaning.
+        */}
+        <span className="sf-offer-coupon-perf" aria-hidden />
+
+        {/* Right: the saving and the way in. */}
+        <div className="sf-offer-coupon-stub">
+          <div className="sf-offer-coupon-saving">
             <p className="sf-offer-saving tnum">{offer.savingsLabel || offer.title}</p>
-            <p className="mt-0.5 text-[10px] font-semibold tracking-[0.1em] uppercase" style={{ color: 'var(--sf-muted)' }}>
-              {timing}
-            </p>
+            <p className="sf-offer-timing">{timing}</p>
           </div>
 
-          <button onClick={onShop} className="sf-btn sf-btn-gold h-10 shrink-0 px-4 text-xs">
+          <button onClick={onShop} className="sf-btn sf-btn-gold h-10 w-full shrink-0 px-4 text-xs sm:w-auto">
             Shop the offer <ArrowRight className="size-3.5" />
           </button>
         </div>
-
-        {/* The code, when the shop uses one — copied, not invented. */}
-        {offer.code && (
-          <p className="w-full text-[11px]" style={{ color: 'var(--sf-muted)' }}>
-            Quote{' '}
-            <span className="sf-offer-code tnum">{offer.code}</span> at the counter.
-          </p>
-        )}
-      </div>
+      </article>
     </section>
   )
 }

@@ -783,19 +783,16 @@
  * louder than every ordinary section. The gold rule down the left ties it to
  * the rest of the page rather than reading as a stock discount strip.
  */
+/*
+ * The band is now just a thin cream shelf that holds the coupon. It keeps the
+ * gradient and hairline so the coupon sits on branded ground rather than on a
+ * bare white gap, but it no longer paints anything of its own — the card does
+ * the work.
+ */
 .sf-offer-band {
   position: relative;
   background: linear-gradient(100deg, var(--sf-gold-wash), var(--sf-cream) 60%, oklch(0.99 0.006 85));
   border-bottom: 1px solid var(--sf-gold-line);
-}
-
-.sf-offer-band::before {
-  position: absolute;
-  inset-block: 0;
-  left: 0;
-  width: 4px;
-  background: var(--sf-maroon);
-  content: '';
 }
 
 .sf-offer-badge {
@@ -838,93 +835,330 @@
   color: var(--sf-heading);
 }
 
-/*
- * The uploaded festival photograph.
+/* ---------------------------------------------------------------------------
+ * The offer coupon
+ * ---------------------------------------------------------------------------
  *
- * The frame does NOT force a square. A shop's festival banner is usually a
- * landscape design — text on the left, artwork on the right — and centre-cropping
- * that to a square cuts the artwork off at both edges. Instead the frame keeps a
- * fixed HEIGHT and lets the photo take its own width up to a cap, so a wide
- * banner stays a wide banner and a square one stays square.
+ * The offer is drawn as a discount coupon: a narrow card, centred, the same sort
+ * of width as a product tile rather than the full width of the page. The shape
+ * is doing the talking — a full-bleed strip reads as another section of the site,
+ * whereas a coupon reads as something the shop is handing you, which is exactly
+ * what a dated festival offer is.
  *
- * The fixed height is what keeps the page stable: whatever shape is uploaded,
- * the band is the same height, so a tall image cannot shove the collection off
- * the first screen.
+ * The pieces:
+ *
+ *   .sf-offer-coupon        the card itself — accent colour, rounded, shadowed,
+ *                           with the two halves laid side by side
+ *   .sf-offer-coupon-main   the left half: badge, name, description, code
+ *   .sf-offer-coupon-perf   the dashed perforation between the halves
+ *   .sf-offer-coupon-stub   the right half: the saving and the button
  */
-.sf-offer-photo {
-  flex-shrink: 0;
+.sf-offer-coupon {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
-  height: 5rem;
-  border: 1px solid var(--sf-gold-line);
-  border-radius: 10px;
-  background: var(--sf-surface);
-  box-shadow: 0 6px 16px oklch(0.4 0.05 70 / 12%);
-  transition: transform 200ms ease, box-shadow 200ms ease;
+  margin-inline: auto;
+  /*
+   * Narrower than the page on purpose. 46rem keeps the coupon reading as a card
+   * — about the width of two product tiles — instead of stretching back into the
+   * full-width strip this replaced.
+   */
+  max-width: 46rem;
+  border-radius: 18px;
+  background: linear-gradient(135deg, var(--sf-gold-wash), var(--sf-cream) 55%, oklch(0.99 0.008 85));
+  box-shadow: 0 18px 40px oklch(0.4 0.05 70 / 14%);
 }
 
-@media (min-width: 640px) {
-  .sf-offer-photo {
-    height: 6.5rem;
+@media (min-width: 768px) {
+  .sf-offer-coupon {
+    flex-direction: row;
+    align-items: stretch;
   }
 }
 
-.sf-offer-photo:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 12px 24px oklch(0.4 0.05 70 / 18%);
+/*
+ * A left accent rule, the way a voucher is printed with a coloured spine. Drawn
+ * with a pseudo-element so it follows the card's rounded corners at any height,
+ * and kept at z-index 3 so it stays crisp above the artwork and its scrim.
+ */
+.sf-offer-coupon::before {
+  position: absolute;
+  inset-block: 0;
+  left: 0;
+  z-index: 3;
+  width: 6px;
+  background: var(--sf-maroon);
+  content: '';
 }
 
 /*
- * `cover` rather than `contain`: a photo that is slightly the wrong shape should
- * fill its frame edge to edge rather than sitting in letterbox bars. Because the
- * frame now follows the photo's own proportions, this trims a little rather than
- * cutting a wide banner in half.
+ * The spine follows the offer's accent colour when there is no artwork — the
+ * four accents are the same closed set the cards use, so the spine and the card
+ * board never disagree about what colour an offer is.
  */
-.sf-offer-photo img {
+.sf-offer-coupon[data-accent='maroon']::before {
+  background: var(--sf-maroon-deep);
+}
+
+.sf-offer-coupon[data-accent='gold']::before {
+  background: var(--sf-offer-gold);
+}
+
+.sf-offer-coupon[data-accent='green']::before {
+  background: var(--sf-offer-green);
+}
+
+/*
+ * With artwork behind it the spine is gold whatever the accent, because it now
+ * has to hold its own against a photo rather than against cream. Placed after
+ * the accent rules so it wins on order at equal specificity.
+ */
+.sf-offer-coupon-art[data-accent]::before {
+  background: var(--sf-gold-ink);
+  box-shadow: 2px 0 8px oklch(0.1 0.02 40 / 45%);
+}
+
+/* The left half: the reading side of the coupon. */
+.sf-offer-coupon-main {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.6rem;
+  min-width: 0;
+  padding: 1.15rem 1.25rem 1.15rem 1.5rem;
+}
+
+/* The code line under the description. */
+.sf-offer-code-line {
+  margin: 0;
+  font-size: 11px;
+  color: var(--sf-muted);
+}
+
+/*
+ * The perforation between the two halves.
+ *
+ * A dashed rule, plus a notch cut from each end of it. The notches are what sell
+ * the coupon: they are the little half-circles a real tear-off card has where the
+ * stub is meant to be separated. Decorative only — the heading and the saving
+ * carry the meaning, so a screen reader loses nothing by skipping this.
+ */
+.sf-offer-coupon-perf {
+  position: relative;
+  flex: 0 0 auto;
+  border-top: 1.5px dashed var(--sf-gold-line);
+}
+
+@media (min-width: 768px) {
+  .sf-offer-coupon-perf {
+    border-top: 0;
+    border-left: 1.5px dashed var(--sf-gold-line);
+  }
+}
+
+/*
+ * The two notches at the ends of the perforation.
+ *
+ * Each is a small circle in the page's cream colour, straddling the perforation
+ * so it reads as a bite taken out of the card's edge. The band's own background
+ * is a gradient rather than a flat colour, so the notch uses the mid tone the
+ * gradient passes through at the card's height — close enough that the eye reads
+ * it as a hole rather than as a dot.
+ */
+.sf-offer-coupon-perf::before,
+.sf-offer-coupon-perf::after {
+  position: absolute;
+  left: -7px;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: var(--sf-cream-soft);
+  content: '';
+}
+
+/* The two notches sit on the top edge as a horizontal rule... */
+.sf-offer-coupon-perf::before {
+  top: -7px;
+}
+
+.sf-offer-coupon-perf::after {
+  bottom: -7px;
+}
+
+/* ...and on the left edge when the card is laid out side by side. */
+@media (min-width: 768px) {
+  .sf-offer-coupon-perf::before {
+    top: -7px;
+    left: -7px;
+  }
+
+  .sf-offer-coupon-perf::after {
+    top: auto;
+    bottom: -7px;
+    left: -7px;
+  }
+}
+
+/*
+ * The stub: the saving, the deadline, and the way in. It is tinted a shade
+ * warmer than the reading half so the eye is pulled to the amount — the part of
+ * a coupon everyone actually looks for.
+ */
+.sf-offer-coupon-stub {
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 1.15rem 1.5rem 1.15rem 1.25rem;
+  background: oklch(1 0 0 / 55%);
+}
+
+@media (min-width: 768px) {
+  .sf-offer-coupon-stub {
+    min-width: 13rem;
+  }
+}
+
+.sf-offer-coupon-saving {
+  text-align: left;
+}
+
+@media (min-width: 768px) {
+  .sf-offer-coupon-saving {
+    text-align: center;
+  }
+}
+
+/* The deadline under the amount. */
+.sf-offer-timing {
+  margin-top: 0.2rem;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--sf-muted);
+}
+
+/*
+ * The uploaded artwork as the coupon's background.
+ *
+ * Same two pieces as before — the photo, then a scrim to seat the type — but now
+ * they fill a card rather than a page-wide strip, so the scrim is a touch
+ * lighter: there is far less artwork to show, and darkening a small card as
+ * heavily as a full-width band would hide the shop's design completely.
+ */
+.sf-offer-band-bg {
+  position: absolute;
+  inset: 0;
+  /*
+   * Negative, so the artwork drops behind the card's own layers — the gradient,
+   * the accent spine and the perforation notches all belong to the card, and a
+   * positioned child at 0 would paint over the spine. Below zero also keeps the
+   * card's gradient underneath as a fallback while the photo is still loading.
+   */
+  z-index: -2;
+  width: 100%;
   height: 100%;
-  width: auto;
-  max-width: 18rem;
   object-fit: cover;
+  object-position: center;
+}
+
+.sf-offer-band-scrim {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(
+    95deg,
+    oklch(0.16 0.03 40 / 76%) 0%,
+    oklch(0.16 0.03 40 / 62%) 55%,
+    oklch(0.16 0.03 40 / 48%) 100%
+  );
+}
+
+/*
+ * The two halves must sit above the photo and its scrim, or the artwork would
+ * paint straight over the text.
+ */
+.sf-offer-coupon-main,
+.sf-offer-coupon-stub {
+  position: relative;
+  z-index: 2;
+}
+
+/*
+ * The perforation needs its own layer above the artwork too, or its notches and
+ * its dashed rule would be swallowed by the photo.
+ */
+.sf-offer-coupon-perf {
+  z-index: 2;
+}
+
+/*
+ * With artwork behind it the stub's white wash would fog the shop's photo, so it
+ * is dropped and the copy is flipped to light type instead.
+ */
+.sf-offer-coupon-art .sf-offer-coupon-stub {
+  background: transparent;
+}
+
+.sf-offer-coupon-art .sf-offer-coupon-perf {
+  border-color: oklch(1 0 0 / 38%);
+}
+
+/*
+ * Light type for the artwork case.
+ *
+ * The colours need `!important` because the component sets several of them as
+ * inline styles for the cream default, and an inline style outranks a class.
+ */
+.sf-offer-coupon-art .sf-offer-copy h2 {
+  color: #fff !important;
+  text-shadow: 0 1px 12px oklch(0.12 0.02 40 / 60%);
+}
+
+.sf-offer-coupon-art .sf-offer-copy p,
+.sf-offer-coupon-art .sf-offer-code-line {
+  color: oklch(0.96 0.01 85 / 88%) !important;
+}
+
+.sf-offer-coupon-art .sf-offer-saving {
+  color: var(--sf-gold-ink);
+  text-shadow: 0 1px 12px oklch(0.12 0.02 40 / 60%);
+}
+
+.sf-offer-coupon-art .sf-offer-timing {
+  color: oklch(0.96 0.01 85 / 82%);
+}
+
+/* The code chip keeps a solid light background so it stays legible on artwork. */
+.sf-offer-coupon-art .sf-offer-code {
+  border-color: oklch(1 0 0 / 45%);
+  background: oklch(1 0 0 / 92%);
+  color: var(--sf-maroon);
 }
 
 /*
  * The copy block: badge, title and description.
  *
- * It is given a real minimum width rather than being left to `flex: 1`, so a
- * long offer name wraps onto two readable lines instead of being crushed into a
- * narrow column beside the buttons.
+ * Given `min-width: 0` so a long offer name wraps onto two readable lines rather
+ * than forcing the coupon's reading half wider than the card.
  */
 .sf-offer-copy {
-  flex: 1 1 18rem;
   min-width: 0;
 }
 
 /*
- * The action block: the saving, the deadline and the button.
- *
- * Pushed to the right end of the row on wide screens where it reads as the
- * decision, and left-aligned underneath on a phone where there is no room for
- * two columns.
- */
-.sf-offer-action {
-  display: flex;
-  flex-shrink: 0;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 1rem;
-}
-
-@media (min-width: 640px) {
-  .sf-offer-action {
-    margin-left: auto;
-  }
-}
-
-/*
- * With a photo present the band grows to fit the frame, and the text is given
- * room to breathe beside it rather than being squeezed into one line.
+ * The old photo-mode rule. Superseded by .sf-offer-band-photo above, which gives
+ * the band real height for a background image; kept as the fallback selector so
+ * any older markup still gets padded.
  */
 .sf-offer-band-photo {
-  padding-block: 1.25rem;
+  padding-block: 1.75rem;
 }
 
 /* ---------- Offers section: the festival card board ---------- */
@@ -937,6 +1171,19 @@
  * four choices live here, in one readable list, instead of being scattered
  * through the component as hex values.
  */
+/*
+ * The animation.
+ *
+ * A festival card is competing for attention against the rest of the page, so it
+ * is given a slow shimmer that sweeps across it. This is deliberately subtle: a
+ * jewellery shop's card should read as expensive, not as a banner advert that
+ * blinks. The motion draws the eye once, then the card sits still enough to be
+ * read.
+ *
+ * Everything here is disabled under `prefers-reduced-motion` further down — a
+ * customer who has asked their device for less movement should get a card that
+ * simply sits there, which is still a perfectly good card.
+ */
 .sf-offer-card {
   position: relative;
   isolation: isolate;
@@ -945,11 +1192,97 @@
   background: var(--sf-offer-red);
   box-shadow: 0 14px 30px oklch(0.4 0.05 70 / 16%);
   transition: transform 220ms ease, box-shadow 220ms ease;
+  animation: sf-offer-float 5.5s ease-in-out infinite;
+}
+
+/*
+ * A travelling highlight, drawn as a pseudo-element so no extra markup is
+ * needed. It runs on its own keyframes rather than on the card, so the sweep
+ * keeps its timing while the card gently floats.
+ */
+.sf-offer-card::before {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  /* Wide and soft, so it reads as light passing over the card, not a stripe. */
+  background: linear-gradient(
+    105deg,
+    transparent 35%,
+    oklch(1 0 0 / 16%) 48%,
+    oklch(1 0 0 / 26%) 50%,
+    oklch(1 0 0 / 16%) 52%,
+    transparent 65%
+  );
+  transform: translateX(-120%);
+  animation: sf-offer-shimmer 4.5s ease-in-out infinite;
+  content: '';
+  pointer-events: none;
 }
 
 .sf-offer-card:hover {
   transform: translateY(-3px);
   box-shadow: 0 22px 44px oklch(0.4 0.05 70 / 22%);
+  animation-play-state: paused;
+}
+
+/*
+ * The card drifts by two pixels. Any more and a grid of three cards moving
+ * independently would look seasick rather than inviting.
+ */
+@keyframes sf-offer-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-2px);
+  }
+}
+
+@keyframes sf-offer-shimmer {
+  0% {
+    transform: translateX(-120%);
+  }
+  /*
+   * A long hold at each end. The sweep takes about a third of the cycle and the
+   * rest is stillness, so the card spends most of its life not moving at all.
+   */
+  38%,
+  100% {
+    transform: translateX(120%);
+  }
+}
+
+/*
+ * The saving itself pulses gently — it is the number the customer is looking
+ * for, and the one thing on the card worth drawing the eye back to.
+ */
+.sf-offer-card-amount {
+  animation: sf-offer-glint 3.2s ease-in-out infinite;
+}
+
+@keyframes sf-offer-glint {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.035);
+  }
+}
+
+/*
+ * Honour the device setting.
+ *
+ * A shop loses nothing by this — the card is still legible, still coloured, and
+ * still has its button. It simply stops moving.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .sf-offer-card,
+  .sf-offer-card::before,
+  .sf-offer-card-amount {
+    animation: none;
+  }
 }
 
 /* The four card colours. Every one is dark enough to carry white text. */
@@ -999,6 +1332,13 @@
   gap: 0.5rem;
   padding: 1.75rem 1.5rem;
   color: #fff;
+  /*
+   * Above the shimmer. The sweep is a positioned pseudo-element at z-index 1, so
+   * without this the highlight would pass over the offer name and the saving —
+   * the two things on the card that must never be washed out.
+   */
+  position: relative;
+  z-index: 2;
 }
 
 /* The festival name, set as a quiet label above the number. */

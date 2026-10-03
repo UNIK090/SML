@@ -15,6 +15,8 @@ const OFFER: PublicOffer = {
   discountType: 'percent',
   discountValue: 10,
   savingsLabel: '10% off',
+  minSpend: 3000,
+  summary: '10% off on orders above ₹3,000',
   accent: 'red',
   startsOn: '2026-09-25',
   endsOn: '2026-11-15',

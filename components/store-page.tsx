@@ -861,6 +861,7 @@ function ShopWindow() {
         open={basketOpen}
         onClose={() => setBasketOpen(false)}
         shop={shop as (Shop & { whatsapp?: string | null; storeHours?: string | null }) | null}
+        offer={offer}
         findProduct={findProduct}
         onPlaced={(order) => {
           setBasketOpen(false)

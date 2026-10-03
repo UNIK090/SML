@@ -7,6 +7,7 @@ import { isConnectionError } from '@/lib/db/errors'
 import { businessDate } from '@/lib/business-time'
 import { publish } from '@/lib/realtime'
 import { clampQuantity, deliveryFeeFor, MAX_ORDER_LINES, requiresAddress, sellingPrice } from '@/lib/store'
+import { liveOfferDiscount } from '@/lib/offers-data'
 
 // ---------------------------------------------------------------------------
 // Order intake comes from two places and both must behave identically:
@@ -117,8 +118,20 @@ export async function placeOrder(input: PlaceOrderInput) {
   })
 
   const subtotal = lineRows.reduce((sum, row) => sum + Number(row.lineTotal), 0)
+
+  //
+  // The festival discount is worked out here, on the server, from the offers the
+  // shop actually has running — never from a number the browser sent.
+  //
+  // A cart is a thing the customer can edit, so a client-supplied discount would
+  // be a customer-supplied discount: anyone could post `discount: 99999` and buy
+  // a gold chain for nothing. The browser is told what the discount is so it can
+  // show it, but the authority is this line.
+  //
+  const offer = await liveOfferDiscount(subtotal)
+  const discountAmount = offer?.amount ?? 0
   const deliveryFee = deliveryFeeFor(subtotal, fulfilment)
-  const total = subtotal + deliveryFee
+  const total = Math.max(0, subtotal - discountAmount) + deliveryFee
   const itemCount = lineRows.reduce((sum, row) => sum + row.quantity, 0)
 
   const orderNumber = makeOrderNumber()
@@ -147,6 +160,8 @@ export async function placeOrder(input: PlaceOrderInput) {
         notes,
         itemCount,
         subtotal: subtotal.toFixed(2),
+        discountAmount: discountAmount.toFixed(2),
+        offerTitle: offer?.title ?? null,
         deliveryFee: deliveryFee.toFixed(2),
         totalAmount: total.toFixed(2),
         businessDay,
@@ -184,7 +199,17 @@ export async function placeOrder(input: PlaceOrderInput) {
     },
   })
 
-  return { order: { ...order.header, lines: order.lines }, publicToken, orderNumber, eventId, subtotal, deliveryFee, total }
+  return {
+    order: { ...order.header, lines: order.lines },
+    publicToken,
+    orderNumber,
+    eventId,
+    subtotal,
+    discountAmount,
+    offerTitle: offer?.title ?? null,
+    deliveryFee,
+    total,
+  }
 }
 
 /** Wraps placeOrder in the error handling both routes share. */

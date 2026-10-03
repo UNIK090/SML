@@ -7,26 +7,38 @@
 // which is why checkout finishes in seconds and the customer immediately gets an
 // order number to track.
 
-import { useState, type ReactNode } from 'react'
-import { ArrowRight, Check, Loader2, Minus, Plus, ShoppingBag, Trash2, X } from 'lucide-react'
+import { useEffect, useState, type ReactNode } from 'react'
+import { ArrowRight, Check, Loader2, Minus, Plus, ShoppingBag, Sparkles, Trash2, X } from 'lucide-react'
 import { useCart } from '@/components/store/cart'
 import { ProductMedia } from '@/components/store/product-card'
 import ShareMenu, { WhatsAppMark } from '@/components/store/share-menu'
 import { DELIVERY_FEE, FREE_DELIVERY_ABOVE, deliveryFeeFor, rupees, rupeesExact, telLink, whatsappLink } from '@/lib/store'
-import type { Shop, StoreProduct } from '@/lib/types'
+import type { PublicOffer, Shop, StoreProduct } from '@/lib/types'
 
 export type PlacedOrder = { orderNumber: string; token: string; totalAtPlacement: number }
+
+/**
+ * What the shop says this basket is worth right now, including any offer.
+ *
+ * The customer's basket and the shop's offers are worked out in different
+ * places, so this is the shape of the answer the server sends back — the cart
+ * only ever displays these numbers, it never computes a discount itself.
+ */
+type Quote = { subtotal: number; discountAmount: number; offerTitle: string | null; total: number }
 
 export default function CartDrawer({
   open,
   onClose,
   shop,
+  offer,
   findProduct,
   onPlaced,
 }: {
   open: boolean
   onClose: () => void
   shop: (Shop & { whatsapp?: string | null; storeHours?: string | null }) | null
+  /** The offer the storefront is advertising, used to nudge the basket up. */
+  offer: PublicOffer | null
   findProduct: (code: number) => StoreProduct | undefined
   onPlaced: (order: PlacedOrder) => void
 }) {
@@ -35,10 +47,57 @@ export default function CartDrawer({
   const [form, setForm] = useState({ name: '', phone: '', email: '', fulfilment: 'PICKUP', address: '', city: '', pincode: '', notes: '' })
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+  /** The server's live price for this basket, refreshed whenever it changes. */
+  const [quote, setQuote] = useState<Quote | null>(null)
 
   const deliveryFee = deliveryFeeFor(cart.subtotal, form.fulfilment)
-  const total = cart.subtotal + deliveryFee
+  const discountAmount = quote?.discountAmount ?? 0
+  const total = Math.max(0, cart.subtotal - discountAmount) + deliveryFee
   const set = (patch: Partial<typeof form>) => setForm((current) => ({ ...current, ...patch }))
+
+  /**
+   * Ask the shop what this basket is worth.
+   *
+   * Re-run on every change to the basket, because the answer depends on the
+   * subtotal: crossing the threshold has to light up the discount immediately,
+   * which is the whole point of a "spend ₹3,000" offer. The request is cheap and
+   * the result is a quote — placing the order prices it again, server-side.
+   */
+  useEffect(() => {
+    if (cart.lines.length === 0) {
+      setQuote(null)
+      return
+    }
+    let cancelled = false
+    const controller = new AbortController()
+    void (async () => {
+      try {
+        const response = await fetch('/api/store/quote', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          signal: controller.signal,
+          body: JSON.stringify({
+            items: cart.lines.map((line) => ({ code: line.code, quantity: line.quantity })),
+          }),
+        })
+        if (!response.ok) return
+        const result = (await response.json()) as Quote
+        if (!cancelled) setQuote(result)
+      } catch {
+        // A quote that cannot be fetched simply means no discount is shown. The
+        // order path re-prices the basket anyway, so the customer is never
+        // charged more than they were told — and never less either.
+      }
+    })()
+    return () => {
+      cancelled = true
+      controller.abort()
+    }
+  }, [cart.lines])
+
+  /** How much more the customer must add before the offer applies, if any. */
+  const shortfall =
+    offer && offer.minSpend > 0 && discountAmount === 0 ? Math.max(0, Math.ceil(offer.minSpend - cart.subtotal)) : 0
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault()
@@ -273,6 +332,22 @@ export default function CartDrawer({
                 <dt>Subtotal</dt>
                 <dd className="tnum">{rupeesExact(cart.subtotal)}</dd>
               </div>
+
+              {/*
+                The offer, when it has actually been earned. Shown in green with
+                a minus sign because this is money coming off — the one line in
+                the basket the customer is pleased to read.
+              */}
+              {discountAmount > 0 && (
+                <div className="flex justify-between font-medium" style={{ color: 'oklch(0.5 0.13 150)' }}>
+                  <dt className="flex items-center gap-1.5">
+                    <Sparkles className="size-3" />
+                    {quote?.offerTitle ? quote.offerTitle : 'Offer discount'}
+                  </dt>
+                  <dd className="tnum">−{rupeesExact(discountAmount)}</dd>
+                </div>
+              )}
+
               {step === 'details' && (
                 <div className="flex justify-between" style={{ color: 'var(--sf-body)' }}>
                   <dt>Delivery</dt>
@@ -282,10 +357,28 @@ export default function CartDrawer({
               <div className="mt-1 flex justify-between border-t border-line pt-2 text-sm font-semibold" style={{ color: 'var(--sf-heading)' }}>
                 <dt>{step === 'details' ? 'Total' : 'Basket total'}</dt>
                 <dd className="tnum" style={{ color: 'var(--sf-maroon)' }}>
-                  {rupeesExact(step === 'details' ? total : cart.subtotal)}
+                  {rupeesExact(step === 'details' ? total : Math.max(0, cart.subtotal - discountAmount))}
                 </dd>
               </div>
             </dl>
+
+            {/*
+              The nudge.
+
+              A "spend ₹3,000" offer only works if the customer knows how close
+              they are. Rather than a passive rule buried in the fine print, the
+              basket says exactly how much more is needed — and says nothing at
+              all once the discount is already earned, because at that point the
+              saving line above has taken over the job.
+            */}
+            {shortfall > 0 && offer && (
+              <div className="mb-3 rounded-xl border border-dashed border-gold bg-gold-soft px-3 py-2.5">
+                <p className="text-[11px] leading-5 text-gold-deep">
+                  Add <span className="tnum font-semibold">{rupees(shortfall)}</span> more to get{' '}
+                  <span className="font-semibold">{offer.savingsLabel}</span> on this order.
+                </p>
+              </div>
+            )}
 
             {step === 'basket' ? (
               <div className="flex flex-col gap-2">

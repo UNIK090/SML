@@ -35,6 +35,7 @@ import {
   Truck,
   X,
   Zap,
+  Gem,
 } from 'lucide-react'
 import { Badge, Button, Card, EmptyState, Input, Notice, SectionHeading, Skeleton, StatCard, WorkspaceHero, money } from '@/components/ui'
 import { useRealtimeOrders } from '@/components/orders/use-realtime-orders'
@@ -669,11 +670,28 @@ export default function OrdersSection({ onRaiseBill }: { onRaiseBill?: () => voi
                             <ul className="divide-y divide-border rounded-2xl border-hairline bg-card/70">
                               {order.lines.map((line) => (
                                 <li key={line.id} className="flex items-center justify-between gap-4 px-4 py-2.5">
-                                  <div className="min-w-0">
-                                    <p className="truncate text-sm">{line.itemName}</p>
-                                    <p className="text-[11px] text-muted-foreground">
-                                      Code {line.itemCode} · {line.category} · {money(Number(line.unitPrice))} × {line.quantity}
-                                    </p>
+                                  <div className="flex min-w-0 items-center gap-3">
+                                    {/*
+                                      The piece itself, not just its code.
+
+                                      An order used to read as a list of catalogue numbers,
+                                      which meant the shopkeeper had to go and look each one up
+                                      before they could picture what was being collected. The
+                                      photo is the fastest way to answer "is this the right
+                                      piece?" at the counter, so it sits with the name.
+
+                                      It falls back to an icon rather than a broken image:
+                                      a piece can be ordered and later unpublished, and the
+                                      endpoint correctly refuses to serve those bytes — so a
+                                      missing thumbnail is an expected state, not an error.
+                                    */}
+                                    <OrderLineThumb code={line.itemCode} name={line.itemName} />
+                                    <div className="min-w-0">
+                                      <p className="truncate text-sm">{line.itemName}</p>
+                                      <p className="text-[11px] text-muted-foreground">
+                                        Code {line.itemCode} · {line.category} · {money(Number(line.unitPrice))} × {line.quantity}
+                                      </p>
+                                    </div>
                                   </div>
                                   <p className="tnum shrink-0 text-sm font-medium">{money(Number(line.lineTotal))}</p>
                                 </li>
@@ -788,5 +806,45 @@ export default function OrdersSection({ onRaiseBill }: { onRaiseBill?: () => voi
         </div>
       </Card>
     </div>
+  )
+}
+
+/**
+ * The product photo beside a piece on an admin order.
+ *
+ * An order line records the catalogue `code`, not the image bytes, so the photo
+ * is fetched from the same endpoint the storefront uses. That keeps the order
+ * row honest — it shows the piece as it is in the catalogue today, rather than
+ * freezing a copy of a photo that the shop may since have replaced.
+ *
+ * Two states fall back to an icon rather than a broken image, and both are
+ * normal rather than exceptional:
+ *
+ *   · the piece was never given a photo, which is common in a shop that is still
+ *     photographing its stock
+ *   · the piece has since been unpublished, and the image endpoint deliberately
+ *     refuses to serve unpublished catalogue rows
+ *
+ * A shopkeeper glancing at an order must never see a broken-image glyph, because
+ * that reads as "something is wrong with this order" when nothing is.
+ */
+function OrderLineThumb({ code, name }: { code: number; name: string }) {
+  const [failed, setFailed] = useState(false)
+
+  return (
+    <span className="flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-xl border-hairline bg-secondary">
+      {failed ? (
+        <Gem className="size-4 text-muted-foreground" />
+      ) : (
+        <img
+          src={`/api/store/image?code=${encodeURIComponent(String(code))}`}
+          alt=""
+          loading="lazy"
+          className="size-11 object-cover"
+          onError={() => setFailed(true)}
+        />
+      )}
+      <span className="sr-only">{name}</span>
+    </span>
   )
 }

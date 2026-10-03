@@ -235,6 +235,17 @@ export const storeOrders = pgTable('store_orders', {
   status: text('status').notNull().default('NEW'),
   itemCount: integer('item_count').notNull().default(0),
   subtotal: numeric('subtotal', { precision: 12, scale: 2 }).notNull().default('0'),
+  /**
+   * The offer discount actually applied to this order, in rupees.
+   *
+   * Stored rather than recomputed because an offer is dated: the row that made
+   * the order cheaper may have ended, or been edited, by the time anyone reads
+   * the order again. A saved order has to keep saying what the customer was
+   * actually promised.
+   */
+  discountAmount: numeric('discount_amount', { precision: 12, scale: 2 }).notNull().default('0'),
+  /** The offer that produced `discountAmount`, for the admin's own records. */
+  offerTitle: text('offer_title'),
   deliveryFee: numeric('delivery_fee', { precision: 12, scale: 2 }).notNull().default('0'),
   totalAmount: numeric('total_amount', { precision: 12, scale: 2 }).notNull().default('0'),
   /** Set when the order is billed at the counter. */
@@ -292,6 +303,16 @@ export const festivalOffers = pgTable(
     discountType: text('discount_type').notNull().default('percent'),
     /** Percent (0–100) or a flat rupee amount, depending on `discountType`. */
     discountValue: numeric('discount_value', { precision: 12, scale: 2 }).notNull().default('0'),
+    /**
+     * Basket value the customer must reach before the offer applies, in rupees.
+     * `0` means no threshold — the offer applies to any basket.
+     *
+     * A shop almost never discounts a single cheap piece; the point of a festival
+     * offer is to lift the size of the basket. Storing the threshold turns the
+     * banner into a rule the till can check, instead of a claim on a poster that
+     * nothing enforces.
+     */
+    minSpend: numeric('min_spend', { precision: 12, scale: 2 }).notNull().default('0'),
     /** Inclusive first day the offer shows on the website. */
     startsOn: date('starts_on').notNull(),
     /** Inclusive last day the offer shows on the website. */

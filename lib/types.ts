@@ -353,6 +353,11 @@ export type Offer = {
   code: string | null
   discountType: OfferDiscountType
   discountValue: string
+  /**
+   * Basket value needed before the offer applies, in rupees. 0 = no minimum.
+   * Stored as a decimal string the way every other money column is.
+   */
+  minSpend: string
   /** Inclusive first day it shows, as YYYY-MM-DD. */
   startsOn: string
   /** Inclusive last day it shows, as YYYY-MM-DD. */
@@ -404,6 +409,14 @@ export type PublicOffer = {
   discountType: OfferDiscountType
   discountValue: number
   savingsLabel: string
+  /**
+   * Basket value needed before the offer applies, in rupees. 0 = no minimum.
+   * Sent to the storefront so the cart can check the basket against it without
+   * a second request — the rule and the shop are always in agreement.
+   */
+  minSpend: number
+  /** The whole condition in one line, e.g. "₹500 off on orders above ₹3,000". */
+  summary: string
   /** Card colour on the website. */
   accent: OfferAccent
   startsOn: string

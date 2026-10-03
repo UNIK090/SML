@@ -35,6 +35,7 @@ type OfferInput = {
   code: string | null
   discountType: OfferDiscountType
   discountValue: number
+  minSpend: number
   startsOn: string
   endsOn: string
   active: boolean
@@ -61,6 +62,12 @@ function parseOffer(body: Record<string, unknown>): { value: OfferInput } | { er
     return { error: 'A percentage discount cannot be more than 100%.' }
   }
 
+  // The minimum spend is optional; anything unreadable or negative becomes 0,
+  // which means "no threshold" rather than blocking the save. A shopkeeper who
+  // clears the field should get an offer with no condition, not an error.
+  const minSpendRaw = Number(body.minSpend)
+  const minSpend = Number.isFinite(minSpendRaw) && minSpendRaw > 0 ? Math.round(minSpendRaw) : 0
+
   const startsOn = typeof body.startsOn === 'string' ? body.startsOn.trim() : ''
   const endsOn = typeof body.endsOn === 'string' ? body.endsOn.trim() : ''
   if (!DATE_PATTERN.test(startsOn) || !DATE_PATTERN.test(endsOn)) {
@@ -75,6 +82,7 @@ function parseOffer(body: Record<string, unknown>): { value: OfferInput } | { er
       code: cleanText(body.code, 24),
       discountType,
       discountValue,
+      minSpend,
       startsOn,
       endsOn,
       active: body.active !== false,
@@ -113,6 +121,7 @@ export async function POST(request: Request) {
       .values({
         ...parsed.value,
         discountValue: parsed.value.discountValue.toFixed(2),
+        minSpend: parsed.value.minSpend.toFixed(2),
       })
       .returning()
 
@@ -154,6 +163,7 @@ export async function PATCH(request: Request) {
       .set({
         ...parsed.value,
         discountValue: parsed.value.discountValue.toFixed(2),
+        minSpend: parsed.value.minSpend.toFixed(2),
         updatedAt: new Date(),
       })
       .where(eq(festivalOffers.id, id))

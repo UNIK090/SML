@@ -98,6 +98,73 @@ export function savingsLabel(discountType: OfferDiscountType | string, discountV
 }
 
 /**
+ * "on orders above ₹3,000" — the condition, phrased for a customer.
+ *
+ * Returned as an empty string when there is no threshold, so a caller can drop
+ * it into a sentence without a branch of its own.
+ */
+export function minSpendLabel(minSpend: number): string {
+  if (!Number.isFinite(minSpend) || minSpend <= 0) return ''
+  return `on orders above ₹${Math.round(minSpend).toLocaleString('en-IN')}`
+}
+
+/** One whole sentence for the coupon: "₹500 off on orders above ₹3,000". */
+export function offerSummary(discountType: OfferDiscountType | string, discountValue: number, minSpend: number): string {
+  const saving = savingsLabel(discountType, discountValue)
+  if (!saving) return ''
+  const condition = minSpendLabel(minSpend)
+  return condition ? `${saving} ${condition}` : saving
+}
+
+/**
+ * The discount an offer gives a basket, in rupees.
+ *
+ * This is the one place the money is worked out, so the cart the customer reads
+ * and the order the shop stores can never disagree about what a festival offer
+ * is worth.
+ *
+ * The rules, in the order they matter:
+ *
+ *   1. A basket below the threshold gets nothing. This is the whole point of a
+ *      minimum spend, so it is checked before anything else is calculated.
+ *   2. A percentage can never take more than the basket is worth — a 100% offer
+ *      on a ₹400 basket gives ₹400, not a paid-out ₹400.
+ *   3. A flat amount is capped at the basket for the same reason: "₹500 off" on
+ *      a ₹300 basket makes it free, never negative.
+ *
+ * Rounding is to the rupee. The storefront shows whole rupees, and a discount of
+ * 499.9999 would render as "₹500 off" while the ledger held 499.9999 — a paisa
+ * of disagreement the shop would eventually have to explain.
+ */
+export function offerDiscountFor(
+  offer: { discountType: OfferDiscountType | string; discountValue: number; minSpend: number },
+  subtotal: number,
+): number {
+  const value = Number(offer.discountValue)
+  const minimum = Number(offer.minSpend) || 0
+  if (!Number.isFinite(subtotal) || subtotal <= 0) return 0
+  if (!Number.isFinite(value) || value <= 0) return 0
+  if (minimum > 0 && subtotal < minimum) return 0
+
+  const raw = offer.discountType === 'flat' ? value : (subtotal * value) / 100
+  const capped = Math.min(raw, subtotal)
+  return Math.max(0, Math.min(Math.round(capped), Math.round(subtotal)))
+}
+
+/**
+ * How much more a customer must add before the offer applies.
+ *
+ * Returns 0 once they have qualified, so the cart can ask "is there a nudge to
+ * show?" with a single truthy check rather than comparing against the threshold
+ * in three different places and getting it subtly wrong in one of them.
+ */
+export function amountToQualify(minSpend: number, subtotal: number): number {
+  const minimum = Number(minSpend) || 0
+  if (minimum <= 0) return 0
+  return Math.max(0, Math.ceil(minimum - subtotal))
+}
+
+/**
  * Narrows a stored offer for the public storefront.
  *
  * Defensive by design: an offer whose dates are unreadable, or whose value is
@@ -111,6 +178,13 @@ export function toPublicOffer(offer: Offer, businessDay: string): PublicOffer | 
   if (!/^\d{4}-\d{2}-\d{2}$/.test(offer.startsOn) || !/^\d{4}-\d{2}-\d{2}$/.test(offer.endsOn)) return null
   if (offer.endsOn < offer.startsOn) return null
 
+  // A threshold that cannot be read is treated as "no threshold" rather than as
+  // a rejection. Blanking the offer would take the banner down over a malformed
+  // number, which is a much bigger failure than a discount that applies a little
+  // more generously than intended.
+  const minSpendRaw = Number(offer.minSpend)
+  const minSpend = Number.isFinite(minSpendRaw) && minSpendRaw > 0 ? minSpendRaw : 0
+
   return {
     id: offer.id,
     title: offer.title.trim(),
@@ -119,6 +193,8 @@ export function toPublicOffer(offer: Offer, businessDay: string): PublicOffer | 
     discountType: offer.discountType,
     discountValue: value,
     savingsLabel: label,
+    minSpend,
+    summary: offerSummary(offer.discountType, value, minSpend),
     accent: offerAccent(offer.accent),
     startsOn: offer.startsOn,
     endsOn: offer.endsOn,
