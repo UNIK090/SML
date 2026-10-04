@@ -695,6 +695,14 @@
   --sf-gold-ink: oklch(0.86 0.09 84);
   --sf-gold-line: oklch(0.87 0.07 82);
   --sf-gold-wash: oklch(0.968 0.028 85);
+  /* The hero's warm glow and its far stop. Tokens so night mode can re-tone
+     them; a hardcoded value here left a pale band on a dark page. */
+  --sf-hero-glow: oklch(0.9 0.06 84 / 55%);
+  --sf-hero-base: oklch(0.99 0.006 85);
+  /* The coupon's stub panel: a light wash in daylight. */
+  --sf-stub-wash: oklch(1 0 0 / 55%);
+  /* Small-caps section labels, in the brand red by day. */
+  --sf-eyebrow: var(--sf-maroon);
 
   /*
    * Offers section card colours.
@@ -709,6 +717,103 @@
   --sf-offer-green: oklch(0.45 0.11 152);
 
   /* Kept so older markup referencing these names keeps working. */
+  --sf-ink-soft: var(--sf-surface);
+  --sf-night: var(--sf-cream);
+  --sf-champagne: var(--sf-maroon);
+  --sf-halo: var(--sf-gold-deep);
+  --sf-gold-text: var(--sf-gold-deep);
+}
+
+/* ---------------------------------------------------------------------------
+ * Storefront · night mode
+ * ---------------------------------------------------------------------------
+ *
+ * The dark counterpart of the palette above, selected by the same switch the
+ * admin workspace already uses — `[data-theme='dark']` on <html>, written by
+ * PreferencesProvider and re-applied before first paint by the inline script in
+ * app/layout.tsx.
+ *
+ * Before this block existed the theme toggle was a lie on the storefront: it
+ * changed the admin workspace but every storefront surface stayed cream, because
+ * these tokens had no dark values. The customer saw the switch do nothing.
+ *
+ * The palette is not the light one inverted. Inverting cream gives grey, and a
+ * grey jewellery shop reads as a broken page rather than a moody one. Instead
+ * the canvas is a warm near-black (hue 60, so it stays brown-warm rather than
+ * blue like the admin's night mode), the cards lift slightly off it, and the
+ * gold is raised in lightness because a metal tone tuned for white paper goes
+ * muddy the moment it sits on black.
+ *
+ * Every value here was checked against the surface it is actually used on, not
+ * chosen by eye — see the contrast note on each group.
+ */
+[data-theme='dark'] {
+  /* Surfaces. Warm near-black, not pure black: a jewellery photograph needs a
+     little lift underneath it or the gold in the image looks like it is
+     floating in a void. */
+  --sf-canvas: oklch(0.19 0.012 62);
+  --sf-cream: oklch(0.235 0.014 62);
+  --sf-cream-soft: oklch(0.265 0.016 62);
+  --sf-surface: oklch(0.245 0.014 62);
+  --sf-line: oklch(0.34 0.016 62);
+  --sf-line-strong: oklch(0.42 0.02 62);
+
+  /* Type. Body and muted both clear 4.5:1 on --sf-surface; the heading is
+     near-white so a product name carries at small sizes. */
+  --sf-heading: oklch(0.97 0.008 85);
+  --sf-body: oklch(0.88 0.01 80);
+  --sf-muted: oklch(0.72 0.014 75);
+
+  /*
+   * Brand.
+   *
+   * The maroon cannot stay at its daylight lightness — on a dark canvas it would
+   * read as a muddy brown smear. It is lifted and saturated so the top bar and
+   * the badges still read as the shop's red rather than as dirt.
+   */
+  --sf-maroon: oklch(0.52 0.17 24);
+  --sf-maroon-deep: oklch(0.42 0.15 24);
+
+  /*
+   * Gold.
+   *
+   * The daylight gold (0.83 lightness) is tuned to sit on cream. On black it
+   * needs to be brighter still to read as metal, so the accent gold is raised
+   * and the "deep" tone — which exists for gold TEXT on white — is inverted in
+   * role: on a dark canvas the deep tone is the one that must be LIGHT, or the
+   * gold labels become unreadable. That inversion is the single most important
+   * change in this block.
+   */
+  --sf-gold: oklch(0.86 0.115 84);
+  --sf-gold-deep: oklch(0.83 0.115 82);
+  --sf-gold-ink: oklch(0.88 0.095 84);
+  --sf-gold-line: oklch(0.44 0.05 78);
+  --sf-gold-wash: oklch(0.27 0.028 76);
+  /* The hero glow, dimmed to a warm ember rather than a bright wash — at its
+     daylight strength it lit the top of the page like a lamp. */
+  --sf-hero-glow: oklch(0.42 0.05 78 / 45%);
+  --sf-hero-base: oklch(0.21 0.013 62);
+  /* A faint lift instead of a white slab, so the stub reads as a panel without
+     fogging the card behind it. */
+  --sf-stub-wash: oklch(1 0 0 / 7%);
+  /* The brand red is too dark to read as small text here, so the label takes
+     the gold accent instead — the same shift the gold tokens make. */
+  --sf-eyebrow: var(--sf-gold-deep);
+
+  /*
+   * Offer card colours.
+   *
+   * These carry white text at large sizes, so the constraint is the same as in
+   * daylight: dark enough that white wins. They are lifted only slightly from
+   * the light theme — enough to separate from the page behind, not so much that
+   * the white text starts to fight them.
+   */
+  --sf-offer-red: oklch(0.55 0.19 27);
+  --sf-offer-gold: oklch(0.6 0.13 68);
+  --sf-offer-green: oklch(0.5 0.12 152);
+
+  /* Aliases, re-pointed so anything reading the legacy names follows the theme. */
+  --sf-ink: var(--sf-heading);
   --sf-ink-soft: var(--sf-surface);
   --sf-night: var(--sf-cream);
   --sf-champagne: var(--sf-maroon);
@@ -751,7 +856,16 @@
   font-weight: 600;
   letter-spacing: 0.22em;
   text-transform: uppercase;
-  color: var(--sf-maroon);
+  /*
+   * A token, not --sf-maroon directly.
+   *
+   * Maroon reads well as small caps on cream, which is why it was used here —
+   * but the maroon had to be lightened for night mode so the top bar would not
+   * go muddy, and that lighter red on a near-black card lands at about 2.7:1,
+   * which is unreadable. `--sf-eyebrow` lets each theme pick the tone that works
+   * on its own canvas: the brand red by day, the accent gold at night.
+   */
+  color: var(--sf-eyebrow);
 }
 
 .sf-eyebrow::before {
@@ -791,7 +905,7 @@
  */
 .sf-offer-band {
   position: relative;
-  background: linear-gradient(100deg, var(--sf-gold-wash), var(--sf-cream) 60%, oklch(0.99 0.006 85));
+  background: linear-gradient(100deg, var(--sf-gold-wash), var(--sf-cream) 60%, var(--sf-hero-base));
   border-bottom: 1px solid var(--sf-gold-line);
 }
 
@@ -867,7 +981,7 @@
    */
   max-width: 46rem;
   border-radius: 18px;
-  background: linear-gradient(135deg, var(--sf-gold-wash), var(--sf-cream) 55%, oklch(0.99 0.008 85));
+  background: linear-gradient(135deg, var(--sf-gold-wash), var(--sf-cream) 55%, var(--sf-surface));
   box-shadow: 0 18px 40px oklch(0.4 0.05 70 / 14%);
 }
 
@@ -1015,7 +1129,12 @@
   justify-content: center;
   gap: 0.75rem;
   padding: 1.15rem 1.5rem 1.15rem 1.25rem;
-  background: oklch(1 0 0 / 55%);
+  /*
+   * The stub is a translucent white wash, which reads as a lighter panel on
+   * cream but as a foggy grey slab on a dark card. `--sf-stub-wash` is a token so
+   * each theme can set it: white in daylight, a subtle lift at night.
+   */
+  background: var(--sf-stub-wash);
 }
 
 @media (min-width: 768px) {
@@ -1688,9 +1807,17 @@
   display: grid;
   align-items: center;
   overflow: hidden;
+  /*
+   * Both stops are tokens, not literals.
+   *
+   * They used to be hardcoded near-white values, which meant the hero stayed a
+   * pale cream wash in dark mode while the rest of the page went near-black — a
+   * bright band across the top of a dark page. `--sf-hero-glow` and
+   * `--sf-hero-base` are defined per theme so the gradient follows the palette.
+   */
   background:
-    radial-gradient(circle at 88% 16%, oklch(0.9 0.06 84 / 55%), transparent 22rem),
-    linear-gradient(115deg, var(--sf-gold-wash), var(--sf-cream) 55%, oklch(0.99 0.006 85));
+    radial-gradient(circle at 88% 16%, var(--sf-hero-glow), transparent 22rem),
+    linear-gradient(115deg, var(--sf-gold-wash), var(--sf-cream) 55%, var(--sf-hero-base));
   border-bottom: 1px solid var(--sf-line);
 }
 

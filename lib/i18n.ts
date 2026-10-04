@@ -19,6 +19,10 @@ const en = {
   'nav.store.hint': 'Website and publishing',
   'nav.offers': 'Offers',
   'nav.offers.hint': 'Festival offers',
+  // Referrals sit under Offers: both are about bringing customers in, and the
+  // shopkeeper reaches for them in the same frame of mind.
+  'nav.referrals': 'Referral Program',
+  'nav.referrals.hint': 'Reward points',
   'nav.reports': 'Reports',
   'nav.reports.hint': 'Income insights',
   'nav.profile': 'Profile',
@@ -213,6 +217,8 @@ const te: Record<TranslationKey, string> = {
   'nav.store.hint': 'వెబ్‌సైట్ మరియు ప్రచురణ',
   'nav.offers': 'ఆఫర్లు',
   'nav.offers.hint': 'పండుగ ఆఫర్లు',
+  'nav.referrals': 'రెఫరల్ ప్రోగ్రామ్',
+  'nav.referrals.hint': 'రివార్డ్ పాయింట్లు',
   'nav.reports': 'రిపోర్టులు',
   'nav.reports.hint': 'ఆదాయ విశ్లేషణ',
   'nav.profile': 'ప్రొఫైల్',

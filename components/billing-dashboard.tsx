@@ -29,6 +29,7 @@ const PaymentsSection = dynamic(() => import('@/components/sections/payments-sec
 const ItemsSection = dynamic(() => import('@/components/sections/items-section'), { loading: SectionFallback })
 const StoreManagerSection = dynamic(() => import('@/components/sections/store-manager-section'), { loading: SectionFallback })
 const OffersSection = dynamic(() => import('@/components/sections/offers-section'), { loading: SectionFallback })
+const ReferralsSection = dynamic(() => import('@/components/sections/referrals-section'), { loading: SectionFallback })
 const ReportsSection = dynamic(() => import('@/components/sections/reports-section'), { loading: SectionFallback })
 const ProfileSection = dynamic(() => import('@/components/sections/profile-section'), { loading: SectionFallback })
 const InvoiceModal = dynamic(() => import('@/components/invoice-modal'))
@@ -156,6 +157,7 @@ export default function BillingDashboard() {
           {section === 'items' && <ItemsSection items={items.data ?? []} loading={items.isLoading} refresh={refresh} />}
           {section === 'store' && <StoreManagerSection items={items.data ?? []} loading={items.isLoading} refresh={refresh} />}
           {section === 'offers' && <OffersSection />}
+          {section === 'referrals' && <ReferralsSection />}
           {section === 'reports' && <ReportsSection dashboard={dashboard.data ?? null} dashboardLoading={dashboard.isLoading} />}
           {section === 'profile' && <ProfileSection onShopChanged={handleShopChanged} onBrandChanged={handleBrandChanged} />}
         </div>

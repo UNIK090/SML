@@ -321,6 +321,46 @@ export type MonthlyReport = {
   activeDays: number
 }
 
+/**
+ * A customer of the shop, as the Referral Program screen reads them.
+ *
+ * The phone is stored normalised (10 digits, no spaces) because it is the key
+ * the system matches on; `phoneDisplay` keeps what was typed so a bill can still
+ * read "+91 85010 34991".
+ *
+ * The three point figures are deliberately distinct. `rewardPoints` is what the
+ * customer can spend today; the other two are lifetime totals that a redemption
+ * must never reduce, or the shop loses the ability to answer "how much has this
+ * person earned from us in total?".
+ */
+export type Customer = {
+  id: number
+  name: string
+  /** Digits only — the matching key. Unique. */
+  phone: string
+  /** The number as typed, for display. */
+  phoneDisplay: string | null
+  email: string | null
+  /** The customer's referral number, e.g. SML10245. Server-generated, unique. */
+  referralCode: string
+  /** The live balance — what may be redeemed today. */
+  rewardPoints: number
+  /** Lifetime earned; never reduced by a redemption. */
+  totalReferralPointsEarned: number
+  /** Lifetime redeemed. */
+  totalPointsRedeemed: number
+  /**
+   * Set when a reversal would have pushed the balance negative because the
+   * points were already spent. The shopkeeper reviews rather than the system
+   * inventing a negative balance.
+   */
+  flaggedForReview: boolean
+  active: boolean
+  notes: string | null
+  createdAt: Date | string
+  updatedAt: Date | string
+}
+
 export type Shop = {
   name: string
   address: string | null

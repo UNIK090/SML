@@ -3,8 +3,12 @@ import { db } from '@/lib/db'
 import { billingTransactions, inventoryItems, invoiceBillPhotos, invoiceItemPhotos, invoiceItems, invoiceSends } from '@/lib/db/schema'
 import { isConnectionError, isUniqueViolation } from '@/lib/db/errors'
 import { requireAdmin } from '@/lib/db/guard'
+import { getSessionIdentity } from '@/lib/db/session-identity'
 import { inArray } from 'drizzle-orm'
 import { buildMessage, buildSmsMessage, canAutoSendInvoices, canAutoSendSmsInvoices, getInvoiceDeliveryStatus, getSmsDeliveryStatus, normalisePhone, sendInvoice, type Channel } from '@/lib/messaging'
+import { findOrCreateCustomer } from '@/lib/customers'
+import { buildRedemptionMessage, getRewardSettings, redeemPoints } from '@/lib/rewards'
+import { deliverRewardMessage } from '@/lib/reward-notifications'
 import { getShopDetails } from '@/lib/shop'
 import { randomBytes } from 'node:crypto'
 import { publicInvoiceUrl } from '@/lib/public-url'
@@ -103,6 +107,9 @@ export async function POST(request: Request) {
     const paymentStatus = body.paymentStatus === 'PENDING' ? 'PENDING' : 'PAID'
     const customerName = typeof body.customerName === 'string' && body.customerName.trim() ? body.customerName.trim().slice(0, 120) : null
     const customerPhone = typeof body.customerPhone === 'string' && body.customerPhone.trim() ? body.customerPhone.trim().slice(0, 40) : null
+    // Who is billing. Recorded against a points redemption, so spending a
+    // customer's balance is always attributable to a person.
+    const actor = await getSessionIdentity()
     const discount = Number(body.discount ?? 0)
     if (!Number.isFinite(discount) || discount < 0) {
       return NextResponse.json({ error: 'Enter a valid discount.' }, { status: 400 })
@@ -161,7 +168,60 @@ export async function POST(request: Request) {
     if (discount > subtotal) {
       return NextResponse.json({ error: 'The discount cannot be more than the bill subtotal.' }, { status: 400 })
     }
-    const total = subtotal - discount
+
+    //
+    // Reward points, if the customer is spending any.
+    //
+    // Resolved BEFORE the invoice is written, so a bad request is refused while
+    // nothing has been committed. The points are not deducted here — the deduction
+    // happens inside the transaction below, alongside the invoice, so the two
+    // cannot come apart. Deducting first and saving afterwards would burn a
+    // customer's points on a bill that failed to save.
+    //
+    const pointsToRedeem = Math.trunc(Number(body.redeemPoints ?? 0))
+    if (!Number.isFinite(pointsToRedeem) || pointsToRedeem < 0) {
+      return NextResponse.json({ error: 'Enter a valid number of reward points to redeem.' }, { status: 400 })
+    }
+
+    // The customer record, found or created from the phone on this bill. This is
+    // also the moment a first-time customer receives their referral number.
+    let customerId: number | null = null
+    let rewardDiscount = 0
+    if (customerName && customerPhone) {
+      const resolved = await findOrCreateCustomer({ name: customerName, phone: customerPhone })
+      // A phone that cannot be a real mobile is not a reason to refuse the bill —
+      // a walk-in sale matters more than a reward. It simply earns nothing.
+      if (!('error' in resolved)) customerId = resolved.customer.id
+    }
+    if (pointsToRedeem > 0 && customerId === null) {
+      return NextResponse.json(
+        { error: 'A valid customer name and mobile number are needed before points can be redeemed.' },
+        { status: 400 },
+      )
+    }
+
+    const settings = await getRewardSettings()
+    if (pointsToRedeem > 0) {
+      if (settings.minimumPointsToRedeem > 0 && pointsToRedeem < settings.minimumPointsToRedeem) {
+        return NextResponse.json({ error: `At least ${settings.minimumPointsToRedeem} points must be redeemed.` }, { status: 400 })
+      }
+      if (settings.maximumPointsPerBill > 0 && pointsToRedeem > settings.maximumPointsPerBill) {
+        return NextResponse.json({ error: `At most ${settings.maximumPointsPerBill} points can be redeemed on one bill.` }, { status: 400 })
+      }
+      rewardDiscount = Math.round(pointsToRedeem * settings.redemptionValuePerPoint)
+      if (rewardDiscount > subtotal - discount) {
+        return NextResponse.json(
+          { error: `Those points are worth ${rewardDiscount}, which is more than the bill after discount.` },
+          { status: 400 },
+        )
+      }
+    }
+
+    // The reward discount is folded into the bill's own discount column, so the
+    // printed total, the reports and the day's takings all agree without any of
+    // them having to know that rewards exist.
+    const totalDiscount = discount + rewardDiscount
+    const total = subtotal - totalDiscount
     const first = lineRows[0]
     const invoiceNumber = makeInvoiceNumber()
     // Date every invoice in the shop's local business timezone. Relying on a
@@ -186,9 +246,30 @@ export async function POST(request: Request) {
         businessDay,
         customerName,
         customerPhone,
-        discount: discount.toFixed(2),
+        customerId,
+        discount: totalDiscount.toFixed(2),
         publicToken,
       }).returning()
+
+      //
+      // Spend the points, in the same transaction as the invoice.
+      //
+      // If this fails the whole invoice rolls back, which is the correct outcome:
+      // a bill that took points it could not record would leave a customer short
+      // with nothing to show for it. The engine also refuses to go negative, so
+      // a stale balance in the browser cannot overdraw the account.
+      //
+      let redeemed: { discountValue: number; balanceAfter: number } | null = null
+      if (pointsToRedeem > 0 && customerId !== null) {
+        const result = await redeemPoints(tx, {
+          customerId,
+          points: pointsToRedeem,
+          invoiceNumber,
+          createdBy: actor,
+        })
+        if ('error' in result) throw new Error(result.error)
+        redeemed = { discountValue: result.discountValue, balanceAfter: result.balanceAfter }
+      }
 
       const lines = await tx.insert(invoiceItems).values(lineRows.map((row) => ({ ...row, invoiceNumber }))).returning()
       const photos = lines.flatMap((line, index) => {
@@ -209,7 +290,7 @@ export async function POST(request: Request) {
         })
       }
 
-      return { header, lines }
+      return { header, lines, redeemed }
     })
 
     // Invoice saves should feel immediate. Direct WhatsApp/SMS providers run
@@ -271,7 +352,58 @@ export async function POST(request: Request) {
       sendDetail = blocked.join(' ')
     }
 
-    return NextResponse.json({ ...transaction.header, lines: transaction.lines, subtotal, sendStatus, sendDetail }, { status: 201 })
+    //
+    // The redemption message, prepared but NOT sent.
+    //
+    // The shop's delivery provider decides whether anything leaves automatically,
+    // and the wording is returned either way so the counter can read it out or
+    // send it by hand. Preparing it here — rather than inside the send helper —
+    // means the message always reflects the balance the transaction actually
+    // produced, never a value recomputed later from a changed world.
+    //
+    let rewardMessage: string | undefined
+    let rewardDelivery: Awaited<ReturnType<typeof deliverRewardMessage>> | undefined
+    if (transaction.redeemed && customerName) {
+      rewardMessage = buildRedemptionMessage(
+        customerName,
+        pointsToRedeem,
+        transaction.redeemed.discountValue,
+        transaction.redeemed.balanceAfter,
+      )
+      //
+      // Sent the same way the invoice is: with the link-based provider this does
+      // not send anything, it returns the WhatsApp URL for the counter to open.
+      // The customer's phone is the one on this bill, which is where the points
+      // belong — the person standing there redeeming them.
+      //
+      rewardDelivery = await deliverRewardMessage({
+        phone: customerPhone,
+        message: rewardMessage,
+        kind: 'POINTS_REDEEMED',
+        invoiceNumber,
+        customerName,
+      })
+    }
+
+    return NextResponse.json(
+      {
+        ...transaction.header,
+        lines: transaction.lines,
+        subtotal,
+        sendStatus,
+        sendDetail,
+        reward: transaction.redeemed
+          ? {
+              pointsRedeemed: pointsToRedeem,
+              discount: transaction.redeemed.discountValue,
+              balanceAfter: transaction.redeemed.balanceAfter,
+              message: rewardMessage,
+              delivery: rewardDelivery,
+            }
+          : undefined,
+      },
+      { status: 201 },
+    )
   } catch (error) {
     console.error('[v0] Failed to save transaction:', error)
     if (isUniqueViolation(error)) {

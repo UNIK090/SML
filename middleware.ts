@@ -28,6 +28,9 @@ const PROTECTED_APIS = [
   // Admin-side order management. The public endpoints live under /api/store/*
   // and must NOT be listed here.
   '/api/orders',
+  // Referral and reward management. Every one of these can move money, so the
+  // whole group is protected here as well as re-checked in each handler.
+  '/api/referrals',
 ]
 
 export async function middleware(request: NextRequest) {
@@ -72,5 +75,7 @@ export const config = {
     '/api/profile/:path*',
     '/api/orders',
     '/api/orders/:path*',
+    '/api/referrals',
+    '/api/referrals/:path*',
   ],
 }

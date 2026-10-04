@@ -5,7 +5,7 @@
 // The cart and the send-invoice interaction both live here; the surrounding
 // shell owns navigation and the sign-out control.
 
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Camera, FileText, ImagePlus, Loader2, Minus, Plus, ReceiptText, Search, ShoppingBag, Trash2, X } from 'lucide-react'
 import { Badge, Button, Card, EmptyState, Field, Input, Notice, SectionHeading, Skeleton, SkeletonRows, Select, WorkspaceHero, money } from '@/components/ui'
 import BarcodeScanner from '@/components/barcode-scanner'
@@ -40,6 +40,15 @@ export default function BillingSection({
   const [customerName, setCustomerName] = useState('')
   const [customerPhone, setCustomerPhone] = useState('')
   const [paymentStatus, setPaymentStatus] = useState('PAID')
+  /** The identified customer's reward balance, once a mobile resolves to one. */
+  const [rewards, setRewards] = useState<null | {
+    id: number
+    name: string
+    referralCode: string
+    rewardPoints: number
+    redemptionValuePerPoint: number
+  }>(null)
+  const [redeemPoints, setRedeemPoints] = useState('')
   const [saving, setSaving] = useState(false)
   const [billPhoto, setBillPhoto] = useState<BillPhoto | undefined>(undefined)
   const [photoLoading, setPhotoLoading] = useState(false)
@@ -148,7 +157,18 @@ export default function BillingSection({
 
   const subtotal = useMemo(() => cart.reduce((sum, line) => sum + line.unitPrice * line.quantity, 0), [cart])
   const discountValue = Math.max(0, Number(discount) || 0)
-  const total = Math.max(0, subtotal - discountValue)
+
+  //
+  // The reward redemption, worked out for display only.
+  //
+  // The browser never decides what points are worth — it shows what the shop's
+  // stored rule says and sends the COUNT of points. The server recalculates the
+  // rupee value when the invoice is written, so a tampered page cannot buy a gold
+  // chain with a made-up redemption.
+  //
+  const redeemValue = Math.max(0, Math.trunc(Number(redeemPoints) || 0))
+  const redeemDiscount = rewards ? Math.round(redeemValue * rewards.redemptionValuePerPoint) : 0
+  const total = Math.max(0, subtotal - discountValue - redeemDiscount)
 
   // One representative item per kind of piece, so the quick-add panel shows a
   // single Ring, Earrings, Chain, Bracelet, Necklace … instead of the whole
@@ -164,6 +184,56 @@ export default function BillingSection({
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([category, item]) => ({ category, item }))
   }, [items])
+
+  /**
+   * Looks up the reward balance for the mobile number on this bill.
+   *
+   * Run when the field loses focus rather than on every keystroke: a mobile
+   * number is only meaningful once it is complete, and searching mid-number would
+   * fire requests for every prefix the staff member types.
+   *
+   * A number with no customer behind it simply shows no rewards panel — that is
+   * the normal case for a walk-in, not an error worth interrupting the sale for.
+   */
+  const lookupRewards = useCallback(async () => {
+    const digits = customerPhone.replace(/\D/g, '')
+    if (digits.length < 10) {
+      setRewards(null)
+      setRedeemPoints('')
+      return
+    }
+    try {
+      const response = await fetch(`/api/referrals/lookup?phone=${encodeURIComponent(customerPhone)}`)
+      if (!response.ok) {
+        setRewards(null)
+        return
+      }
+      const result = (await response.json()) as {
+        found: boolean
+        customer?: { id: number; name: string; referralCode: string; rewardPoints: number }
+        redemptionValuePerPoint?: number
+      }
+      if (!result.found || !result.customer) {
+        setRewards(null)
+        setRedeemPoints('')
+        return
+      }
+      setRewards({
+        id: result.customer.id,
+        name: result.customer.name,
+        referralCode: result.customer.referralCode,
+        rewardPoints: result.customer.rewardPoints,
+        redemptionValuePerPoint: result.redemptionValuePerPoint ?? 1,
+      })
+      // The name field is filled from the record only when it is empty, so a
+      // staff member who typed a name first is never overridden by the stored one.
+      if (!customerName.trim()) setCustomerName(result.customer.name)
+    } catch {
+      // A lookup that fails must not block the sale. No panel is shown and the
+      // bill proceeds at full price.
+      setRewards(null)
+    }
+  }, [customerPhone, customerName])
 
   const createBill = async () => {
     setMessage('')
@@ -186,6 +256,7 @@ export default function BillingSection({
           })),
           billPhoto: billPhoto ? { data: billPhoto.data } : undefined,
           discount: discountValue,
+          redeemPoints: redeemValue,
           paymentStatus,
           customerName,
           customerPhone,
@@ -196,12 +267,36 @@ export default function BillingSection({
       if (!response.ok) return setError(result.error ?? 'Could not save the bill.')
 
       let note = `Invoice ${result.invoiceNumber} saved — ${money(total)} for ${cart.length} item${cart.length > 1 ? 's' : ''}.`
+      if (result.reward?.pointsRedeemed) {
+        note += ` ${result.reward.pointsRedeemed} reward points redeemed for ${money(result.reward.discount)} off.`
+      }
       if (result.sendStatus === 'SCHEDULED') note += ` ${result.sendDetail ?? 'Invoice delivery is being sent in the background.'}`
       else if (result.sendStatus === 'SENT') note += ' Invoice sent to the customer.'
       else if (result.sendStatus === 'QUEUED' && result.sendLink) {
         window.open(result.sendLink, '_blank', 'noopener')
         note += ' WhatsApp opened to send the invoice.'
       } else if (result.sendStatus === 'FAILED') note += ` Sending failed: ${result.sendDetail ?? 'unknown error'}.`
+
+      //
+      // The reward message, sent the same way the invoice is.
+      //
+      // WhatsApp does not allow a programmatic send without a Business API
+      // account, so this opens the chat with the text already written and the
+      // shopkeeper presses Send. It is a second tab rather than a replacement for
+      // the invoice one, because they are two separate messages to the customer
+      // and both are worth sending.
+      //
+      // Only opened when points actually moved — a message saying "you redeemed 0
+      // points" would be worse than saying nothing.
+      //
+      if (result.reward?.message) {
+        if (result.reward.delivery?.link) {
+          window.open(result.reward.delivery.link, '_blank', 'noopener')
+          note += ' WhatsApp opened to send their reward points message.'
+        } else if (result.reward.delivery?.detail) {
+          note += ` Reward message: ${result.reward.delivery.detail}`
+        }
+      }
 
       setMessage(note)
       clearCart()
@@ -462,7 +557,13 @@ export default function BillingSection({
                 <Input value={customerName} onChange={(event) => setCustomerName(event.target.value)} placeholder="Walk-in" />
               </Field>
               <Field label={t('billing.mobile')} hint={t('billing.mobile.hint')}>
-                <Input value={customerPhone} onChange={(event) => setCustomerPhone(event.target.value)} placeholder="10-digit number" inputMode="numeric" />
+                <Input
+                  value={customerPhone}
+                  onChange={(event) => setCustomerPhone(event.target.value)}
+                  onBlur={() => void lookupRewards()}
+                  placeholder="10-digit number"
+                  inputMode="numeric"
+                />
               </Field>
               <Field label={t('billing.payment')}>
                 <Select value={paymentStatus} onChange={(event) => setPaymentStatus(event.target.value)}>
@@ -471,6 +572,62 @@ export default function BillingSection({
                 </Select>
               </Field>
             </div>
+
+            {/**
+              Reward points, once the customer has been identified.
+
+              This only appears after a mobile number resolves to a customer with
+              a balance, so the counter is not cluttered with a rewards panel for
+              every walk-in sale. When it does appear it states the balance and
+              the value plainly, because the customer will ask "how much is that
+              worth?" before deciding.
+            */}
+            {rewards && rewards.rewardPoints > 0 && (
+              <div className="mt-5 rounded-2xl border border-gold bg-gold-soft/60 px-4 py-3">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="text-sm">
+                    <p className="font-semibold text-gold-deep">
+                      {rewards.name} · <span className="tnum">{rewards.referralCode}</span>
+                    </p>
+                    <p className="mt-0.5 text-xs text-gold-deep">
+                      <span className="tnum font-semibold">{rewards.rewardPoints}</span> reward points available — worth{' '}
+                      <span className="tnum font-semibold">{money(rewards.rewardPoints * rewards.redemptionValuePerPoint)}</span> off
+                    </p>
+                  </div>
+                  <div className="flex items-end gap-2">
+                    <Field label="Redeem points">
+                      <Input
+                        type="number"
+                        min="0"
+                        max={rewards.rewardPoints}
+                        value={redeemPoints}
+                        onChange={(event) => setRedeemPoints(event.target.value)}
+                        placeholder="0"
+                        className="h-10 w-28"
+                      />
+                    </Field>
+                    <button
+                      type="button"
+                      onClick={() => setRedeemPoints(String(rewards.rewardPoints))}
+                      className="h-10 rounded-xl border-hairline bg-card px-3 text-xs font-medium transition hover:bg-secondary"
+                    >
+                      Use all
+                    </button>
+                  </div>
+                </div>
+
+                {redeemValue > 0 && (
+                  <p className="mt-2 text-xs text-gold-deep">
+                    Redeeming <span className="tnum font-semibold">{redeemValue}</span> points for{' '}
+                    <span className="tnum font-semibold">{money(redeemDiscount)}</span> off. Remaining balance:{' '}
+                    <span className="tnum font-semibold">{Math.max(0, rewards.rewardPoints - redeemValue)}</span> points.
+                  </p>
+                )}
+                {redeemValue > rewards.rewardPoints && (
+                  <p className="mt-2 text-xs text-destructive">That is more than the available balance.</p>
+                )}
+              </div>
+            )}
 
             <div className="mt-5 grid gap-5 sm:grid-cols-2">
               <Field label={t('common.discount')} hint={t('billing.discount.hint')}>
