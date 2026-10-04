@@ -2,8 +2,6 @@
 @import 'tw-animate-css';
 @import 'shadcn/tailwind.css';
 
-@custom-variant dark (&:is(.dark *));
-
 @theme inline {
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
@@ -45,7 +43,8 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
-/* Modern operations workspace: cool, spacious content surfaces with a deep navy rail. */
+/* Modern operations workspace: cool, spacious content surfaces with a deep navy rail.
+   Light mode only. There is no dark theme anywhere in the app. */
 :root {
   color-scheme: light;
   --background: oklch(0.975 0.008 247);
@@ -104,57 +103,6 @@
   --color-success-soft: var(--success-soft);
   --color-warn: var(--warn);
   --color-warn-soft: var(--warn-soft);
-}
-
-/*
- * Dark theme: deep indigo with the same gold. Bound to the data-theme
- * attribute that PreferencesProvider writes, plus a .dark class for the
- * shadcn-compatible classes.
- */
-.dark,
-[data-theme='dark'] {
-  color-scheme: dark;
-  --background: oklch(0.18 0.028 258);
-  --foreground: oklch(0.95 0.009 250);
-  --card: oklch(0.23 0.03 258);
-  --card-foreground: oklch(0.95 0.009 250);
-  --popover: oklch(0.23 0.03 258);
-  --popover-foreground: oklch(0.95 0.009 250);
-  --primary: oklch(0.92 0.015 250);
-  --primary-foreground: oklch(0.22 0.04 258);
-  --secondary: oklch(0.285 0.03 258);
-  --secondary-foreground: oklch(0.95 0.009 250);
-  --muted: oklch(0.285 0.03 258);
-  --muted-foreground: oklch(0.72 0.02 250);
-  --accent: oklch(0.32 0.05 258);
-  --accent-foreground: oklch(0.9 0.05 82);
-  --destructive: oklch(0.7 0.16 25);
-  --border: oklch(1 0 0 / 12%);
-  --input: oklch(1 0 0 / 16%);
-  --ring: oklch(0.77 0.11 78);
-  --chart-1: oklch(0.77 0.11 78);
-  --chart-2: oklch(0.7 0.1 162);
-  --chart-3: oklch(0.68 0.08 255);
-  --chart-4: oklch(0.75 0.08 45);
-  --chart-5: oklch(0.62 0.04 255);
-  --sidebar: oklch(0.155 0.036 258);
-  --sidebar-foreground: oklch(0.93 0.01 250);
-  --sidebar-primary: oklch(0.77 0.11 78);
-  --sidebar-primary-foreground: oklch(0.18 0.04 258);
-  --sidebar-accent: oklch(0.27 0.045 258);
-  --sidebar-accent-foreground: oklch(0.9 0.05 82);
-  --sidebar-border: oklch(1 0 0 / 12%);
-  --sidebar-ring: oklch(0.77 0.11 78);
-  --gold: oklch(0.78 0.11 78);
-  --gold-soft: oklch(0.33 0.055 80);
-  --gold-deep: oklch(0.87 0.08 82);
-  --success: oklch(0.72 0.12 162);
-  --success-soft: oklch(0.3 0.05 162);
-  --warn: oklch(0.8 0.11 75);
-  --warn-soft: oklch(0.32 0.05 75);
-  --shadow-sm: 0 1px 2px oklch(0 0 0 / 30%);
-  --shadow-md: 0 4px 14px oklch(0 0 0 / 35%);
-  --shadow-lg: 0 18px 40px oklch(0 0 0 / 45%);
 }
 
 /* The success dialog and its tick animation. */
@@ -392,12 +340,6 @@
   content: '';
 }
 
-/*
- * The OS colour-scheme preference is intentionally NOT auto-applied: the shop
- * chooses light or dark with the in-app toggle, and that choice is stored.
- * Auto-switching would fight the toggle for anyone whose OS is in dark mode.
- */
-
 @layer base {
   html {
     max-width: 100%;
@@ -575,18 +517,6 @@
   }
 }
 
-.dark .dashboard-canvas {
-  background:
-    linear-gradient(oklch(0.18 0.028 258 / 94%), oklch(0.18 0.028 258 / 94%)),
-    linear-gradient(oklch(1 0 0 / 4%) 1px, transparent 1px),
-    linear-gradient(90deg, oklch(1 0 0 / 4%) 1px, transparent 1px),
-    radial-gradient(circle at 85% -10%, oklch(0.36 0.08 250 / 34%), transparent 29rem);
-  background-size: auto, 34px 34px, 34px 34px, auto;
-}
-
-.dark .business-card { box-shadow: var(--shadow-md), inset 0 1px 0 oklch(1 0 0 / 5%); }
-.dark .catalogue-search input { box-shadow: 0 0 0 5px oklch(0.34 0.055 80), 0 12px 24px oklch(0 0 0 / 22%); }
-
 @media print {
   /*
    * The browser opens the operating system's print dialog, which supports
@@ -651,8 +581,7 @@
    --------------------------------------------------------------------------
    A traditional Indian jewellery-counter look, in the spirit of the big chains:
    an ivory canvas, a deep maroon brand bar, warm gold hairlines, and plain white
-   product cards. Bright and content-led — no dark cinema hero. Every token below
-   maps to something a customer would call "cream", "maroon" or "gold".
+   product cards. Bright and content-led. Light mode only.
    ========================================================================== */
 
 @theme inline {
@@ -695,22 +624,21 @@
   --sf-gold-ink: oklch(0.86 0.09 84);
   --sf-gold-line: oklch(0.87 0.07 82);
   --sf-gold-wash: oklch(0.968 0.028 85);
-  /* The hero's warm glow and its far stop. Tokens so night mode can re-tone
-     them; a hardcoded value here left a pale band on a dark page. */
+  /* The hero's warm glow and its far stop. */
   --sf-hero-glow: oklch(0.9 0.06 84 / 55%);
   --sf-hero-base: oklch(0.99 0.006 85);
-  /* The coupon's stub panel: a light wash in daylight. */
+  /* The coupon's stub panel: a light wash. */
   --sf-stub-wash: oklch(1 0 0 / 55%);
-  /* Small-caps section labels, in the brand red by day. */
+  /* Small-caps section labels, in the brand red. */
   --sf-eyebrow: var(--sf-maroon);
 
   /*
    * Offers section card colours.
    *
    * All four are dark enough to carry white text at the large sizes the cards
-   * use — that is the constraint, not decoration. A pale festival yellow with
-   * white type is unreadable at a counter in daylight, so the gold offered here
-   * is a deep antique tone rather than the bright accent gold above.
+   * use. A pale festival yellow with white type is unreadable at a counter in
+   * daylight, so the gold offered here is a deep antique tone rather than the
+   * bright accent gold above.
    */
   --sf-offer-red: oklch(0.5 0.19 27);
   --sf-offer-gold: oklch(0.55 0.12 68);
@@ -724,106 +652,10 @@
   --sf-gold-text: var(--sf-gold-deep);
 }
 
-/* ---------------------------------------------------------------------------
- * Storefront · night mode
- * ---------------------------------------------------------------------------
- *
- * The dark counterpart of the palette above, selected by the same switch the
- * admin workspace already uses — `[data-theme='dark']` on <html>, written by
- * PreferencesProvider and re-applied before first paint by the inline script in
- * app/layout.tsx.
- *
- * Before this block existed the theme toggle was a lie on the storefront: it
- * changed the admin workspace but every storefront surface stayed cream, because
- * these tokens had no dark values. The customer saw the switch do nothing.
- *
- * The palette is not the light one inverted. Inverting cream gives grey, and a
- * grey jewellery shop reads as a broken page rather than a moody one. Instead
- * the canvas is a warm near-black (hue 60, so it stays brown-warm rather than
- * blue like the admin's night mode), the cards lift slightly off it, and the
- * gold is raised in lightness because a metal tone tuned for white paper goes
- * muddy the moment it sits on black.
- *
- * Every value here was checked against the surface it is actually used on, not
- * chosen by eye — see the contrast note on each group.
- */
-[data-theme='dark'] {
-  /* Surfaces. Warm near-black, not pure black: a jewellery photograph needs a
-     little lift underneath it or the gold in the image looks like it is
-     floating in a void. */
-  --sf-canvas: oklch(0.19 0.012 62);
-  --sf-cream: oklch(0.235 0.014 62);
-  --sf-cream-soft: oklch(0.265 0.016 62);
-  --sf-surface: oklch(0.245 0.014 62);
-  --sf-line: oklch(0.34 0.016 62);
-  --sf-line-strong: oklch(0.42 0.02 62);
-
-  /* Type. Body and muted both clear 4.5:1 on --sf-surface; the heading is
-     near-white so a product name carries at small sizes. */
-  --sf-heading: oklch(0.97 0.008 85);
-  --sf-body: oklch(0.88 0.01 80);
-  --sf-muted: oklch(0.72 0.014 75);
-
-  /*
-   * Brand.
-   *
-   * The maroon cannot stay at its daylight lightness — on a dark canvas it would
-   * read as a muddy brown smear. It is lifted and saturated so the top bar and
-   * the badges still read as the shop's red rather than as dirt.
-   */
-  --sf-maroon: oklch(0.52 0.17 24);
-  --sf-maroon-deep: oklch(0.42 0.15 24);
-
-  /*
-   * Gold.
-   *
-   * The daylight gold (0.83 lightness) is tuned to sit on cream. On black it
-   * needs to be brighter still to read as metal, so the accent gold is raised
-   * and the "deep" tone — which exists for gold TEXT on white — is inverted in
-   * role: on a dark canvas the deep tone is the one that must be LIGHT, or the
-   * gold labels become unreadable. That inversion is the single most important
-   * change in this block.
-   */
-  --sf-gold: oklch(0.86 0.115 84);
-  --sf-gold-deep: oklch(0.83 0.115 82);
-  --sf-gold-ink: oklch(0.88 0.095 84);
-  --sf-gold-line: oklch(0.44 0.05 78);
-  --sf-gold-wash: oklch(0.27 0.028 76);
-  /* The hero glow, dimmed to a warm ember rather than a bright wash — at its
-     daylight strength it lit the top of the page like a lamp. */
-  --sf-hero-glow: oklch(0.42 0.05 78 / 45%);
-  --sf-hero-base: oklch(0.21 0.013 62);
-  /* A faint lift instead of a white slab, so the stub reads as a panel without
-     fogging the card behind it. */
-  --sf-stub-wash: oklch(1 0 0 / 7%);
-  /* The brand red is too dark to read as small text here, so the label takes
-     the gold accent instead — the same shift the gold tokens make. */
-  --sf-eyebrow: var(--sf-gold-deep);
-
-  /*
-   * Offer card colours.
-   *
-   * These carry white text at large sizes, so the constraint is the same as in
-   * daylight: dark enough that white wins. They are lifted only slightly from
-   * the light theme — enough to separate from the page behind, not so much that
-   * the white text starts to fight them.
-   */
-  --sf-offer-red: oklch(0.55 0.19 27);
-  --sf-offer-gold: oklch(0.6 0.13 68);
-  --sf-offer-green: oklch(0.5 0.12 152);
-
-  /* Aliases, re-pointed so anything reading the legacy names follows the theme. */
-  --sf-ink: var(--sf-heading);
-  --sf-ink-soft: var(--sf-surface);
-  --sf-night: var(--sf-cream);
-  --sf-champagne: var(--sf-maroon);
-  --sf-halo: var(--sf-gold-deep);
-  --sf-gold-text: var(--sf-gold-deep);
-}
-
 /* ---------- Base canvas ---------- */
 .sf-canvas {
   position: relative;
+  color-scheme: light;
   background: var(--sf-canvas);
   color: var(--sf-body);
 }
@@ -856,15 +688,6 @@
   font-weight: 600;
   letter-spacing: 0.22em;
   text-transform: uppercase;
-  /*
-   * A token, not --sf-maroon directly.
-   *
-   * Maroon reads well as small caps on cream, which is why it was used here —
-   * but the maroon had to be lightened for night mode so the top bar would not
-   * go muddy, and that lighter red on a near-black card lands at about 2.7:1,
-   * which is unreadable. `--sf-eyebrow` lets each theme pick the tone that works
-   * on its own canvas: the brand red by day, the accent gold at night.
-   */
   color: var(--sf-eyebrow);
 }
 
@@ -892,16 +715,8 @@
 
 /* ---------- Festival offer band ---------- */
 /*
- * The one place the shop speaks in its own maroon, directly under the banner:
- * an offer is the message a customer has to act on before it expires, so it is
- * louder than every ordinary section. The gold rule down the left ties it to
- * the rest of the page rather than reading as a stock discount strip.
- */
-/*
- * The band is now just a thin cream shelf that holds the coupon. It keeps the
- * gradient and hairline so the coupon sits on branded ground rather than on a
- * bare white gap, but it no longer paints anything of its own — the card does
- * the work.
+ * A thin cream shelf that holds the coupon. It keeps the gradient and hairline
+ * so the coupon sits on branded ground rather than on a bare white gap.
  */
 .sf-offer-band {
   position: relative;
@@ -928,7 +743,7 @@
   color: var(--sf-gold-ink);
 }
 
-/* The saving is the largest thing in the row — it is the reason to look. */
+/* The saving is the largest thing in the row, it is the reason to look. */
 .sf-offer-saving {
   font-size: 1.35rem;
   font-weight: 700;
@@ -950,39 +765,41 @@
 }
 
 /* ---------------------------------------------------------------------------
- * The offer coupon
+ * The offer coupon · gilded gift voucher
  * ---------------------------------------------------------------------------
  *
- * The offer is drawn as a discount coupon: a narrow card, centred, the same sort
- * of width as a product tile rather than the full width of the page. The shape
- * is doing the talking — a full-bleed strip reads as another section of the site,
- * whereas a coupon reads as something the shop is handing you, which is exactly
- * what a dated festival offer is.
+ * A deep maroon (or antique gold / green) voucher with a slowly travelling gold
+ * foil edge, a diagonal sheen, a fine diamond-lattice texture and a pale gold
+ * stub carrying the saving beside a rotating seal.
  *
- * The pieces:
- *
- *   .sf-offer-coupon        the card itself — accent colour, rounded, shadowed,
- *                           with the two halves laid side by side
- *   .sf-offer-coupon-main   the left half: badge, name, description, code
- *   .sf-offer-coupon-perf   the dashed perforation between the halves
- *   .sf-offer-coupon-stub   the right half: the saving and the button
+ *   .sf-offer-coupon        the card; data-accent = maroon | red | gold | green
+ *   .sf-offer-coupon-main   the reading half: badge, name, description, code
+ *   .sf-offer-coupon-perf   the dashed perforation with its two notches
+ *   .sf-offer-coupon-stub   the gold stub: the saving, the deadline, the button
+ *   .sf-offer-coupon-art    added when the shop uploaded artwork
  */
+@property --sf-ang {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+
 .sf-offer-coupon {
+  --coupon-bg: linear-gradient(135deg, var(--sf-maroon-deep), var(--sf-maroon) 58%, oklch(0.26 0.11 22));
   position: relative;
   isolation: isolate;
   display: flex;
   flex-direction: column;
   overflow: hidden;
   margin-inline: auto;
-  /*
-   * Narrower than the page on purpose. 46rem keeps the coupon reading as a card
-   * — about the width of two product tiles — instead of stretching back into the
-   * full-width strip this replaced.
-   */
-  max-width: 46rem;
-  border-radius: 18px;
-  background: linear-gradient(135deg, var(--sf-gold-wash), var(--sf-cream) 55%, var(--sf-surface));
-  box-shadow: 0 18px 40px oklch(0.4 0.05 70 / 14%);
+  max-width: 50rem;
+  border-radius: 22px;
+  background: var(--coupon-bg);
+  box-shadow:
+    0 28px 56px oklch(0.3 0.12 22 / 30%),
+    0 2px 6px oklch(0.3 0.1 22 / 20%),
+    inset 0 1px 0 oklch(1 0 0 / 12%);
+  animation: sf-coupon-in 900ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 @media (min-width: 768px) {
@@ -992,194 +809,227 @@
   }
 }
 
-/*
- * A left accent rule, the way a voucher is printed with a coloured spine. Drawn
- * with a pseudo-element so it follows the card's rounded corners at any height,
- * and kept at z-index 3 so it stays crisp above the artwork and its scrim.
- */
+.sf-offer-coupon[data-accent='red'] {
+  --coupon-bg: linear-gradient(135deg, oklch(0.4 0.17 27), var(--sf-offer-red) 58%, oklch(0.36 0.15 27));
+}
+.sf-offer-coupon[data-accent='gold'] {
+  --coupon-bg: linear-gradient(135deg, oklch(0.42 0.1 66), var(--sf-offer-gold) 58%, oklch(0.4 0.09 66));
+}
+.sf-offer-coupon[data-accent='green'] {
+  --coupon-bg: linear-gradient(135deg, oklch(0.34 0.09 152), var(--sf-offer-green) 58%, oklch(0.32 0.08 152));
+}
+
+/* Texture + travelling sheen. */
 .sf-offer-coupon::before {
   position: absolute;
-  inset-block: 0;
-  left: 0;
-  z-index: 3;
-  width: 6px;
-  background: var(--sf-maroon);
+  inset: 0;
+  z-index: 0;
+  background:
+    linear-gradient(105deg, transparent 38%, oklch(1 0 0 / 15%) 50%, transparent 62%) 0 0 / 260% 100% no-repeat,
+    repeating-linear-gradient(45deg, oklch(1 0 0 / 3.5%) 0 1px, transparent 1px 15px),
+    repeating-linear-gradient(-45deg, oklch(1 0 0 / 3.5%) 0 1px, transparent 1px 15px);
+  background-position: 130% 0, 0 0, 0 0;
+  animation: sf-coupon-sheen 5.5s ease-in-out 1.2s infinite;
   content: '';
+  pointer-events: none;
 }
 
-/*
- * The spine follows the offer's accent colour when there is no artwork — the
- * four accents are the same closed set the cards use, so the spine and the card
- * board never disagree about what colour an offer is.
- */
-.sf-offer-coupon[data-accent='maroon']::before {
-  background: var(--sf-maroon-deep);
+/* The gold foil edge: a conic gradient clipped to a 1.5px ring that slowly rotates. */
+.sf-offer-coupon::after {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  padding: 1.5px;
+  border-radius: inherit;
+  background: conic-gradient(
+    from var(--sf-ang),
+    oklch(0.86 0.12 85),
+    oklch(0.6 0.1 70),
+    oklch(0.96 0.08 90),
+    oklch(0.62 0.1 70),
+    oklch(0.86 0.12 85)
+  );
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  animation: sf-foil-spin 7s linear infinite;
+  content: '';
+  pointer-events: none;
 }
 
-.sf-offer-coupon[data-accent='gold']::before {
-  background: var(--sf-offer-gold);
+@keyframes sf-coupon-in {
+  0% { opacity: 0; transform: translateY(26px) scale(0.95) rotateX(8deg); }
+  60% { opacity: 1; transform: translateY(-3px) scale(1.01) rotateX(0); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
 }
 
-.sf-offer-coupon[data-accent='green']::before {
-  background: var(--sf-offer-green);
+@keyframes sf-coupon-sheen {
+  0% { background-position: 130% 0, 0 0, 0 0; }
+  45%, 100% { background-position: -130% 0, 0 0, 0 0; }
 }
 
-/*
- * With artwork behind it the spine is gold whatever the accent, because it now
- * has to hold its own against a photo rather than against cream. Placed after
- * the accent rules so it wins on order at equal specificity.
- */
-.sf-offer-coupon-art[data-accent]::before {
-  background: var(--sf-gold-ink);
-  box-shadow: 2px 0 8px oklch(0.1 0.02 40 / 45%);
+@keyframes sf-foil-spin {
+  to { --sf-ang: 360deg; }
 }
 
-/* The left half: the reading side of the coupon. */
+/* ---- The reading half ---- */
 .sf-offer-coupon-main {
+  position: relative;
+  z-index: 2;
   display: flex;
   flex: 1 1 auto;
   flex-direction: column;
   align-items: flex-start;
-  gap: 0.6rem;
+  gap: 0.65rem;
   min-width: 0;
-  padding: 1.15rem 1.25rem 1.15rem 1.5rem;
+  padding: 1.5rem 1.5rem 1.5rem 1.75rem;
 }
 
-/* The code line under the description. */
+/* Gold pill badge on the dark field. */
+.sf-offer-coupon .sf-offer-badge {
+  background: linear-gradient(135deg, oklch(0.93 0.09 88), oklch(0.78 0.12 80));
+  color: var(--sf-maroon-deep);
+  box-shadow: 0 4px 12px oklch(0.2 0.05 40 / 25%);
+}
+.sf-offer-coupon .sf-offer-badge svg { color: var(--sf-maroon-deep); }
+
+/* Inline colours from the component are forced light, so the copy always reads on the dark field. */
+.sf-offer-coupon .sf-offer-copy h2 {
+  color: oklch(0.98 0.02 85) !important;
+  text-shadow: 0 1px 14px oklch(0.12 0.03 30 / 45%);
+}
+.sf-offer-coupon .sf-offer-copy p,
+.sf-offer-coupon .sf-offer-code-line {
+  color: oklch(0.94 0.02 85 / 86%) !important;
+}
+
 .sf-offer-code-line {
   margin: 0;
   font-size: 11px;
   color: var(--sf-muted);
 }
 
-/*
- * The perforation between the two halves.
- *
- * A dashed rule, plus a notch cut from each end of it. The notches are what sell
- * the coupon: they are the little half-circles a real tear-off card has where the
- * stub is meant to be separated. Decorative only — the heading and the saving
- * carry the meaning, so a screen reader loses nothing by skipping this.
- */
+.sf-offer-coupon .sf-offer-code {
+  border-color: oklch(0.86 0.1 85 / 70%);
+  background: oklch(1 0 0 / 10%);
+  color: var(--sf-gold-ink);
+  backdrop-filter: blur(4px);
+}
+
+.sf-offer-copy { min-width: 0; }
+
+/* ---- The perforation ---- */
 .sf-offer-coupon-perf {
   position: relative;
+  z-index: 2;
   flex: 0 0 auto;
-  border-top: 1.5px dashed var(--sf-gold-line);
+  border-top: 1.5px dashed oklch(0.86 0.1 85 / 55%);
 }
 
 @media (min-width: 768px) {
   .sf-offer-coupon-perf {
     border-top: 0;
-    border-left: 1.5px dashed var(--sf-gold-line);
+    border-left: 1.5px dashed oklch(0.86 0.1 85 / 55%);
   }
 }
 
-/*
- * The two notches at the ends of the perforation.
- *
- * Each is a small circle in the page's cream colour, straddling the perforation
- * so it reads as a bite taken out of the card's edge. The band's own background
- * is a gradient rather than a flat colour, so the notch uses the mid tone the
- * gradient passes through at the card's height — close enough that the eye reads
- * it as a hole rather than as a dot.
- */
 .sf-offer-coupon-perf::before,
 .sf-offer-coupon-perf::after {
   position: absolute;
-  left: -7px;
-  width: 13px;
-  height: 13px;
+  left: -8px;
+  width: 15px;
+  height: 15px;
   border-radius: 50%;
   background: var(--sf-cream-soft);
+  box-shadow: inset 0 1px 3px oklch(0.2 0.05 30 / 35%);
   content: '';
 }
+.sf-offer-coupon-perf::before { top: -8px; }
+.sf-offer-coupon-perf::after { bottom: -8px; }
 
-/* The two notches sit on the top edge as a horizontal rule... */
-.sf-offer-coupon-perf::before {
-  top: -7px;
-}
-
-.sf-offer-coupon-perf::after {
-  bottom: -7px;
-}
-
-/* ...and on the left edge when the card is laid out side by side. */
 @media (min-width: 768px) {
-  .sf-offer-coupon-perf::before {
-    top: -7px;
-    left: -7px;
-  }
-
-  .sf-offer-coupon-perf::after {
-    top: auto;
-    bottom: -7px;
-    left: -7px;
-  }
+  .sf-offer-coupon-perf::before { top: -8px; left: -8px; }
+  .sf-offer-coupon-perf::after { top: auto; bottom: -8px; left: -8px; }
 }
 
-/*
- * The stub: the saving, the deadline, and the way in. It is tinted a shade
- * warmer than the reading half so the eye is pulled to the amount — the part of
- * a coupon everyone actually looks for.
- */
+/* ---- The gold stub ---- */
 .sf-offer-coupon-stub {
+  position: relative;
+  z-index: 2;
   display: flex;
   flex: 0 0 auto;
   flex-direction: column;
   align-items: stretch;
   justify-content: center;
-  gap: 0.75rem;
-  padding: 1.15rem 1.5rem 1.15rem 1.25rem;
-  /*
-   * The stub is a translucent white wash, which reads as a lighter panel on
-   * cream but as a foggy grey slab on a dark card. `--sf-stub-wash` is a token so
-   * each theme can set it: white in daylight, a subtle lift at night.
-   */
-  background: var(--sf-stub-wash);
+  gap: 0.8rem;
+  overflow: hidden;
+  padding: 1.5rem 1.75rem 1.5rem 1.5rem;
+  background: linear-gradient(160deg, oklch(0.985 0.03 88), oklch(0.93 0.065 86));
 }
 
 @media (min-width: 768px) {
-  .sf-offer-coupon-stub {
-    min-width: 13rem;
-  }
+  .sf-offer-coupon-stub { min-width: 14rem; }
 }
 
-.sf-offer-coupon-saving {
-  text-align: left;
+/* A slowly turning dashed seal in the corner of the stub. */
+.sf-offer-coupon-stub::before {
+  position: absolute;
+  top: -2rem;
+  right: -2rem;
+  width: 7rem;
+  height: 7rem;
+  border: 1px dashed oklch(0.6 0.1 72 / 70%);
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 10px oklch(0.6 0.1 72 / 7%), inset 0 0 0 11px oklch(0.6 0.1 72 / 30%);
+  animation: sf-spin 26s linear infinite;
+  content: '';
+  pointer-events: none;
 }
 
+.sf-offer-coupon-saving { text-align: left; }
 @media (min-width: 768px) {
-  .sf-offer-coupon-saving {
-    text-align: center;
-  }
+  .sf-offer-coupon-saving { text-align: center; }
 }
 
-/* The deadline under the amount. */
+/* The saving: large serif, with the gold shimmer running through the maroon. */
+.sf-offer-coupon .sf-offer-saving {
+  font-family: ui-serif, Georgia, Cambria, 'Times New Roman', serif;
+  font-size: 2.15rem;
+  font-weight: 800;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  background: linear-gradient(
+    100deg,
+    var(--sf-maroon) 0%,
+    var(--sf-maroon) 38%,
+    oklch(0.7 0.13 76) 48%,
+    oklch(0.88 0.1 86) 50%,
+    oklch(0.7 0.13 76) 52%,
+    var(--sf-maroon) 62%,
+    var(--sf-maroon) 100%
+  );
+  background-size: 250% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  animation: sf-text-shine 5s ease-in-out infinite;
+}
+
 .sf-offer-timing {
-  margin-top: 0.2rem;
+  margin-top: 0.25rem;
   font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.1em;
+  font-weight: 700;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--sf-muted);
+  color: var(--sf-gold-deep);
 }
 
-/*
- * The uploaded artwork as the coupon's background.
- *
- * Same two pieces as before — the photo, then a scrim to seat the type — but now
- * they fill a card rather than a page-wide strip, so the scrim is a touch
- * lighter: there is far less artwork to show, and darkening a small card as
- * heavily as a full-width band would hide the shop's design completely.
- */
+/* ---- With uploaded artwork behind the card ---- */
 .sf-offer-band-bg {
   position: absolute;
   inset: 0;
-  /*
-   * Negative, so the artwork drops behind the card's own layers — the gradient,
-   * the accent spine and the perforation notches all belong to the card, and a
-   * positioned child at 0 would paint over the spine. Below zero also keeps the
-   * card's gradient underneath as a fallback while the photo is still loading.
-   */
   z-index: -2;
   width: 100%;
   height: 100%;
@@ -1193,116 +1043,34 @@
   z-index: -1;
   background: linear-gradient(
     95deg,
-    oklch(0.16 0.03 40 / 76%) 0%,
-    oklch(0.16 0.03 40 / 62%) 55%,
-    oklch(0.16 0.03 40 / 48%) 100%
+    oklch(0.16 0.04 25 / 82%) 0%,
+    oklch(0.16 0.04 25 / 68%) 55%,
+    oklch(0.16 0.04 25 / 52%) 100%
   );
 }
 
-/*
- * The two halves must sit above the photo and its scrim, or the artwork would
- * paint straight over the text.
- */
-.sf-offer-coupon-main,
-.sf-offer-coupon-stub {
-  position: relative;
-  z-index: 2;
-}
+.sf-offer-coupon-art::before { opacity: 0.6; }
+.sf-offer-coupon-art .sf-offer-coupon-stub { background: oklch(0.985 0.03 88 / 94%); }
+.sf-offer-coupon-art .sf-offer-coupon-perf { border-color: oklch(1 0 0 / 42%); }
 
-/*
- * The perforation needs its own layer above the artwork too, or its notches and
- * its dashed rule would be swallowed by the photo.
- */
-.sf-offer-coupon-perf {
-  z-index: 2;
-}
+.sf-offer-band-photo { padding-block: 1.75rem; }
 
-/*
- * With artwork behind it the stub's white wash would fog the shop's photo, so it
- * is dropped and the copy is flipped to light type instead.
- */
-.sf-offer-coupon-art .sf-offer-coupon-stub {
-  background: transparent;
-}
-
-.sf-offer-coupon-art .sf-offer-coupon-perf {
-  border-color: oklch(1 0 0 / 38%);
-}
-
-/*
- * Light type for the artwork case.
- *
- * The colours need `!important` because the component sets several of them as
- * inline styles for the cream default, and an inline style outranks a class.
- */
-.sf-offer-coupon-art .sf-offer-copy h2 {
-  color: #fff !important;
-  text-shadow: 0 1px 12px oklch(0.12 0.02 40 / 60%);
-}
-
-.sf-offer-coupon-art .sf-offer-copy p,
-.sf-offer-coupon-art .sf-offer-code-line {
-  color: oklch(0.96 0.01 85 / 88%) !important;
-}
-
-.sf-offer-coupon-art .sf-offer-saving {
-  color: var(--sf-gold-ink);
-  text-shadow: 0 1px 12px oklch(0.12 0.02 40 / 60%);
-}
-
-.sf-offer-coupon-art .sf-offer-timing {
-  color: oklch(0.96 0.01 85 / 82%);
-}
-
-/* The code chip keeps a solid light background so it stays legible on artwork. */
-.sf-offer-coupon-art .sf-offer-code {
-  border-color: oklch(1 0 0 / 45%);
-  background: oklch(1 0 0 / 92%);
-  color: var(--sf-maroon);
-}
-
-/*
- * The copy block: badge, title and description.
- *
- * Given `min-width: 0` so a long offer name wraps onto two readable lines rather
- * than forcing the coupon's reading half wider than the card.
- */
-.sf-offer-copy {
-  min-width: 0;
-}
-
-/*
- * The old photo-mode rule. Superseded by .sf-offer-band-photo above, which gives
- * the band real height for a background image; kept as the fallback selector so
- * any older markup still gets padded.
- */
-.sf-offer-band-photo {
-  padding-block: 1.75rem;
+@media (prefers-reduced-motion: reduce) {
+  .sf-offer-coupon,
+  .sf-offer-coupon::before,
+  .sf-offer-coupon::after,
+  .sf-offer-coupon-stub::before,
+  .sf-offer-coupon .sf-offer-saving {
+    animation: none !important;
+  }
+  .sf-offer-coupon .sf-offer-saving {
+    background: none;
+    -webkit-text-fill-color: currentColor;
+    color: var(--sf-maroon);
+  }
 }
 
 /* ---------- Offers section: the festival card board ---------- */
-/*
- * These are the loud cards a jewellery site leads with during a festival: a
- * solid colour field, white text, the percentage as the biggest thing on the
- * card, and one clear Shop Now button.
- *
- * The colour is driven by a data attribute rather than an inline style so the
- * four choices live here, in one readable list, instead of being scattered
- * through the component as hex values.
- */
-/*
- * The animation.
- *
- * A festival card is competing for attention against the rest of the page, so it
- * is given a slow shimmer that sweeps across it. This is deliberately subtle: a
- * jewellery shop's card should read as expensive, not as a banner advert that
- * blinks. The motion draws the eye once, then the card sits still enough to be
- * read.
- *
- * Everything here is disabled under `prefers-reduced-motion` further down — a
- * customer who has asked their device for less movement should get a card that
- * simply sits there, which is still a perfectly good card.
- */
 .sf-offer-card {
   position: relative;
   isolation: isolate;
@@ -1314,16 +1082,11 @@
   animation: sf-offer-float 5.5s ease-in-out infinite;
 }
 
-/*
- * A travelling highlight, drawn as a pseudo-element so no extra markup is
- * needed. It runs on its own keyframes rather than on the card, so the sweep
- * keeps its timing while the card gently floats.
- */
+/* A travelling highlight, drawn as a pseudo-element so no extra markup is needed. */
 .sf-offer-card::before {
   position: absolute;
   inset: 0;
   z-index: 1;
-  /* Wide and soft, so it reads as light passing over the card, not a stripe. */
   background: linear-gradient(
     105deg,
     transparent 35%,
@@ -1344,10 +1107,6 @@
   animation-play-state: paused;
 }
 
-/*
- * The card drifts by two pixels. Any more and a grid of three cards moving
- * independently would look seasick rather than inviting.
- */
 @keyframes sf-offer-float {
   0%,
   100% {
@@ -1362,20 +1121,13 @@
   0% {
     transform: translateX(-120%);
   }
-  /*
-   * A long hold at each end. The sweep takes about a third of the cycle and the
-   * rest is stillness, so the card spends most of its life not moving at all.
-   */
   38%,
   100% {
     transform: translateX(120%);
   }
 }
 
-/*
- * The saving itself pulses gently — it is the number the customer is looking
- * for, and the one thing on the card worth drawing the eye back to.
- */
+/* The saving itself pulses gently. */
 .sf-offer-card-amount {
   animation: sf-offer-glint 3.2s ease-in-out infinite;
 }
@@ -1390,12 +1142,6 @@
   }
 }
 
-/*
- * Honour the device setting.
- *
- * A shop loses nothing by this — the card is still legible, still coloured, and
- * still has its button. It simply stops moving.
- */
 @media (prefers-reduced-motion: reduce) {
   .sf-offer-card,
   .sf-offer-card::before,
@@ -1418,13 +1164,7 @@
   background: var(--sf-offer-green);
 }
 
-/*
- * Uploaded artwork, if the shop added any.
- *
- * It is a wash behind the text, not a picture beside it: the card is a poster, so
- * the words have to win. Held well back in opacity so any photo stays legible
- * under white text, and blended so it tints the colour instead of replacing it.
- */
+/* Uploaded artwork, if the shop added any: a wash behind the text. */
 .sf-offer-card-art {
   position: absolute;
   inset: 0;
@@ -1437,7 +1177,6 @@
 }
 
 .sf-offer-card::after {
-  /* A subtle diagonal sheen keeps a flat colour field from looking dead. */
   position: absolute;
   inset: 0;
   z-index: -1;
@@ -1451,16 +1190,10 @@
   gap: 0.5rem;
   padding: 1.75rem 1.5rem;
   color: #fff;
-  /*
-   * Above the shimmer. The sweep is a positioned pseudo-element at z-index 1, so
-   * without this the highlight would pass over the offer name and the saving —
-   * the two things on the card that must never be washed out.
-   */
   position: relative;
   z-index: 2;
 }
 
-/* The festival name, set as a quiet label above the number. */
 .sf-offer-card-label {
   font-size: 10px;
   font-weight: 700;
@@ -1469,7 +1202,6 @@
   color: oklch(1 0 0 / 82%);
 }
 
-/* The percentage — the reason the card exists, and the largest thing on it. */
 .sf-offer-card-amount {
   display: flex;
   align-items: baseline;
@@ -1509,10 +1241,6 @@
   margin-top: 0.75rem;
 }
 
-/*
- * The one action on the card: white on the colour field, so it is unmistakable
- * against the busy card behind it.
- */
 .sf-offer-card-btn {
   display: inline-flex;
   align-items: center;
@@ -1532,7 +1260,6 @@
   box-shadow: 0 8px 18px oklch(0.2 0.03 60 / 25%);
 }
 
-/* The coupon code, pushed to the far end as a dashed ticket stub. */
 .sf-offer-card-code {
   padding: 0.3rem 0.6rem;
   border: 1px dashed oklch(1 0 0 / 55%);
@@ -1544,13 +1271,11 @@
 }
 
 /* ---------- The pop-up festival offer ---------- */
-
 /*
- * The overlay the popup lives in.
- *
- * Fixed and above the sticky header (z-40), so the offer lands over the whole
- * shop rather than behind the navigation. `sf-popup-root` itself is only a
- * positioning frame — the backdrop below it is what dims the page.
+ * Entrance: the backdrop blurs in, the card tips up out of the page with a small
+ * overshoot, a gold foil edge circles it, a sheen crosses it once, a burst of
+ * confetti leaves the top, and the content rises line by line. Leaving: set
+ * data-state="closing" on .sf-popup-root for ~300ms before unmounting.
  */
 .sf-popup-root {
   position: fixed;
@@ -1560,6 +1285,7 @@
   align-items: center;
   justify-content: center;
   padding: 1rem;
+  perspective: 1200px;
 }
 
 .sf-popup-backdrop {
@@ -1567,16 +1293,9 @@
   inset: 0;
   background: oklch(0.2 0.02 60 / 62%);
   backdrop-filter: blur(3px);
-  animation: sf-popup-fade 220ms ease both;
+  animation: sf-popup-fade 320ms ease both;
 }
 
-/*
- * The card itself.
- *
- * Deliberately the same colour language as the offer board: the shop already
- * chose an accent for this festival, and the popup is the same offer seen from a
- * different place on the page. It must never look like a different sale.
- */
 .sf-popup {
   position: relative;
   z-index: 1;
@@ -1586,13 +1305,39 @@
   max-width: 26rem;
   max-height: calc(100dvh - 2rem);
   overflow-y: auto;
-  border-radius: 20px;
+  border-radius: 22px;
   background: var(--sf-surface);
-  box-shadow: 0 30px 70px oklch(0.2 0.03 60 / 38%);
-  animation: sf-popup-rise 260ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  box-shadow:
+    0 40px 90px oklch(0.2 0.05 30 / 45%),
+    0 0 0 1px oklch(0.86 0.1 85 / 30%);
+  transform-origin: 50% 70%;
+  animation: sf-popup-pop 780ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
-/* The festival artwork, when the shop uploaded any, leads the card. */
+/* Rotating gold foil edge, same family as the coupon. */
+.sf-popup::after {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  padding: 1.5px;
+  border-radius: inherit;
+  background: conic-gradient(
+    from var(--sf-ang),
+    oklch(0.9 0.11 88),
+    oklch(0.62 0.1 72),
+    oklch(0.97 0.07 90),
+    oklch(0.64 0.1 72),
+    oklch(0.9 0.11 88)
+  );
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  animation: sf-foil-spin 6s linear infinite;
+  content: '';
+  pointer-events: none;
+}
+
 .sf-popup-art {
   position: relative;
   aspect-ratio: 16 / 7;
@@ -1604,22 +1349,16 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
+  animation: sf-kenburns 14s ease-in-out infinite alternate;
 }
 
-/*
- * The body carries the accent colour, exactly as the board cards do.
- *
- * With no artwork the whole card is this colour; with artwork the colour starts
- * below the photo. Either way the saving is white on a dark field, which is the
- * only combination this shop's offer colours are chosen for.
- */
 .sf-popup-body {
   position: relative;
   isolation: isolate;
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
-  padding: 1.5rem;
+  padding: 1.6rem;
   background: var(--sf-offer-red);
   color: #fff;
 }
@@ -1629,20 +1368,53 @@
 .sf-popup[data-accent='gold'] .sf-popup-body { background: var(--sf-offer-gold); }
 .sf-popup[data-accent='green'] .sf-popup-body { background: var(--sf-offer-green); }
 
-/* A soft sheen so a flat festival colour does not look dead. */
+/* Sheen that crosses the card once, shortly after it lands. */
+.sf-popup-body::before {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: linear-gradient(105deg, transparent 35%, oklch(1 0 0 / 24%) 50%, transparent 65%);
+  transform: translateX(-130%);
+  animation: sf-popup-sheen 1500ms cubic-bezier(0.22, 1, 0.36, 1) 650ms both;
+  content: '';
+  pointer-events: none;
+}
+
 .sf-popup-body::after {
   position: absolute;
   inset: 0;
   z-index: -1;
-  background: linear-gradient(135deg, oklch(1 0 0 / 14%), transparent 55%);
+  background:
+    radial-gradient(circle at 85% 0%, oklch(1 0 0 / 22%), transparent 55%),
+    linear-gradient(135deg, oklch(1 0 0 / 14%), transparent 55%);
   content: '';
 }
+
+/* Content rises line by line. */
+.sf-popup-eyebrow,
+.sf-popup-title,
+.sf-popup-amount,
+.sf-popup-desc,
+.sf-popup-timing,
+.sf-popup-code,
+.sf-popup-actions,
+.sf-popup-note {
+  animation: sf-popup-child 620ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.sf-popup-eyebrow { animation-delay: 330ms; }
+.sf-popup-title { animation-delay: 410ms; }
+.sf-popup-amount { animation-name: sf-popup-amount-in, sf-popup-glint; animation-duration: 760ms, 3.4s; animation-delay: 500ms, 1.4s; animation-iteration-count: 1, infinite; animation-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1), ease-in-out; transform-origin: left center; }
+.sf-popup-desc { animation-delay: 620ms; }
+.sf-popup-timing { animation-delay: 700ms; }
+.sf-popup-code { animation-delay: 780ms; }
+.sf-popup-actions { animation-delay: 860ms; }
+.sf-popup-note { animation-delay: 940ms; }
 
 .sf-popup-close {
   position: absolute;
   top: 0.75rem;
   right: 0.75rem;
-  z-index: 2;
+  z-index: 7;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1652,11 +1424,13 @@
   background: oklch(0.2 0.02 60 / 45%);
   color: #fff;
   backdrop-filter: blur(4px);
-  transition: background 160ms ease;
+  transition: background 160ms ease, transform 320ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation: sf-popup-close-in 600ms cubic-bezier(0.34, 1.56, 0.64, 1) 700ms both;
 }
 
 .sf-popup-close:hover {
   background: oklch(0.2 0.02 60 / 70%);
+  transform: rotate(90deg) scale(1.08);
 }
 
 .sf-popup-eyebrow {
@@ -1676,15 +1450,15 @@
   letter-spacing: 0.01em;
 }
 
-/* The saving is the reason this dialog exists, so it is the largest thing in it. */
 .sf-popup-amount {
   display: flex;
   align-items: baseline;
   gap: 0.4rem;
-  font-size: 2.7rem;
+  font-size: 2.9rem;
   font-weight: 800;
   line-height: 1;
   letter-spacing: -0.03em;
+  text-shadow: 0 2px 18px oklch(0.15 0.04 30 / 35%);
 }
 
 .sf-popup-unit {
@@ -1710,7 +1484,6 @@
   color: oklch(1 0 0 / 82%);
 }
 
-/* The code, as a dashed ticket stub — the same treatment the board uses. */
 .sf-popup-code {
   align-self: flex-start;
   margin-top: 0.15rem;
@@ -1734,13 +1507,9 @@
   margin-top: 0.75rem;
 }
 
-/*
- * The primary action is white on the colour field.
- *
- * It has to be the most obvious thing in the dialog after the number itself — a
- * customer who acts on the offer is the entire point of interrupting them.
- */
 .sf-popup-shop {
+  position: relative;
+  overflow: hidden;
   display: inline-flex;
   flex: 1;
   align-items: center;
@@ -1754,6 +1523,17 @@
   font-size: 0.82rem;
   font-weight: 700;
   transition: transform 180ms ease, box-shadow 180ms ease;
+}
+
+/* The main button shines on a loop so it is the obvious next step. */
+.sf-popup-shop::after {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(105deg, transparent 35%, oklch(0.9 0.09 88 / 65%) 50%, transparent 65%);
+  transform: translateX(-130%);
+  animation: sf-popup-btn-shine 3.2s ease-in-out 1.6s infinite;
+  content: '';
+  pointer-events: none;
 }
 
 .sf-popup-shop:hover {
@@ -1772,9 +1552,7 @@
   transition: background 160ms ease;
 }
 
-.sf-popup-later:hover {
-  background: oklch(1 0 0 / 14%);
-}
+.sf-popup-later:hover { background: oklch(1 0 0 / 14%); }
 
 .sf-popup-note {
   margin-top: 0.35rem;
@@ -1782,46 +1560,129 @@
   color: oklch(1 0 0 / 72%);
 }
 
-@keyframes sf-popup-fade {
-  from { opacity: 0; }
-  to { opacity: 1; }
+/* Optional confetti. Markup, as the first child of .sf-popup:
+   <div class="sf-popup-confetti" aria-hidden><span></span> x 14</div> */
+.sf-popup-confetti {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  overflow: hidden;
+  pointer-events: none;
+}
+.sf-popup-confetti span {
+  position: absolute;
+  top: 38%;
+  left: 50%;
+  width: 7px;
+  height: 11px;
+  border-radius: 2px;
+  background: var(--c, oklch(0.9 0.11 88));
+  opacity: 0;
+  animation: sf-confetti 1.7s cubic-bezier(0.15, 0.7, 0.3, 1) var(--dl, 320ms) both;
+}
+.sf-popup-confetti span:nth-child(1)  { --tx: -150px; --ty: -120px; --r: 320deg;  --c: oklch(0.9 0.11 88); }
+.sf-popup-confetti span:nth-child(2)  { --tx: -105px; --ty: -170px; --r: -260deg; --c: #fff;              --dl: 360ms; }
+.sf-popup-confetti span:nth-child(3)  { --tx: -55px;  --ty: -190px; --r: 400deg;  --c: oklch(0.8 0.13 80); --dl: 340ms; }
+.sf-popup-confetti span:nth-child(4)  { --tx: 0px;    --ty: -205px; --r: -300deg; --c: oklch(0.95 0.07 90); --dl: 380ms; }
+.sf-popup-confetti span:nth-child(5)  { --tx: 55px;   --ty: -190px; --r: 280deg;  --c: #fff;              --dl: 350ms; }
+.sf-popup-confetti span:nth-child(6)  { --tx: 105px;  --ty: -170px; --r: -380deg; --c: oklch(0.9 0.11 88); --dl: 370ms; }
+.sf-popup-confetti span:nth-child(7)  { --tx: 150px;  --ty: -120px; --r: 340deg;  --c: oklch(0.8 0.13 80); --dl: 330ms; }
+.sf-popup-confetti span:nth-child(8)  { --tx: -170px; --ty: -40px;  --r: -240deg; --c: oklch(0.95 0.07 90); --dl: 400ms; }
+.sf-popup-confetti span:nth-child(9)  { --tx: 170px;  --ty: -40px;  --r: 260deg;  --c: #fff;              --dl: 410ms; }
+.sf-popup-confetti span:nth-child(10) { --tx: -120px; --ty: 30px;   --r: 420deg;  --c: oklch(0.9 0.11 88); --dl: 430ms; }
+.sf-popup-confetti span:nth-child(11) { --tx: 120px;  --ty: 30px;   --r: -420deg; --c: oklch(0.8 0.13 80); --dl: 440ms; }
+.sf-popup-confetti span:nth-child(12) { --tx: -75px;  --ty: -90px;  --r: 200deg;  --c: #fff;              --dl: 390ms; }
+.sf-popup-confetti span:nth-child(13) { --tx: 75px;   --ty: -90px;  --r: -200deg; --c: oklch(0.95 0.07 90); --dl: 395ms; }
+.sf-popup-confetti span:nth-child(14) { --tx: 0px;    --ty: -130px; --r: 360deg;  --c: oklch(0.9 0.11 88); --dl: 420ms; }
+
+/* Leaving. */
+.sf-popup-root[data-state='closing'] .sf-popup { animation: sf-popup-out 300ms cubic-bezier(0.55, 0, 0.8, 0.4) both; }
+.sf-popup-root[data-state='closing'] .sf-popup-backdrop { animation: sf-popup-fade-out 300ms ease both; }
+
+@keyframes sf-popup-fade { from { opacity: 0; backdrop-filter: blur(0); } to { opacity: 1; backdrop-filter: blur(3px); } }
+@keyframes sf-popup-fade-out { from { opacity: 1; } to { opacity: 0; } }
+
+@keyframes sf-popup-pop {
+  0%   { opacity: 0; transform: translateY(46px) scale(0.8) rotateX(22deg); }
+  55%  { opacity: 1; transform: translateY(-8px) scale(1.035) rotateX(-3deg); }
+  78%  { transform: translateY(2px) scale(0.992) rotateX(0.6deg); }
+  100% { opacity: 1; transform: translateY(0) scale(1) rotateX(0); }
 }
 
-@keyframes sf-popup-rise {
-  from { opacity: 0; transform: translateY(14px) scale(0.97); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
+@keyframes sf-popup-out {
+  from { opacity: 1; transform: translateY(0) scale(1); }
+  to   { opacity: 0; transform: translateY(24px) scale(0.92) rotateX(10deg); }
 }
 
-/* A customer who prefers less motion gets the offer without the movement. */
+@keyframes sf-popup-sheen { to { transform: translateX(130%); } }
+
+@keyframes sf-popup-child {
+  from { opacity: 0; transform: translateY(14px); filter: blur(3px); }
+  to   { opacity: 1; transform: translateY(0); filter: blur(0); }
+}
+
+@keyframes sf-popup-amount-in {
+  0%   { opacity: 0; transform: scale(0.6) translateY(10px); filter: blur(6px); }
+  100% { opacity: 1; transform: scale(1) translateY(0); filter: blur(0); }
+}
+
+@keyframes sf-popup-glint {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.035); }
+}
+
+@keyframes sf-popup-close-in {
+  from { opacity: 0; transform: rotate(-120deg) scale(0.4); }
+  to   { opacity: 1; transform: rotate(0) scale(1); }
+}
+
+@keyframes sf-popup-btn-shine {
+  0% { transform: translateX(-130%); }
+  35%, 100% { transform: translateX(130%); }
+}
+
+@keyframes sf-confetti {
+  0%   { opacity: 0; transform: translate(-50%, -50%) scale(0) rotate(0); }
+  12%  { opacity: 1; }
+  70%  { opacity: 1; }
+  100% { opacity: 0; transform: translate(calc(-50% + var(--tx)), calc(-50% + var(--ty) + 60px)) scale(1) rotate(var(--r)); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .sf-popup,
-  .sf-popup-backdrop {
-    animation: none;
+  .sf-popup::after,
+  .sf-popup-backdrop,
+  .sf-popup-body::before,
+  .sf-popup-art img,
+  .sf-popup-eyebrow,
+  .sf-popup-title,
+  .sf-popup-amount,
+  .sf-popup-desc,
+  .sf-popup-timing,
+  .sf-popup-code,
+  .sf-popup-actions,
+  .sf-popup-note,
+  .sf-popup-close,
+  .sf-popup-shop::after {
+    animation: none !important;
   }
+  .sf-popup-body::before,
+  .sf-popup-confetti { display: none; }
 }
 
-/* ---------- Hero: a short cream banner, not a full-height dark hero ---------- */
+/* ---------- Hero: a short cream banner ---------- */
 .sf-hero {
   position: relative;
   isolation: isolate;
   display: grid;
   align-items: center;
   overflow: hidden;
-  /*
-   * Both stops are tokens, not literals.
-   *
-   * They used to be hardcoded near-white values, which meant the hero stayed a
-   * pale cream wash in dark mode while the rest of the page went near-black — a
-   * bright band across the top of a dark page. `--sf-hero-glow` and
-   * `--sf-hero-base` are defined per theme so the gradient follows the palette.
-   */
   background:
     radial-gradient(circle at 88% 16%, var(--sf-hero-glow), transparent 22rem),
     linear-gradient(115deg, var(--sf-gold-wash), var(--sf-cream) 55%, var(--sf-hero-base));
   border-bottom: 1px solid var(--sf-line);
 }
 
-/* The shop's own hero clip sits in a display-style frame beside the copy. */
 .sf-hero-video-card {
   aspect-ratio: 16 / 10;
   overflow: hidden;
@@ -1839,7 +1700,6 @@
   object-position: center;
 }
 
-/* Gold-framed panel, like the display sheets the counters use. */
 .sf-hero-frame {
   border: 1px solid var(--sf-gold-line);
   border-radius: 1.25rem;
@@ -1869,7 +1729,6 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* Small stat tiles under the banner copy. */
 .sf-stat {
   border: 1px solid var(--sf-line);
   border-radius: 0.9rem;
@@ -1915,7 +1774,6 @@
   transform: scale(1.045);
 }
 
-/* Soft sheen across the photo on hover. */
 .sf-card-sheen .sf-card-media::after {
   position: absolute;
   inset: 0;
@@ -1956,7 +1814,7 @@
   transform: translateY(-1px);
 }
 
-/* Outlined, on white — the secondary action. */
+/* Outlined, on white: the secondary action. */
 .sf-btn-ghost {
   border: 1px solid var(--sf-line-strong);
   background: var(--sf-surface);
@@ -1996,9 +1854,6 @@
   color: #fff;
 }
 
-/* The count inside a filter chip. Kept quiet so the collection name is what the
-   eye lands on, but present, because "PANCHALOHAM 2" answers "is this shelf
-   worth opening?" before the customer has to tap it. */
 .sf-chip-count {
   opacity: 0.6;
   font-variant-numeric: tabular-nums;
@@ -2035,14 +1890,12 @@
 }
 
 /* ---------- Section furniture ---------- */
-/* Striped trust strip under the banner. */
 .sf-trust-strip {
   background: var(--sf-cream);
   border-top: 1px solid var(--sf-line);
   border-bottom: 1px solid var(--sf-line);
 }
 
-/* Cream band to break up long runs of white cards. */
 .sf-band { background: var(--sf-cream); }
 .sf-band-gold { background: linear-gradient(180deg, var(--sf-gold-wash), var(--sf-cream)); }
 
@@ -2067,33 +1920,12 @@
     transform 620ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-/*
- * The entrance directions.
- *
- * `up` is the default and the one used most, because a card rising into place
- * reads as the page settling. The sideways variants pull in from the edge the
- * element sits toward, which stops a two-column row from moving as one slab.
- *
- * The travel is deliberately small — 20px on a phone up to 28px on a desktop.
- * A long slide is the single most common way an entrance animation makes a shop
- * look cheap, and it also drags content across the viewport, which is a real
- * cost on a mid-range Android.
- */
 .sf-reveal-ready [data-reveal='up'] { transform: translateY(20px); }
 .sf-reveal-ready [data-reveal='left'] { transform: translateX(-20px); }
 .sf-reveal-ready [data-reveal='right'] { transform: translateX(20px); }
 .sf-reveal-ready [data-reveal='scale'] { transform: scale(0.97); }
-
-/*
- * A softer rise that adds a touch of scale, so a large block (a hero panel, a
- * full-width band) arrives with weight rather than simply sliding.
- */
 .sf-reveal-ready [data-reveal='rise'] { transform: translateY(28px) scale(0.985); }
 
-/*
- * A masked wipe, for a heading. The element is clipped from the bottom and grows
- * into place, which reads like type being set rather than a block sliding.
- */
 .sf-reveal-ready [data-reveal='wipe'] {
   opacity: 0;
   clip-path: inset(0 0 100% 0);
@@ -2116,25 +1948,12 @@
   .sf-reveal-ready [data-reveal='right'] { transform: translateX(28px); }
 }
 
-/*
- * Parallax layers.
- *
- * The transform itself is written by the reveal hook each frame; this rule only
- * supplies the GPU hint so the browser promotes the element to its own layer
- * rather than repainting the section around it on every scroll event.
- */
+/* Parallax layers: the hook writes the transform; this is only the GPU hint. */
 [data-parallax] {
   will-change: transform;
 }
 
-/*
- * The reading-progress bar.
- *
- * Fixed to the very top of the viewport, above the sticky header (which sits at
- * z-index 40), and scaled from the left edge by the scroll hook. It is purely
- * decorative for a sighted reader — a screen reader is told nothing, because
- * "42% scrolled" is not information a page needs to announce.
- */
+/* The reading-progress bar, fixed to the very top of the viewport. */
 .sf-scroll-progress {
   position: fixed;
   top: 0;
@@ -2200,8 +2019,6 @@
     clip-path: none !important;
     transition: none !important;
   }
-  /* A parallax layer must sit still, and the bar is meaningless if it never
-   * moves — so it is hidden rather than left as a permanent stub at 0%. */
   [data-parallax] {
     transform: none !important;
   }
@@ -2212,37 +2029,22 @@
 
 /* ==========================================================================
    Storefront · Sharing a piece
-   --------------------------------------------------------------------------
-   The share control sits in the action row UNDER the piece, not on the photo,
-   so the jewellery itself is never covered up. It reads as a quiet text action
-   next to "Ask about this piece", and only its panel draws attention.
    ========================================================================== */
 
-/* The WhatsApp mark is a filled glyph, so it needs no stroke width and sits on
-   the text baseline without nudging the label up. */
 .sf-share-mark {
   display: block;
   flex-shrink: 0;
 }
 
-/* The panel is anchored to the control, which may sit anywhere in a wrapping
-   row. Aligning it left keeps it inside the card rather than hanging off it. */
 .sf-share-panel {
   left: 0;
   right: auto;
 }
 
-
 /* ==========================================================================
    Admin · Orders screen
-   --------------------------------------------------------------------------
-   The list has to do two jobs at once: stay calm while it is long, and make the
-   one order that needs a phone call impossible to miss. Everything here serves
-   that — a breathing marker on new orders, a gold edge that travels down the
-   row, and a hover that lifts the card off the canvas.
    ========================================================================== */
 
-/* A new order breathes, so a screen full of identical rows still has a focus. */
 @keyframes order-need-pulse {
   0%, 100% { box-shadow: 0 0 0 0 oklch(0.72 0.11 78 / 0%); }
   50% { box-shadow: 0 0 0 6px oklch(0.72 0.11 78 / 14%); }
@@ -2252,7 +2054,6 @@
   animation: order-need-pulse 2.6s ease-in-out infinite;
 }
 
-/* The gold hairline that draws itself down the left edge of an open row. */
 @keyframes order-edge-draw {
   from { transform: scaleY(0); opacity: 0; }
   to { transform: scaleY(1); opacity: 1; }
@@ -2270,7 +2071,6 @@
   animation: order-edge-draw 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
-/* Row hover: the whole card lifts and picks up a warm edge. */
 .order-row {
   position: relative;
   transition:
@@ -2291,7 +2091,6 @@
   box-shadow: var(--shadow-md);
 }
 
-/* Status tabs: the pill count badge reads as a live tally. */
 .order-tab {
   transition: background 180ms ease, border-color 180ms ease, color 180ms ease, transform 180ms ease;
 }
@@ -2305,14 +2104,12 @@
   box-shadow: 0 8px 18px oklch(0.31 0.07 258 / 22%);
 }
 
-/* The little "how long has this been sitting" chip. */
 .order-age[data-urgent='true'] {
   background: var(--warn-soft);
   color: var(--warn);
   font-weight: 600;
 }
 
-/* Detail panel slides open rather than snapping into place. */
 @keyframes order-detail-open {
   from { opacity: 0; transform: translateY(-6px); }
   to { opacity: 1; transform: translateY(0); }
@@ -2331,14 +2128,8 @@
 
 /* ==========================================================================
    Admin · Notification bell
-   --------------------------------------------------------------------------
-   The bell has one job: an order that lands while the shopkeeper is in Billing
-   must be impossible to ignore, and must stop demanding attention the moment it
-   has been looked at. Everything here serves that — a gold halo while unseen,
-   a panel that separates unread from read, and a quiet state once cleared.
    ========================================================================== */
 
-/* The halo that marks the bell as carrying unseen orders. */
 @keyframes bell-halo {
   0%, 100% { box-shadow: 0 0 0 0 oklch(0.72 0.11 78 / 45%); }
   60% { box-shadow: 0 0 0 8px oklch(0.72 0.11 78 / 0%); }
@@ -2348,7 +2139,6 @@
   animation: bell-halo 2.4s ease-out infinite;
 }
 
-/* The badge pops in rather than appearing mid-animation. */
 @keyframes bell-badge-in {
   from { transform: scale(0.4); opacity: 0; }
   60% { transform: scale(1.12); opacity: 1; }
@@ -2359,7 +2149,6 @@
   animation: bell-badge-in 320ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
 
-/* A notification row slides in as it arrives. */
 @keyframes bell-item-in {
   from { opacity: 0; transform: translateX(8px); }
   to { opacity: 1; transform: translateX(0); }
@@ -2367,7 +2156,6 @@
 
 .bell-item { animation: bell-item-in 260ms cubic-bezier(0.22, 1, 0.36, 1) both; }
 
-/* Unread rows carry a warm left edge, so the split is visible at a glance. */
 .bell-item[data-unread='true'] {
   background: linear-gradient(90deg, oklch(0.72 0.11 78 / 9%), transparent 60%);
 }
@@ -2383,7 +2171,6 @@
   content: '';
 }
 
-/* The panel opens downward from the bell. */
 @keyframes bell-panel-in {
   from { opacity: 0; transform: translateY(-6px) scale(0.98); }
   to { opacity: 1; transform: translateY(0) scale(1); }
@@ -2402,16 +2189,14 @@
     animation: none !important;
   }
 }
+
 /* ==========================================================================
    Storefront · Product photo gallery
    --------------------------------------------------------------------------
    The large photo, its arrows and the thumbnail strip. Shown only when a piece
-   has more than one photo — a single-photo product is unchanged by all of this.
+   has more than one photo.
    ========================================================================== */
 
-/* Arrows sit over the photo, faded until the pointer is on the frame, so a
-   piece of jewellery is never permanently covered by chrome. They stay visible
-   on touch devices, which have no hover to reveal them. */
 .sf-gallery-arrow {
   position: absolute;
   top: 50%;
@@ -2436,16 +2221,12 @@
   color: var(--sf-maroon);
 }
 
-/* A disabled arrow stays faintly visible rather than vanishing, so the pair
-   does not jump around as the customer reaches either end of the gallery. */
 .sf-gallery-arrow:disabled {
   cursor: not-allowed;
   opacity: 0.3;
   pointer-events: none;
 }
 
-/* Reveal on hover or when the gallery has keyboard focus, so a keyboard user
-   can actually see the control they are tabbing to. */
 .sf-card-media:hover .sf-gallery-arrow,
 .group:hover .sf-gallery-arrow,
 [role='group']:hover .sf-gallery-arrow,
@@ -2453,8 +2234,6 @@
   opacity: 1;
 }
 
-/* Arrows are the only gallery control, so they must never be invisible on a
-   touch device, where there is no hover to reveal them. */
 @media (hover: none) {
   .sf-gallery-arrow {
     opacity: 1;
@@ -2462,16 +2241,15 @@
   .sf-gallery-arrow:disabled {
     opacity: 0.3;
   }
-}/* ==========================================================================
+}
+
+/* ==========================================================================
    Storefront · Selling sections
    --------------------------------------------------------------------------
-   The counter-site furniture: sideways shelves, "shop in budget" tiles, the
-   wide notice strip and the promise cards. Purely structural — it holds the
-   shop's own catalogue and adds no claims of its own.
+   Sideways shelves, "shop in budget" tiles, the wide notice strip and the
+   promise cards.
    ========================================================================== */
 
-/* "View all" on a rail heading: a gold-underlined text link, not a button, so
-   it sits quietly beside the heading instead of competing with it. */
 .sf-link-all {
   display: inline-flex;
   align-items: center;
@@ -2489,8 +2267,6 @@
   gap: 0.6rem;
 }
 
-/* Shelf arrows. Disabled rather than removed at the ends so the control keeps
-   its place and the row does not reflow while a customer is scrolling. */
 .sf-rail-arrow {
   display: inline-flex;
   width: 2.25rem;
@@ -2515,8 +2291,6 @@
   opacity: 0.35;
 }
 
-/* A "shop in budget" tile. Three lines: a mark, the band, and how many pieces
-   sit inside it — the count is what makes the shortcut worth tapping. */
 .sf-band-tile {
   display: flex;
   width: 8.75rem;
@@ -2536,8 +2310,6 @@
   transform: translateY(-2px);
 }
 
-/* The selected band reads as chosen, not merely hovered — a customer who
-   filtered the grid needs to see which shortcut is holding the filter. */
 .sf-band-tile[data-active='true'] {
   border-color: var(--sf-maroon);
   background: var(--sf-maroon);
@@ -2551,9 +2323,7 @@
   color: var(--sf-gold-ink) !important;
 }
 
-/* ---------- Counter notice ----------
-   The wide strip the chains run between shelves. A cream panel with a gold
-   hairline, so it reads as a shop notice rather than an advertisement. */
+/* ---------- Counter notice ---------- */
 .sf-counter-banner {
   position: relative;
   isolation: isolate;
@@ -2578,57 +2348,425 @@
   pointer-events: none;
 }
 
-/* ---------- Product photo gallery ----------
-   The large photo and its arrows. Shown only when a piece has more than one
-   photo — a single-photo product is unchanged by all of this. */
+/* ==========================================================================
+   Storefront · Motion layer
+   ========================================================================== */
 
-.sf-gallery-arrow {
+
+/* ---------- 0. Stagger helper ----------
+   Any element can take an inline delay:  style={{ '--d': '120ms' }}
+   Used by the reveal, the hero entrance and the grid cards below. */
+[data-reveal] { transition-delay: var(--d, 0ms); }
+
+/* ---------- 1. Page entrance ---------- */
+@keyframes sf-page-in {
+  from { opacity: 0; filter: blur(6px); }
+  to { opacity: 1; filter: blur(0); }
+}
+.sf-page-in { animation: sf-page-in 700ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+/* ---------- 2. Gold shimmer text (headings, prices, brand name) ---------- */
+.sf-shine-text {
+  background: linear-gradient(
+    100deg,
+    var(--sf-maroon) 0%,
+    var(--sf-maroon) 38%,
+    oklch(0.72 0.13 78) 48%,
+    oklch(0.9 0.1 88) 50%,
+    oklch(0.72 0.13 78) 52%,
+    var(--sf-maroon) 62%,
+    var(--sf-maroon) 100%
+  );
+  background-size: 250% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  animation: sf-text-shine 6s ease-in-out infinite;
+}
+@keyframes sf-text-shine {
+  0% { background-position: 120% 0; }
+  45%, 100% { background-position: -120% 0; }
+}
+
+/* ---------- 3. Hero entrance: children rise one after another ---------- */
+.sf-hero-stagger > * {
+  animation: sf-fade-rise 800ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.sf-hero-stagger > *:nth-child(1) { animation-delay: 80ms; }
+.sf-hero-stagger > *:nth-child(2) { animation-delay: 220ms; }
+.sf-hero-stagger > *:nth-child(3) { animation-delay: 360ms; }
+.sf-hero-stagger > *:nth-child(4) { animation-delay: 500ms; }
+.sf-hero-stagger > *:nth-child(n + 5) { animation-delay: 640ms; }
+
+/* Slow breathing zoom on a hero photo or video. */
+@keyframes sf-kenburns {
+  from { transform: scale(1) translate3d(0, 0, 0); }
+  to { transform: scale(1.08) translate3d(-1.2%, -1%, 0); }
+}
+.sf-kenburns { animation: sf-kenburns 18s ease-in-out infinite alternate; }
+
+/* ---------- 4. Floating gold dust in the hero ----------
+   Markup: <div class="sf-dust" aria-hidden><span/><span/>... (10-14 spans) */
+.sf-dust {
   position: absolute;
-  top: 50%;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.sf-dust span {
+  position: absolute;
+  bottom: -12px;
+  left: var(--x, 50%);
+  width: var(--s, 5px);
+  height: var(--s, 5px);
+  border-radius: 50%;
+  background: radial-gradient(circle, oklch(0.93 0.1 88), oklch(0.78 0.12 80) 60%, transparent 70%);
+  opacity: 0;
+  animation: sf-dust-rise var(--t, 12s) linear var(--dl, 0s) infinite;
+}
+.sf-dust span:nth-child(1) { --x: 6%; --s: 4px; --t: 13s; --dl: 0s; }
+.sf-dust span:nth-child(2) { --x: 15%; --s: 6px; --t: 17s; --dl: 2s; }
+.sf-dust span:nth-child(3) { --x: 24%; --s: 3px; --t: 11s; --dl: 5s; }
+.sf-dust span:nth-child(4) { --x: 33%; --s: 5px; --t: 15s; --dl: 1s; }
+.sf-dust span:nth-child(5) { --x: 42%; --s: 4px; --t: 14s; --dl: 7s; }
+.sf-dust span:nth-child(6) { --x: 51%; --s: 7px; --t: 19s; --dl: 3s; }
+.sf-dust span:nth-child(7) { --x: 60%; --s: 3px; --t: 12s; --dl: 6s; }
+.sf-dust span:nth-child(8) { --x: 69%; --s: 5px; --t: 16s; --dl: 0.5s; }
+.sf-dust span:nth-child(9) { --x: 77%; --s: 4px; --t: 13s; --dl: 4s; }
+.sf-dust span:nth-child(10) { --x: 85%; --s: 6px; --t: 18s; --dl: 8s; }
+.sf-dust span:nth-child(11) { --x: 92%; --s: 3px; --t: 11s; --dl: 2.5s; }
+.sf-dust span:nth-child(12) { --x: 48%; --s: 4px; --t: 14s; --dl: 9s; }
+@keyframes sf-dust-rise {
+  0% { transform: translate3d(0, 0, 0) scale(0.6); opacity: 0; }
+  12% { opacity: 0.85; }
+  50% { transform: translate3d(14px, -45vh, 0) scale(1); }
+  100% { transform: translate3d(-10px, -95vh, 0) scale(0.7); opacity: 0; }
+}
+
+/* ---------- 5. Sparkle: a twinkling four-point star ----------
+   Place <span class="sf-sparkle" style="top:..;left:.."/> over a hero image,
+   a price tag or a heading. */
+.sf-sparkle {
+  position: absolute;
+  width: var(--sz, 14px);
+  height: var(--sz, 14px);
+  background: oklch(0.95 0.09 90);
+  clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%);
+  filter: drop-shadow(0 0 4px oklch(0.85 0.12 85));
+  opacity: 0;
+  pointer-events: none;
+  animation: sf-twinkle 3.4s ease-in-out var(--dl, 0s) infinite;
+}
+@keyframes sf-twinkle {
+  0%, 100% { opacity: 0; transform: scale(0) rotate(0deg); }
+  40% { opacity: 1; transform: scale(1) rotate(45deg); }
+  60% { opacity: 0.9; transform: scale(0.8) rotate(90deg); }
+}
+
+/* Gentle float for a single decorative piece. */
+@keyframes sf-bob {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-9px) rotate(1.2deg); }
+}
+.sf-float { animation: sf-bob 6s ease-in-out infinite; }
+
+/* ---------- 6. Buttons: a light sweep across the maroon button ---------- */
+.sf-btn-gold { position: relative; overflow: hidden; isolation: isolate; }
+.sf-btn-gold::after {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(105deg, transparent 30%, oklch(1 0 0 / 28%) 50%, transparent 70%);
+  transform: translateX(-130%);
+  transition: transform 700ms cubic-bezier(0.22, 1, 0.36, 1);
+  content: '';
+}
+.sf-btn-gold:hover::after { transform: translateX(130%); }
+
+/* A slow attention pulse for the one primary call to action on a screen. */
+@keyframes sf-cta-pulse {
+  0%, 100% { box-shadow: 0 6px 16px oklch(0.36 0.14 22 / 20%), 0 0 0 0 oklch(0.72 0.13 78 / 45%); }
+  60% { box-shadow: 0 6px 16px oklch(0.36 0.14 22 / 20%), 0 0 0 12px oklch(0.72 0.13 78 / 0%); }
+}
+.sf-cta-pulse { animation: sf-cta-pulse 2.8s ease-out infinite; }
+
+/* ---------- 7. Links: gold underline that draws in ---------- */
+.sf-underline {
+  position: relative;
+  display: inline-block;
+}
+.sf-underline::after {
+  position: absolute;
+  right: 0;
+  bottom: -3px;
+  left: 0;
+  height: 1px;
+  background: linear-gradient(90deg, var(--sf-gold-deep), var(--sf-gold));
+  transform: scaleX(0);
+  transform-origin: right;
+  transition: transform 380ms cubic-bezier(0.22, 1, 0.36, 1);
+  content: '';
+}
+.sf-underline:hover::after,
+.sf-underline[aria-current='page']::after {
+  transform: scaleX(1);
+  transform-origin: left;
+}
+
+/* ---------- 8. Product cards: gold frame, spotlight and quick-action bar ----------
+   Add the class `sf-card-lux` next to `sf-card`. The hook in
+   storefront-motion.tsx writes --mx/--my so the spotlight follows the pointer. */
+.sf-card-lux { --mx: 50%; --my: 50%; }
+
+.sf-card-lux::before {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: inherit;
+  background: radial-gradient(
+    18rem circle at var(--mx) var(--my),
+    oklch(0.95 0.07 88 / 38%),
+    transparent 60%
+  );
+  opacity: 0;
+  transition: opacity 300ms ease;
+  content: '';
+  pointer-events: none;
+}
+.sf-card-lux:hover::before { opacity: 1; }
+
+/* A thin gold frame that fades in around the card. */
+.sf-card-lux::after {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  border-radius: inherit;
+  box-shadow: inset 0 0 0 1px transparent;
+  transition: box-shadow 320ms ease;
+  content: '';
+  pointer-events: none;
+}
+.sf-card-lux:hover::after { box-shadow: inset 0 0 0 1px var(--sf-gold-deep); }
+
+/* Bar that slides up over the bottom of the photo: put the "Add to basket" or
+   "Quick view" control inside `.sf-card-cta`, inside `.sf-card-media`. */
+.sf-card-cta {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 3;
   display: flex;
-  width: 2.25rem;
-  height: 2.25rem;
+  gap: 0.5rem;
+  justify-content: center;
+  padding: 0.75rem;
+  background: linear-gradient(0deg, oklch(0.2 0.03 40 / 55%), transparent);
+  transform: translateY(100%);
+  transition: transform 380ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.sf-card:hover .sf-card-cta,
+.sf-card:focus-within .sf-card-cta { transform: translateY(0); }
+@media (hover: none) { .sf-card-cta { transform: none; } }
+
+/* ---------- 9. Image curtain reveal ----------
+   Wrap an <img> in `.sf-img-reveal` and give the wrapper data-reveal="up". */
+.sf-img-reveal { position: relative; overflow: hidden; }
+.sf-img-reveal img {
+  transform: scale(1.18);
+  transition: transform 1400ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.sf-img-reveal::after {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, var(--sf-gold-wash), var(--sf-cream-soft));
+  transform-origin: right;
+  transition: transform 1000ms cubic-bezier(0.77, 0, 0.18, 1);
+  content: '';
+  pointer-events: none;
+}
+.sf-reveal-ready .sf-img-reveal:not(.sf-in) img { transform: scale(1.18); }
+.sf-img-reveal.sf-in img { transform: scale(1); }
+.sf-img-reveal.sf-in::after { transform: scaleX(0); }
+
+/* ---------- 10. Ornamental divider that draws itself ----------
+   <div class="sf-ornament" data-reveal="up"><i/></div> */
+.sf-ornament {
+  position: relative;
+  display: flex;
   align-items: center;
   justify-content: center;
-  transform: translateY(-50%);
-  border: 1px solid var(--sf-line);
-  border-radius: 999px;
-  background: oklch(1 0 0 / 92%);
-  color: var(--sf-heading);
-  box-shadow: 0 6px 16px oklch(0.4 0.05 70 / 14%);
-  opacity: 0;
-  transition: opacity 180ms ease, border-color 160ms ease, background 160ms ease, color 160ms ease;
+  height: 1.5rem;
+  margin-block: 1.5rem;
+}
+.sf-ornament::before,
+.sf-ornament::after {
+  display: block;
+  width: min(30%, 11rem);
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--sf-gold-deep));
+  transform: scaleX(0);
+  transition: transform 1100ms cubic-bezier(0.22, 1, 0.36, 1) 150ms;
+  content: '';
+}
+.sf-ornament::before { transform-origin: right; }
+.sf-ornament::after {
+  background: linear-gradient(270deg, transparent, var(--sf-gold-deep));
+  transform-origin: left;
+}
+.sf-ornament i {
+  width: 9px;
+  height: 9px;
+  margin-inline: 0.9rem;
+  background: var(--sf-gold-deep);
+  transform: rotate(45deg) scale(0);
+  transition: transform 700ms cubic-bezier(0.34, 1.56, 0.64, 1) 650ms;
+}
+.sf-ornament.sf-in::before,
+.sf-ornament.sf-in::after { transform: scaleX(1); }
+.sf-ornament.sf-in i { transform: rotate(45deg) scale(1); }
+.sf-reveal-ready .sf-ornament[data-reveal] { transform: none; }
+
+/* ---------- 11. Sliding marquee for the trust strip or press logos ----------
+   <div class="sf-marquee"><div class="sf-marquee-track">...items... (duplicate the set once)</div></div> */
+.sf-marquee {
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+}
+.sf-marquee-track {
+  display: flex;
+  width: max-content;
+  gap: 3rem;
+  animation: sf-marquee 38s linear infinite;
+}
+.sf-marquee:hover .sf-marquee-track { animation-play-state: paused; }
+@keyframes sf-marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
 }
 
-.sf-gallery-arrow:hover:not(:disabled) {
-  border-color: var(--sf-gold-deep);
-  background: var(--sf-gold-wash);
-  color: var(--sf-maroon);
+/* ---------- 12. Header: shrinks and gains a soft shadow after scrolling ----------
+   The hook sets data-scrolled="true" on `.sf-header`. */
+.sf-header { transition: box-shadow 300ms ease, padding 300ms ease, background 300ms ease; }
+.sf-header[data-scrolled='true'] {
+  background: oklch(1 0 0 / 88%);
+  backdrop-filter: blur(14px) saturate(1.2);
+  box-shadow: 0 1px 0 var(--sf-gold-line), 0 10px 30px oklch(0.4 0.05 70 / 10%);
 }
 
-/* A disabled arrow stays faintly visible rather than vanishing, so the pair
-   does not jump around as the customer reaches either end of the gallery. */
-.sf-gallery-arrow:disabled {
-  cursor: not-allowed;
-  opacity: 0.3;
+/* ---------- 13. Cart, wishlist and badge micro-interactions ---------- */
+@keyframes sf-pop {
+  0% { transform: scale(1); }
+  35% { transform: scale(1.35); }
+  70% { transform: scale(0.92); }
+  100% { transform: scale(1); }
+}
+.sf-pop { animation: sf-pop 480ms cubic-bezier(0.34, 1.56, 0.64, 1); }
+
+/* Wishlist heart: set data-on="true" when saved. */
+.sf-heart svg { transition: transform 300ms cubic-bezier(0.34, 1.56, 0.64, 1), fill 200ms ease, color 200ms ease; }
+.sf-heart:hover svg { transform: scale(1.18); }
+.sf-heart[data-on='true'] svg { color: var(--sf-maroon); fill: var(--sf-maroon); animation: sf-pop 480ms cubic-bezier(0.34, 1.56, 0.64, 1); }
+
+/* The "item added" fly-to-cart ping, rendered at the button. */
+@keyframes sf-ping {
+  0% { transform: scale(0.6); opacity: 0.7; }
+  100% { transform: scale(2.4); opacity: 0; }
+}
+.sf-ping::after {
+  position: absolute;
+  inset: 0;
+  border: 2px solid var(--sf-gold);
+  border-radius: inherit;
+  animation: sf-ping 700ms ease-out both;
+  content: '';
   pointer-events: none;
 }
 
-/* Reveal on hover or when the gallery has keyboard focus, so a keyboard user
-   can actually see the control they are tabbing to. */
-.sf-card-media:hover .sf-gallery-arrow,
-[role='group']:hover .sf-gallery-arrow,
-[role='group']:focus-within .sf-gallery-arrow {
-  opacity: 1;
+/* ---------- 14. Number counters / stat tiles ---------- */
+.sf-stat { position: relative; overflow: hidden; }
+.sf-stat::after {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(115deg, transparent 40%, oklch(0.95 0.07 88 / 45%) 50%, transparent 60%);
+  transform: translateX(-130%);
+  transition: transform 800ms cubic-bezier(0.22, 1, 0.36, 1);
+  content: '';
+  pointer-events: none;
+}
+.sf-stat:hover::after { transform: translateX(130%); }
+
+/* ---------- 15. Round category shortcuts: slow orbit ring on hover ---------- */
+.sf-circle-ring::after {
+  position: absolute;
+  inset: 3px;
+  border: 1px dashed var(--sf-gold-deep);
+  border-radius: 50%;
+  opacity: 0;
+  transition: opacity 250ms ease;
+  content: '';
+  pointer-events: none;
+}
+.sf-circle:hover .sf-circle-ring::after {
+  opacity: 0.8;
+  animation: sf-spin 14s linear infinite;
+}
+@keyframes sf-spin { to { transform: rotate(360deg); } }
+.sf-circle-ring img { transition: transform 600ms cubic-bezier(0.22, 1, 0.36, 1); }
+.sf-circle:hover .sf-circle-ring img { transform: scale(1.12); }
+
+/* ---------- 16. Loading skeleton in cream and gold ---------- */
+.sf-skeleton {
+  position: relative;
+  overflow: hidden;
+  border-radius: 0.5rem;
+  background: var(--sf-cream-soft);
+}
+.sf-skeleton::after {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, oklch(0.97 0.05 88 / 80%), transparent);
+  transform: translateX(-100%);
+  animation: shimmer 1.5s infinite;
+  content: '';
 }
 
-/* Arrows are the only gallery control, so they must never be invisible on a
-   touch device, where there is no hover to reveal them. */
-@media (hover: none) {
-  .sf-gallery-arrow {
-    opacity: 1;
+/* ---------- 17. Page-to-page and drawer polish ---------- */
+.sf-drawer { animation-duration: 420ms; animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1); }
+.sf-scrim { animation-duration: 300ms; }
+
+/* Grid cards cascade in when their section is revealed. */
+.sf-grid-cascade > * { transition-delay: calc(var(--i, 0) * 70ms); }
+
+/* ---------- Reduced motion: everything above stands still ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .sf-page-in,
+  .sf-shine-text,
+  .sf-hero-stagger > *,
+  .sf-kenburns,
+  .sf-dust span,
+  .sf-sparkle,
+  .sf-float,
+  .sf-cta-pulse,
+  .sf-marquee-track,
+  .sf-pop,
+  .sf-heart[data-on='true'] svg,
+  .sf-ping::after,
+  .sf-circle:hover .sf-circle-ring::after,
+  .sf-skeleton::after {
+    animation: none !important;
   }
-  .sf-gallery-arrow:disabled {
-    opacity: 0.3;
+  .sf-shine-text {
+    background: none;
+    -webkit-text-fill-color: currentColor;
+    color: var(--sf-maroon);
   }
+  .sf-dust, .sf-sparkle { display: none; }
+  .sf-card-cta { transform: none; }
+  .sf-img-reveal img { transform: none !important; }
+  .sf-img-reveal::after { display: none; }
+  .sf-ornament::before, .sf-ornament::after { transform: scaleX(1) !important; }
+  .sf-ornament i { transform: rotate(45deg) scale(1) !important; }
 }
