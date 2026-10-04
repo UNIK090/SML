@@ -58,7 +58,7 @@ import {
   OrderSteps,
   PromiseBand,
 } from '@/components/store/store-sections'
-import { useRevealOnScroll } from '@/components/store/reveal'
+import { useRevealOnScroll, ScrollProgress } from '@/components/store/reveal'
 import { useApi } from '@/lib/use-api'
 import { rupees, telLink, whatsappLink } from '@/lib/store'
 import type { PriceBand, Shop, StoreCatalogue } from '@/lib/types'
@@ -166,6 +166,9 @@ function ShopWindow() {
 
   return (
     <div className="sf-canvas min-h-screen">
+      {/* How far through the catalogue the reader is. */}
+      <ScrollProgress />
+
       {/* ---------------------------- Utility bar ---------------------------- */}
       <div className="sf-topbar px-4 pt-[max(0.5rem,env(safe-area-inset-top))] pb-2 text-[11px] sm:px-7 sm:py-2">
         <div className="mx-auto flex w-full max-w-[1400px] items-center justify-between gap-4">
@@ -303,6 +306,15 @@ function ShopWindow() {
       </header>
 
       {/* -------------------------------- Banner -------------------------------- */}
+      {/*
+        The hero, given depth.
+
+        The panel and the copy drift at different speeds as the page scrolls, so
+        the first screen slides apart like a shop window rather than leaving flat.
+        The speeds are small (0.25 and 0.12) on purpose: this is the first thing
+        a customer sees, and a hero that lurches teaches them the page is going to
+        be jumpy.
+      */}
       <section className="sf-hero px-4 pt-14 pb-14 sm:px-7 sm:pt-16 sm:pb-16">
         <div className="relative z-10 mx-auto grid w-full max-w-[1400px] items-center gap-8 lg:grid-cols-[1.05fr_.95fr] lg:gap-12">
           <div className="max-w-2xl">
@@ -319,6 +331,13 @@ function ShopWindow() {
               {data ? `Affordable styles · ${categoryCount} ${categoryCount === 1 ? 'category' : 'categories'}` : 'One-gram gold · panchaloha · silver'}
             </p>
 
+            {/*
+              The headline animates per line via .sf-line, not via data-reveal.
+              It is deliberately left out of the reveal pass: the two would fight
+              — the reveal would fade the whole block while each line was already
+              rising on its own — and the per-line stagger is the better effect,
+              so the reveal loses.
+            */}
             <h1 className="mt-6 text-[2.4rem] leading-[1.06] font-semibold tracking-[-0.02em] sm:text-[3.2rem] lg:text-[3.6rem]">
               {HERO_LINES.map((line, index) => (
                 <span key={line} className="sf-line-mask">
@@ -364,7 +383,7 @@ function ShopWindow() {
             </dl>
           </div>
 
-          <div className="sf-hero-video-card" data-reveal="right">
+          <div className="sf-hero-video-card" data-reveal="right" data-parallax="-0.25">
             <video className="sf-hero-video" autoPlay loop muted playsInline preload="metadata" aria-label="Jewellery collection video">
               <source src="/media/BG.mp4" type="video/mp4" />
             </video>
