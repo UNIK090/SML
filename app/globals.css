@@ -1788,6 +1788,49 @@
   transform: translateX(130%);
 }
 
+/* ---- Basket count ----
+ * The number of pieces in the basket, pinned to the top-right of the basket
+ * button.
+ *
+ * Deliberately self-contained: a solid accent-filled pill with white digits,
+ * and a ring drawn in the page background colour. It must read on BOTH header
+ * skins — the maroon button it was originally written for, and the light
+ * Apple-style bar the storefront now uses — so nothing here is allowed to
+ * depend on what is behind it. A gold-on-maroon scheme looked well on the old
+ * button and vanished on the new one, which is exactly why the colours are
+ * fixed rather than inherited. */
+.sf-count {
+  position: absolute;
+  top: -0.4rem;
+  right: -0.4rem;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.5rem;
+  height: 1.5rem;
+  padding-inline: 0.35rem;
+  border-radius: 999px;
+  background: var(--ap-accent, var(--sf-maroon));
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  /* The ring is what separates the pill from both the button edge and the
+     header behind it, so it is painted in the page colour rather than white. */
+  box-shadow: 0 0 0 2px var(--ap-page, #fbfbfd), 0 1px 3px rgb(0 0 0 / 22%);
+  pointer-events: none;
+  transform: translateZ(0);
+}
+
+/* Two or more digits: the pill widens to fit, but the type only shrinks a
+   little so the whole number still reads at a glance. */
+.sf-count-many {
+  font-size: 0.66rem;
+  letter-spacing: -0.02em;
+}
+
 /* ---------- Buttons & chips ---------- */
 .sf-btn {
   display: inline-flex;
@@ -2769,4 +2812,538 @@
   .sf-img-reveal::after { display: none; }
   .sf-ornament::before, .sf-ornament::after { transform: scaleX(1) !important; }
   .sf-ornament i { transform: rotate(45deg) scale(1) !important; }
+}
+/* ==========================================================================
+   Storefront · Apple-style interface layer
+   --------------------------------------------------------------------------
+   A deliberate re-skin of the storefront in the idiom of apple.com:
+
+     · one neutral type family at several weights, with tight display tracking
+     · very generous vertical rhythm and narrow, centred reading columns
+     · plain near-white surfaces instead of borders; separation comes from
+       contrast and a soft shadow, never from a hairline
+     · fully-rounded ("pill") controls, with the quiet-grey secondary button
+     · frosted-glass sticky navigation that reacts to the page scroll
+
+   This section is appended last on purpose: it is the newest skin for the
+   storefront, so it must win over the earlier `sf-*` rules at equal
+   specificity. Nothing above is deleted — the old classes still stand, this
+   just re-interprets the ones the storefront actually renders.
+   ========================================================================== */
+
+:root {
+  /* Near-white surfaces, read as "no colour" rather than as a cream tint. */
+  --ap-page: #fbfbfd;
+  --ap-panel: #f5f5f7;
+  --ap-surface: #ffffff;
+  --ap-ink: #1d1d1f;
+  --ap-ink-soft: #424245;
+  /* Apple's secondary grey: the exact ratio they use for captions. */
+  --ap-grey: #6e6e73;
+  --ap-line: #d2d2d7;
+  --ap-link: #0066cc;
+
+  /* The one brand accent, kept from the shop's maroon so the storefront still
+     belongs to the jeweller rather than to a generic template. */
+  --ap-accent: var(--sf-maroon);
+  --ap-accent-deep: var(--sf-maroon-deep);
+
+  /* Softer, tighter shadows than the desk UI uses: light diffusion, no ring. */
+  --ap-shadow: 0 4px 14px rgb(0 0 0 / 5%);
+  --ap-shadow-lift: 0 12px 32px rgb(0 0 0 / 9%);
+  --ap-shadow-card: 0 2px 8px rgb(0 0 0 / 4%);
+
+  --ap-pill: 980px;
+  --ap-radius: 18px;
+  --ap-radius-lg: 28px;
+
+  /* The reading column. Apple never lets body text run the full page width. */
+  --ap-column: 64rem;
+  --ap-gutter: 1.25rem;
+
+  /* How much air each section gets. Big, and bigger on a desktop. */
+  --ap-section: 4.5rem;
+}
+
+@media (min-width: 768px) {
+  :root {
+    --ap-gutter: 3rem;
+    --ap-section: 7.5rem;
+  }
+}
+
+/* ---------- The canvas ---------- */
+.sf-canvas {
+  background: var(--ap-page);
+  color: var(--ap-ink-soft);
+  letter-spacing: -0.01em;
+}
+
+/* Headings: one neutral sans at a heavy weight with tight tracking. This is
+   the single change that makes the page read instantly as Apple rather than
+   as a small-business site — the serif is dropped entirely. */
+.sf-canvas h1,
+.sf-canvas h2,
+.sf-canvas h3 {
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  color: var(--ap-ink);
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  line-height: 1.08;
+}
+
+.sf-canvas h1 {
+  letter-spacing: -0.028em;
+  line-height: 1.05;
+}
+
+/* Apple's reading measure: a narrow, centred column and a comfortable
+   line-height, so long copy is never a wall of full-width text. */
+.sf-canvas p,
+.sf-canvas li,
+.sf-canvas dd,
+.sf-canvas dt {
+  line-height: 1.52;
+}
+
+/* The storefront's inline maroon styling is pushed to the neutral ink, so the
+   accent is reserved for links and the primary button only. */
+.sf-canvas [style*='--sf-heading'] {
+  color: var(--ap-ink) !important;
+}
+
+.sf-canvas [style*='--sf-muted'] {
+  color: var(--ap-grey) !important;
+}
+
+/* Apple writes these small labels as sentence case in a quiet grey. The
+   storefront marks them with `uppercase` plus wide tracking as utility classes
+   in the markup, so the treatment is neutralised centrally rather than at each
+   call site — one skin, readable in one place. Scoped to the storefront's own
+   label elements so it can never reach unrelated components. */
+.sf-canvas .sf-eyebrow,
+.sf-canvas section header > p,
+.sf-canvas section > div > p:first-child {
+  text-transform: none;
+  letter-spacing: -0.005em;
+}
+/* ---------- Rhythm: a real container and real section spacing ---------- */
+.sf-canvas > section,
+.sf-canvas > div {
+  padding-block: var(--ap-section);
+}
+
+/* The utility strip, the trust strip and the bands are thin by design and must
+   not inherit the full section air. */
+.sf-topbar {
+  padding-block: 0.5rem !important;
+}
+
+.sf-trust-strip {
+  padding-block: 1.15rem !important;
+}
+
+/* Every banded section becomes the same soft grey panel Apple uses to break a
+   long white page into chapters. */
+.sf-band,
+.sf-band-gold {
+  background: var(--ap-panel);
+  border: 0 !important;
+}
+
+/* Horizontal gutters, applied to the sections that paint edge to edge. */
+.sf-canvas > section {
+  padding-inline: var(--ap-gutter);
+}
+
+/* Pictures sit in rounded, shadowed frames rather than hard rectangles. */
+.sf-hero-video-card {
+  border: 0;
+  border-radius: var(--ap-radius-lg);
+  box-shadow: var(--ap-shadow-lift);
+}
+
+.sf-card {
+  border: 0;
+  border-radius: var(--ap-radius);
+  box-shadow: var(--ap-shadow-card);
+}
+
+.sf-card:hover,
+.sf-card:focus-within {
+  border: 0;
+  box-shadow: var(--ap-shadow-lift);
+  transform: translateY(-4px);
+}
+
+/* The two flat panels on the boutique section: same treatment as a card. */
+.sf-counter-banner {
+  border: 0;
+  border-radius: var(--ap-radius-lg);
+  background: var(--ap-surface);
+  box-shadow: var(--ap-shadow);
+}
+
+.sf-counter-banner::after {
+  display: none;
+}
+
+/* ---------- The eyebrow label ---------- */
+/* Apple writes these as a small, quiet grey caption. The gold rule in front of
+   it is small-business furniture, so it goes. */
+.sf-eyebrow {
+  color: var(--ap-grey);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: none;
+}
+
+.sf-eyebrow::before {
+  display: none;
+}
+
+/* ---------- Buttons: pills, and only two of them ---------- */
+.sf-btn {
+  border-radius: var(--ap-pill);
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  transition:
+    background 220ms cubic-bezier(0.28, 0.11, 0.32, 1),
+    color 220ms cubic-bezier(0.28, 0.11, 0.32, 1),
+    transform 220ms cubic-bezier(0.28, 0.11, 0.32, 1),
+    box-shadow 220ms cubic-bezier(0.28, 0.11, 0.32, 1);
+}
+
+.sf-btn:active {
+  transform: scale(0.97);
+}
+
+/* The primary action. Apple's own is a saturated blue; the shop's maroon takes
+   that role so the brand survives the re-skin. */
+.sf-btn-gold {
+  background: var(--ap-accent);
+  color: #fff;
+  box-shadow: none;
+}
+
+.sf-btn-gold:hover {
+  background: var(--ap-accent-deep);
+  box-shadow: var(--ap-shadow);
+  transform: none;
+}
+
+/* The quiet secondary: a light grey pill, exactly the "learn more" control. */
+.sf-btn-ghost {
+  border: 0;
+  background: rgb(0 0 0 / 5%);
+  color: var(--ap-ink);
+}
+
+.sf-btn-ghost:hover {
+  border: 0;
+  background: rgb(0 0 0 / 9%);
+  color: var(--ap-ink);
+  transform: none;
+}
+
+/* Chips and small round controls follow the same rule. */
+.sf-chip {
+  border-color: transparent;
+  background: var(--ap-panel);
+  color: var(--ap-ink);
+  border-radius: var(--ap-pill);
+}
+
+.sf-chip:hover {
+  border-color: transparent;
+  background: rgb(0 0 0 / 7%);
+  color: var(--ap-ink);
+  transform: none;
+}
+
+.sf-chip[data-active='true'] {
+  border-color: transparent;
+  background: var(--ap-ink);
+  color: #fff;
+}
+
+.sf-band-tile {
+  border: 0;
+  background: var(--ap-surface);
+  box-shadow: var(--ap-shadow-card);
+}
+
+.sf-band-tile[data-active='true'] {
+  border-color: transparent;
+  background: var(--ap-ink);
+}
+
+.sf-rail-arrow,
+.sf-gallery-arrow {
+  border-color: transparent;
+  background: rgb(255 255 255 / 86%);
+  backdrop-filter: saturate(180%) blur(20px);
+  box-shadow: var(--ap-shadow-card);
+}
+
+.sf-rail-arrow:hover:not(:disabled),
+.sf-gallery-arrow:hover:not(:disabled) {
+  border-color: transparent;
+  background: #fff;
+  color: var(--ap-ink);
+}
+
+.sf-circle-ring {
+  border: 0;
+  background: var(--ap-panel);
+}
+
+.sf-circle:hover .sf-circle-ring {
+  border-color: transparent;
+  box-shadow: var(--ap-shadow-lift);
+}
+
+/* ---------- Links ---------- */
+.sf-link-all {
+  border-bottom: 0;
+  color: var(--ap-link);
+  font-weight: 400;
+  font-size: 0.85rem;
+}
+
+.sf-link-all:hover {
+  border-color: transparent;
+  gap: 0.5rem;
+  text-decoration: underline;
+}
+
+.sf-underline::after {
+  background: var(--ap-link);
+}
+
+/* ---------- The masthead: frosted glass ---------- */
+.sf-topbar {
+  background: var(--ap-ink);
+  color: rgb(255 255 255 / 80%);
+  border: 0;
+}
+
+.sf-header {
+  background: rgb(251 251 253 / 72%);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  backdrop-filter: saturate(180%) blur(20px);
+  box-shadow: 0 1px 0 rgb(0 0 0 / 6%);
+  transition: background 320ms cubic-bezier(0.28, 0.11, 0.32, 1), box-shadow 320ms cubic-bezier(0.28, 0.11, 0.32, 1);
+}
+
+/* Once the page has moved, the bar condenses: a shorter bar, a hairline, and
+   the site's own background rather than a translucent one. */
+.sf-header[data-scrolled='true'] {
+  background: rgb(251 251 253 / 86%);
+  box-shadow: 0 1px 0 rgb(0 0 0 / 8%), 0 4px 20px rgb(0 0 0 / 4%);
+}
+
+/* ---------- The hero ---------- */
+.sf-hero {
+  background: var(--ap-page);
+  border-bottom: 0;
+}
+
+/* Headlines here are the biggest type on the page, as on a product launch. */
+.sf-hero h1 {
+  font-size: clamp(2.5rem, 6.2vw, 4.75rem);
+  font-weight: 600;
+  letter-spacing: -0.032em;
+}
+
+.sf-hero p {
+  color: var(--ap-grey);
+}
+
+/* The trust strip: a quiet grey shelf with a hairline above and below. */
+.sf-trust-strip {
+  background: var(--ap-panel);
+  border-top: 1px solid rgb(0 0 0 / 5%);
+  border-bottom: 1px solid rgb(0 0 0 / 5%);
+}
+
+/* Nothing sits behind a famous product photo, so the ornaments go. */
+.sf-dust,
+.sf-sparkle {
+  display: none;
+}
+
+/* ---------- Stat tiles ---------- */
+.sf-stat {
+  border: 0;
+  background: var(--ap-surface);
+  border-radius: var(--ap-radius);
+  box-shadow: var(--ap-shadow-card);
+}
+
+.sf-stat:hover {
+  border-color: transparent;
+}
+
+/* ---------- Forms ---------- */
+.sf-canvas input,
+.sf-canvas select,
+.sf-canvas textarea {
+  background: var(--ap-surface);
+  border-radius: 12px;
+}
+
+/* ---------- Smooth scrolling ----------
+   `scroll-behavior` is what turns the header's "Shop"/"Boutique" jumps from a
+   snap into a glide. It is applied at the root, and only when the reader has
+   not asked for less motion at the OS level. */
+html {
+  scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  .sf-canvas * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ---------- Scroll-linked motion ----------
+   One shared easing curve for every entrance on the page. Apple's transitions
+   are slow to start and settle gently, which is what this curve imitates. */
+
+/* Headline lines and the hero children rise from a slight blur, so they read
+   as coming into focus rather than sliding in. */
+@keyframes ap-rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(22px);
+    filter: blur(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+
+/* The reveal pass, retimed for the Apple feel. */.sf-reveal-ready [data-reveal] {
+  opacity: 0;
+  transform: translateY(26px);
+  filter: blur(8px);
+  transition:
+    opacity 1000ms cubic-bezier(0.28, 0.11, 0.32, 1),
+    transform 1000ms cubic-bezier(0.28, 0.11, 0.32, 1),
+    filter 1000ms cubic-bezier(0.28, 0.11, 0.32, 1);
+  will-change: opacity, transform, filter;
+}
+
+.sf-reveal-ready [data-reveal='scale'] {
+  transform: scale(0.94);
+}
+
+.sf-reveal-ready [data-reveal='left'] {
+  transform: translateX(-26px);
+}
+
+.sf-reveal-ready [data-reveal='right'] {
+  transform: translateX(26px);
+}
+
+/* Settled: no residual transform, blur or clip. */
+.sf-reveal-ready [data-reveal].sf-in {
+  opacity: 1;
+  transform: none;
+  filter: blur(0);
+  clip-path: inset(0 0 0 0);
+}
+
+/* A photo that grows out of its frame, as Apple's product images do. */
+.sf-reveal-ready [data-reveal='scale'].sf-in img,
+.sf-reveal-ready .sf-img-reveal.sf-in img {
+  transform: scale(1);
+}
+
+/* ---------- The page-entrance pass ----------
+ *
+ * These deliberately set `animation-name`, `-duration` and `-timing-function`
+ * as LONGSHANDS rather than the `animation:` shorthand. The hero markup carries
+ * its own inline `animation-delay` to stagger the three headline lines, and the
+ * shorthand resets `animation-delay` to 0 — which would collapse the stagger
+ * and, worse, leave a `both`-fill animation frozen at its first frame for the
+ * duration it was supposed to be waiting. Longhands leave the inline delay
+ * intact, which is the whole point. */
+.sf-page-in {
+  animation-name: sf-page-in;
+  animation-duration: 900ms;
+  animation-timing-function: cubic-bezier(0.28, 0.11, 0.32, 1);
+  animation-fill-mode: both;
+}
+
+.sf-hero-stagger > * {
+  animation-name: ap-rise-in;
+  animation-duration: 1100ms;
+  animation-timing-function: cubic-bezier(0.28, 0.11, 0.32, 1);
+  animation-fill-mode: both;
+}
+
+.sf-line {
+  animation-name: ap-rise-in;
+  animation-duration: 1000ms;
+  animation-timing-function: cubic-bezier(0.28, 0.11, 0.32, 1);
+  animation-fill-mode: both;
+}
+
+.sf-fade-up {
+  animation-name: ap-rise-in;
+  animation-duration: 1000ms;
+  animation-timing-function: cubic-bezier(0.28, 0.11, 0.32, 1);
+  animation-fill-mode: both;
+}
+
+/* ---------- The reading-progress line ----------
+ * Removed. A fixed dark bar across the very top of the viewport reads as a
+ * smudge on the page rather than as a device, and on a storefront it is
+ * decoration the customer never asked for. The element is still rendered by
+ * `ScrollProgress` and still driven by the scroll hook, so it is hidden here
+ * instead of being ripped out of the markup — that keeps the hook's
+ * `[data-scroll-progress]` lookup valid and makes this a one-line change to
+ * bring back. */
+.sf-scroll-progress {
+  display: none;
+}
+
+/* ---------- Drawer and overlays ---------- */
+.sf-drawer {
+  border: 0;
+  box-shadow: -20px 0 60px rgb(0 0 0 / 18%);
+}
+
+.sf-scrim {
+  backdrop-filter: saturate(120%) blur(10px);
+}
+
+/* ---------- Reduced motion: everything above holds still ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .sf-reveal-ready [data-reveal],
+  .sf-page-in,
+  .sf-hero-stagger > *,
+  .sf-line,
+  .sf-fade-up {
+    animation: none !important;
+    transition: none !important;
+    filter: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  .sf-scroll-progress {
+    display: none;
+  }
 }

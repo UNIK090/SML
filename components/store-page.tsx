@@ -171,7 +171,7 @@ function ShopWindow() {
 
       {/* ---------------------------- Utility bar ---------------------------- */}
       <div className="sf-topbar px-4 pt-[max(0.5rem,env(safe-area-inset-top))] pb-2 text-[11px] sm:px-7 sm:py-2">
-        <div className="mx-auto flex w-full max-w-[1400px] items-center justify-between gap-4">
+        <div className="mx-auto flex w-full max-w-[68rem] items-center justify-between gap-4">
           <p className="truncate">One-gram gold · Panchaloha · Silver · Beautiful designs at affordable prices</p>
           <div className="hidden shrink-0 items-center gap-5 sm:flex">
             <Link href="/track" className="transition hover:text-white">
@@ -188,7 +188,7 @@ function ShopWindow() {
 
       {/* ------------------------------- Header ------------------------------- */}
       <header className="sf-header sticky top-0 z-40">
-        <div className="mx-auto flex w-full max-w-[1400px] items-center gap-3 px-4 py-3.5 sm:px-7">
+        <div className="mx-auto flex w-full max-w-[68rem] items-center gap-3 px-4 py-3 sm:px-7">
           <Link href="/" className="flex min-w-0 items-center gap-3">
             {data?.shop ? (
               <img
@@ -202,10 +202,10 @@ function ShopWindow() {
               />
             ) : null}
             <span className="min-w-0">
-              <span className="block truncate text-base font-semibold tracking-[0.08em] text-maroon uppercase sm:text-lg">
+              <span className="block truncate text-base font-semibold sm:text-lg" style={{ color: 'var(--ap-ink)', letterSpacing: '-0.015em' }}>
                 {shop?.name ?? 'Sri Maha Laxmi Jewellers'}
               </span>
-              <span className="block truncate text-[10px] tracking-[0.22em] uppercase" style={{ color: 'var(--sf-muted)' }}>
+              <span className="block truncate text-[11px]" style={{ color: 'var(--ap-grey)' }}>
                 Affordable jewellery
               </span>
             </span>
@@ -223,16 +223,16 @@ function ShopWindow() {
               <button
                 key={item.id}
                 onClick={() => jumpTo(item.id)}
-                className="rounded-md px-3.5 py-2 text-sm font-medium transition hover:bg-cream hover:text-maroon"
-                style={{ color: 'var(--sf-heading)' }}
+                className="rounded-full px-3.5 py-2 text-sm font-medium whitespace-nowrap transition hover:bg-black/5"
+                style={{ color: 'var(--ap-ink)' }}
               >
                 {item.label}
               </button>
             ))}
             <Link
               href="/track"
-              className="rounded-md px-3.5 py-2 text-sm font-medium transition hover:bg-cream hover:text-maroon"
-              style={{ color: 'var(--sf-heading)' }}
+              className="rounded-full px-3.5 py-2 text-sm font-medium whitespace-nowrap transition hover:bg-black/5"
+              style={{ color: 'var(--ap-ink)' }}
             >
               Track order
             </Link>
@@ -240,10 +240,10 @@ function ShopWindow() {
 
           <div className="ml-auto flex items-center gap-2 lg:ml-3">
             <span
-              className="hidden items-center gap-1.5 rounded-md border border-line px-3 py-1.5 text-[10px] font-semibold tracking-[0.12em] uppercase xl:flex"
-              style={{ color: 'var(--sf-muted)' }}
+              className="hidden items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-medium whitespace-nowrap xl:flex"
+              style={{ background: 'var(--ap-panel)', color: 'var(--ap-grey)' }}
             >
-              <BadgeCheck className="size-3.5" style={{ color: 'var(--sf-gold-deep)' }} /> Affordable styles
+              <BadgeCheck className="size-3.5" style={{ color: 'var(--ap-accent)' }} /> Affordable styles
             </span>
 
             {call && (
@@ -252,19 +252,29 @@ function ShopWindow() {
               </a>
             )}
 
-            <button
-              onClick={() => setBasketOpen(true)}
-              className="sf-btn sf-btn-gold relative h-10 px-4 text-sm"
-              aria-label={`Open basket, ${cart.count} items`}
-            >
-              <ShoppingBag className="size-4" />
-              <span className="hidden sm:inline">Basket</span>
+            {/* The wrapper is the anchoring box for the count. It sits outside the
+                button because `.sf-btn-gold` sets overflow:hidden for its sheen,
+                which would otherwise clip a badge hanging off the corner. */}
+            <div className="relative shrink-0">
+              <button
+                onClick={() => setBasketOpen(true)}
+                className="sf-btn sf-btn-gold h-10 px-4 text-sm"
+                aria-label={`Open basket, ${cart.count} items`}
+              >
+                <ShoppingBag className="size-4" />
+                <span className="hidden sm:inline">Basket</span>
+              </button>
+              {/* Re-keyed on every change so the pop replays each time a piece is
+                  added. Two-digit counts get the slightly smaller type. */}
               {cart.ready && cart.count > 0 && (
-                <span className="tnum absolute -top-1.5 -right-1.5 flex size-5 items-center justify-center rounded-full bg-gold text-[10px] font-bold text-maroon ring-2 ring-white">
-                  {cart.count}
+                <span
+                  key={cart.count}
+                  className={`sf-count sf-pop${cart.count > 9 ? ' sf-count-many' : ''}`}
+                >
+                  {cart.count > 99 ? '99+' : cart.count}
                 </span>
               )}
-            </button>
+            </div>
 
             <button
               onClick={() => setMenuOpen((value) => !value)}
@@ -315,8 +325,8 @@ function ShopWindow() {
         a customer sees, and a hero that lurches teaches them the page is going to
         be jumpy.
       */}
-      <section className="sf-hero px-4 pt-14 pb-14 sm:px-7 sm:pt-16 sm:pb-16">
-        <div className="relative z-10 mx-auto grid w-full max-w-[1400px] items-center gap-8 lg:grid-cols-[1.05fr_.95fr] lg:gap-12">
+      <section className="sf-hero px-4 pt-16 pb-16 sm:px-7 sm:pt-24 sm:pb-24">
+        <div className="relative z-10 mx-auto grid w-full max-w-[78rem] items-center gap-10 lg:grid-cols-[1.05fr_.95fr] lg:gap-16">
           <div className="max-w-2xl">
             {/*
               While the catalogue is still loading, say nothing rather than
@@ -324,10 +334,10 @@ function ShopWindow() {
               worse than no number at all.
             */}
             <p
-              className="sf-fade-up inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 text-[10px] font-semibold tracking-[0.2em] uppercase"
-              style={{ background: 'var(--sf-maroon)', color: '#fff' }}
+              className="sf-fade-up inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-[11px] font-medium"
+              style={{ background: 'var(--ap-panel)', color: 'var(--ap-ink)' }}
             >
-              <BadgeCheck className="size-3.5" style={{ color: 'var(--sf-gold-ink)' }} />
+              <BadgeCheck className="size-3.5" style={{ color: 'var(--ap-accent)' }} />
               {data ? `Affordable styles · ${categoryCount} ${categoryCount === 1 ? 'category' : 'categories'}` : 'One-gram gold · panchaloha · silver'}
             </p>
 
@@ -338,7 +348,7 @@ function ShopWindow() {
               rising on its own — and the per-line stagger is the better effect,
               so the reveal loses.
             */}
-            <h1 className="mt-6 text-[2.4rem] leading-[1.06] font-semibold tracking-[-0.02em] sm:text-[3.2rem] lg:text-[3.6rem]">
+            <h1 className="mt-6 text-[2.6rem] leading-[1.05] font-semibold text-balance sm:text-[3.6rem] lg:text-[4.25rem]">
               {HERO_LINES.map((line, index) => (
                 <span key={line} className="sf-line-mask">
                   <span className="sf-line" style={{ animationDelay: `${160 + index * 130}ms` }}>
@@ -412,7 +422,7 @@ function ShopWindow() {
 
       {/* ------------------------------ Trust strip ------------------------------ */}
       <div className="sf-trust-strip px-4 py-4 sm:px-7">
-        <div className="mx-auto flex w-full max-w-[1400px] flex-wrap items-center justify-center gap-x-8 gap-y-3 lg:justify-between">
+        <div className="mx-auto flex w-full max-w-[68rem] flex-wrap items-center justify-center gap-x-8 gap-y-3 lg:justify-between">
           {[
             { icon: Gem, text: 'One-gram gold, panchaloha & silver' },
             { icon: ShieldCheck, text: 'Gold-look designs at easy prices' },
@@ -435,8 +445,8 @@ function ShopWindow() {
       {/* ---------------------------- Shop by type ---------------------------- */}
       {data && data.collections.length > 0 && (
         <section className="px-4 py-14 sm:px-7">
-          <div className="mx-auto w-full max-w-[1400px]">
-            <header className="mb-8 text-center" data-reveal="up">
+          <div className="mx-auto w-full max-w-[68rem]">
+            <header className="mb-10 text-center" data-reveal="up">
               <p className="sf-eyebrow">Shop by</p>
               <h2 className="mt-3 text-2xl font-semibold tracking-tight sm:text-3xl">Find your piece in a tap</h2>
             </header>
@@ -498,7 +508,7 @@ function ShopWindow() {
 
       {/* ---------------------------- Collections ---------------------------- */}
       <section id="collections" className="sf-band scroll-mt-28 border-t border-line px-4 py-16 sm:px-7">
-        <div className="mx-auto w-full max-w-[1400px]">
+        <div className="mx-auto w-full max-w-[68rem]">
           <header className="mb-10 flex flex-wrap items-end justify-between gap-5" data-reveal="up">
             <div className="max-w-2xl">
               <p className="sf-eyebrow">The collections</p>
@@ -592,8 +602,8 @@ function ShopWindow() {
 
       {/* ------------------------------- Store ------------------------------- */}
       <section id="store" className="scroll-mt-28 border-t border-line px-3 py-12 sm:px-7 sm:py-16">
-        <div className="mx-auto w-full max-w-[1400px]">
-          <header className="mb-6 flex flex-wrap items-end justify-between gap-4 sm:mb-8" data-reveal="up">
+        <div className="mx-auto w-full max-w-[80rem]">
+          <header className="mb-6 flex flex-wrap items-end justify-between gap-4 sm:mb-10" data-reveal="up">
             <div className="max-w-2xl">
               <p className="sf-eyebrow">Shop the collection</p>
               <h2 className="mt-3 text-xl font-semibold tracking-tight sm:text-[2rem]">Beautiful jewellery at easy prices.</h2>
@@ -781,7 +791,7 @@ function ShopWindow() {
 
       {/* ------------------------------ Boutique ------------------------------ */}
       <section id="boutique" className="sf-band scroll-mt-28 border-t border-line px-4 py-16 sm:px-7">
-        <div className="mx-auto grid w-full max-w-[1400px] gap-6 lg:grid-cols-[1.15fr_.85fr]">
+        <div className="mx-auto grid w-full max-w-[68rem] gap-6 lg:grid-cols-[1.15fr_.85fr]">
           <div className="sf-card p-7 sm:p-9" data-reveal="left">
             <p className="sf-eyebrow">Visit the boutique</p>
             <h2 className="mt-3 text-2xl font-semibold tracking-tight sm:text-3xl">
@@ -849,9 +859,9 @@ function ShopWindow() {
 
       {/* ------------------------------- Footer ------------------------------- */}
       <footer className="sf-topbar px-4 pt-10 pb-[max(2.5rem,env(safe-area-inset-bottom))] sm:px-7 sm:py-10">
-        <div className="mx-auto flex w-full max-w-[1400px] flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mx-auto flex w-full max-w-[68rem] flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <p className="text-sm font-semibold tracking-[0.12em] text-white uppercase">{shop?.name ?? 'Sri Maha Laxmi Jewellers'}</p>
+            <p className="text-sm font-semibold text-white">{shop?.name ?? 'Sri Maha Laxmi Jewellers'}</p>
             <p className="mt-1.5 text-xs text-white/60">
               {shop?.phone ? `${shop.phone} · ` : ''}
               {shop?.email ?? 'Affordable one-gram gold, panchaloha and silver jewellery.'}

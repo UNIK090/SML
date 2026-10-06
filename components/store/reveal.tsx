@@ -25,7 +25,16 @@
 import { useEffect } from 'react'
 
 /** How far a parallax layer travels, in px, at the top and bottom of its pass. */
-const PARALLAX_RANGE = 60
+const PARALLAX_RANGE = 28
+
+/**
+ * How long the page keeps easing after the reader stops. Scroll-linked motion
+ * that stops dead with the wheel reads as mechanical; letting it settle for a
+ * few frames is what gives the page its weight.
+ */
+const SETTLE_FRAMES = 10
+/** Easing factor applied to the remaining distance on each animation frame. */
+const SETTLE_EASE = 0.14
 
 export function useRevealOnScroll() {
   useEffect(() => {
@@ -64,27 +73,33 @@ export function useRevealOnScroll() {
       document.querySelectorAll('[data-reveal]:not(.sf-in)').forEach((element) => observer.observe(element))
     }
     scan()
-    const timer = window.setInterval(scan, 700)
+    const timer = window.setInterval(scan, 900)
 
     // --- Continuous effects -------------------------------------------------
     const parallaxNodes = Array.from(document.querySelectorAll<HTMLElement>('[data-parallax]'))
     const progressBar = document.querySelector<HTMLElement>('[data-scroll-progress]')
 
     let queued = false
+    /** The raw, most-recent scroll position — the target the render eases to. */
+    let wanted = window.scrollY
+    /** What the render has actually reached. It chases `wanted`, never jumps. */
+    let eased = window.scrollY
+    /** Frames the settle loop has left to run before it can idle again. */
+    let settling = 0
+
     /**
-     * Reads scroll position once per frame.
+     * Positions every continuous effect for a given scroll offset.
      *
-     * The work is batched behind a single rAF guard because `scroll` fires far
-     * more often than the screen repaints; without it a long catalogue page
-     * would recalculate hundreds of positions per frame and stutter on a phone.
+     * Takes the offset as an argument rather than reading `window.scrollY`
+     * because the caller may be running one frame ahead of the real scroll
+     * position: that gap is exactly what makes the motion feel eased.
      */
-    const update = () => {
-      queued = false
+    const paint = (scrollY: number) => {
       const viewportHeight = window.innerHeight
 
       if (progressBar) {
         const scrollable = document.documentElement.scrollHeight - viewportHeight
-        const ratio = scrollable > 0 ? window.scrollY / scrollable : 0
+        const ratio = scrollable > 0 ? scrollY / scrollable : 0
         progressBar.style.transform = `scaleX(${Math.min(Math.max(ratio, 0), 1)})`
       }
 
@@ -103,15 +118,52 @@ export function useRevealOnScroll() {
       }
     }
 
+    /**
+     * The settle loop.
+     *
+     * While the reader is scrolling this simply follows the wheel. The moment
+     * they stop, `eased` is still a little behind `wanted`, so the remaining
+     * frames close that gap gradually and the page drifts to rest instead of
+     * freezing mid-motion. It runs for a bounded number of frames and then
+     * stops entirely, so an idle page costs nothing.
+     */
+    const settle = () => {
+      const gap = wanted - eased
+      eased += gap * SETTLE_EASE
+
+      if (Math.abs(gap) < 0.4 || settling <= 0) {
+        eased = wanted
+        paint(eased)
+        queued = false
+        return
+      }
+
+      settling -= 1
+      paint(eased)
+      window.requestAnimationFrame(settle)
+    }
+
+    /**
+     * Reads scroll position once per frame.
+     *
+     * The work is batched behind a single rAF guard because `scroll` fires far
+     * more often than the screen repaints; without it a long catalogue page
+     * would recalculate hundreds of positions per frame and stutter on a phone.
+     */
     const onScroll = () => {
+      wanted = window.scrollY
+      settling = SETTLE_FRAMES
       if (queued) return
       queued = true
-      window.requestAnimationFrame(update)
+      window.requestAnimationFrame(() => {
+        paint(wanted)
+        settle()
+      })
     }
 
     // Run once so the bar and anything already in view are correct at load,
     // rather than animating in on the reader's first nudge of the wheel.
-    window.requestAnimationFrame(update)
+    window.requestAnimationFrame(() => paint(window.scrollY))
     window.addEventListener('scroll', onScroll, { passive: true })
     window.addEventListener('resize', onScroll, { passive: true })
 
