@@ -47,6 +47,7 @@ import CartDrawer, { type PlacedOrder } from '@/components/store/cart-drawer'
 import OrderSuccess from '@/components/store/order-success'
 import OfferPopup from '@/components/store/offer-popup'
 import ProductCard from '@/components/store/product-card'
+import { StoreFooter } from '@/components/store/store-shell'
 import {
   BestSellersRail,
   BudgetRail,
@@ -229,6 +230,26 @@ function ShopWindow() {
                 {item.label}
               </button>
             ))}
+            {/*
+              The three doors the counter sites all run beside the sections:
+              a search, the customer's own orders, and order tracking. They open
+              real pages rather than filtering in place, so a search can be
+              bookmarked and shared and the back button behaves as expected.
+            */}
+            <Link
+              href="/search"
+              className="rounded-full px-3.5 py-2 text-sm font-medium whitespace-nowrap transition hover:bg-black/5"
+              style={{ color: 'var(--ap-ink)' }}
+            >
+              Search
+            </Link>
+            <Link
+              href="/orders"
+              className="rounded-full px-3.5 py-2 text-sm font-medium whitespace-nowrap transition hover:bg-black/5"
+              style={{ color: 'var(--ap-ink)' }}
+            >
+              My orders
+            </Link>
             <Link
               href="/track"
               className="rounded-full px-3.5 py-2 text-sm font-medium whitespace-nowrap transition hover:bg-black/5"
@@ -310,6 +331,30 @@ function ShopWindow() {
               style={{ color: 'var(--sf-heading)' }}
             >
               Track an order
+            </Link>
+            <Link
+              href="/search"
+              onClick={() => setMenuOpen(false)}
+              className="block rounded-lg px-3 py-2.5 text-sm transition hover:bg-cream"
+              style={{ color: 'var(--sf-heading)' }}
+            >
+              Search products
+            </Link>
+            <Link
+              href="/orders"
+              onClick={() => setMenuOpen(false)}
+              className="block rounded-lg px-3 py-2.5 text-sm transition hover:bg-cream"
+              style={{ color: 'var(--sf-heading)' }}
+            >
+              My orders
+            </Link>
+            <Link
+              href="/pages/stores"
+              onClick={() => setMenuOpen(false)}
+              className="block rounded-lg px-3 py-2.5 text-sm transition hover:bg-cream"
+              style={{ color: 'var(--sf-heading)' }}
+            >
+              Our stores
             </Link>
           </nav>
         )}
@@ -858,32 +903,14 @@ function ShopWindow() {
       <PromiseBand />
 
       {/* ------------------------------- Footer ------------------------------- */}
-      <footer className="sf-topbar px-4 pt-10 pb-[max(2.5rem,env(safe-area-inset-bottom))] sm:px-7 sm:py-10">
-        <div className="mx-auto flex w-full max-w-[68rem] flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <p className="text-sm font-semibold text-white">{shop?.name ?? 'Sri Maha Laxmi Jewellers'}</p>
-            <p className="mt-1.5 text-xs text-white/60">
-              {shop?.phone ? `${shop.phone} · ` : ''}
-              {shop?.email ?? 'Affordable one-gram gold, panchaloha and silver jewellery.'}
-            </p>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-5 text-xs text-white/70">
-            <button onClick={() => jumpTo('store')} className="transition hover:text-white">
-              Shop
-            </button>
-            <button onClick={() => jumpTo('boutique')} className="transition hover:text-white">
-              Boutique
-            </button>
-            <Link href="/track" className="transition hover:text-white">
-              Track order
-            </Link>
-            <Link href="/admin-login" className="inline-flex items-center gap-1.5 transition hover:text-white">
-              <StoreIcon className="size-3.5" /> Shop owner
-            </Link>
-          </div>
-        </div>
-      </footer>
+      {/*
+        The same footer every other page carries. It replaced a one-line strip
+        that offered only a shop link and the admin door: the counter sites a
+        customer compares us against all run a help / quick-links / discover
+        block, and a customer who has scrolled this far is either looking for a
+        policy or looking for another shelf. Both are answered here.
+      */}
+      <StoreFooter shop={shop} />
 
       {/* ------------------------------ Overlays ------------------------------ */}
       <CartDrawer
