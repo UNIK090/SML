@@ -18,10 +18,13 @@
 
 import { useEffect, useState, type ReactNode } from 'react'
 import Link from 'next/link'
+import { usePathname, useRouter } from 'next/navigation'
 import { ArrowLeft, Menu, Phone, Search, ShoppingBag, Store as StoreIcon, X } from 'lucide-react'
 import { CartProvider, useCart } from '@/components/store/cart'
 import { WishlistProvider } from '@/components/store/wishlist'
 import CartDrawer, { type PlacedOrder } from '@/components/store/cart-drawer'
+import MobileBar, { type MobileTab } from '@/components/store/mobile-bar'
+import { SavedDrawer } from '@/components/store/store-extras'
 import OrderSuccess from '@/components/store/order-success'
 import { useApi } from '@/lib/use-api'
 import { telLink } from '@/lib/store'
@@ -91,7 +94,10 @@ function Chrome({
 }) {
   const { data } = useApi<StoreCatalogue>('/api/store/catalogue', { refreshInterval: 120_000 })
   const cart = useCart()
+  const router = useRouter()
+  const pathname = usePathname()
   const [basketOpen, setBasketOpen] = useState(false)
+  const [savedOpen, setSavedOpen] = useState(false)
   const [placed, setPlaced] = useState<PlacedOrder | null>(null)
   const [menuOpen, setMenuOpen] = useState(false)
   const [term, setTerm] = useState('')
@@ -100,6 +106,23 @@ function Chrome({
   const call = telLink(shop?.phone)
   const products = data?.products ?? []
   const findProduct = (code: number) => products.find((product) => product.code === code)
+
+  /**
+   * Which bottom-bar tab is lit on a page outside the storefront.
+   *
+   * Those pages *do* have a real pathname, so the tab is derived from it rather
+   * than from a scroll position: the search page is Shop, anything else in the
+   * shell is Home. Tapping a tab navigates — Home and Shop both resolve on `/`,
+   * with the basket opening in place because it is the same drawer everywhere.
+   */
+  const activeTab: MobileTab =
+    pathname === '/search' || pathname?.startsWith('/product') ? 'shop' : pathname?.startsWith('/orders') ? 'home' : 'home'
+
+  const goToTab = (tab: 'home' | 'shop' | 'offers') => {
+    if (tab === 'home') router.push('/')
+    else if (tab === 'shop') router.push('/#store')
+    else router.push('/#offers')
+  }
 
   // The header should say what the page is — it is the only title a shared link
   // gets in a browser tab, and on a phone it is the tab strip.
@@ -127,28 +150,32 @@ function Chrome({
 
       <header className="sf-header sticky top-0 z-40">
         <div className="mx-auto flex w-full max-w-[68rem] items-center gap-3 px-4 py-3 sm:px-7">
-          <Link href="/" className="flex min-w-0 items-center gap-2.5">
+          {/* The same logo + name lockup the storefront uses, so the shop's
+              identity is presented identically on every page the customer
+              reaches — search, orders, a policy — not just the landing page. */}
+          <Link href="/" className="sf-lockup flex min-w-0 flex-1 items-center gap-2.5 lg:flex-none">
             {shop ? (
               <img
                 src={`/api/brand?kind=logo&v=${encodeURIComponent(data?.updatedAt ?? '1')}`}
-                alt=""
-                className="size-9 shrink-0 rounded-lg border border-line bg-cream object-contain p-0.5"
+                alt={`${shop.name} logo`}
+                className="sf-lockup-logo"
                 onError={(event) => {
                   event.currentTarget.style.display = 'none'
                 }}
               />
             ) : null}
-            <span className="min-w-0">
-              <span className="block truncate text-sm font-semibold sm:text-base" style={{ color: 'var(--sf-heading)' }}>
+            <span className="flex min-w-0 flex-col justify-center">
+              <span className="sf-lockup-name" title={shop?.name ?? 'Sri Maha Laxmi Jewellers'}>
                 {shop?.name ?? 'Sri Maha Laxmi Jewellers'}
               </span>
-              <span className="block truncate text-[10px]" style={{ color: 'var(--sf-muted)' }}>
-                Affordable jewellery
-              </span>
+              <span className="sf-lockup-tagline">Affordable jewellery</span>
             </span>
           </Link>
 
-          <nav className="ml-auto hidden items-center gap-1 lg:flex" aria-label="Sections">
+          {/* The middle of the row: the nav absorbs the free space and
+              right-aligns itself, so the actions stay flush inside the header
+              rather than being pushed past its edge. */}
+          <nav className="hidden min-w-0 flex-1 items-center justify-end gap-1 lg:flex" aria-label="Sections">
             {NAV.map((item) => (
               <Link
                 key={item.href}
@@ -161,7 +188,7 @@ function Chrome({
             ))}
           </nav>
 
-          <div className="ml-auto flex items-center gap-2 lg:ml-3">
+          <div className="ml-auto flex shrink-0 items-center gap-2 lg:ml-2">
             {/*
               Search travels with the header, not on the page.
               It submits to /search rather than filtering in place, so a search
@@ -197,9 +224,14 @@ function Chrome({
               )}
             </div>
 
-            <button onClick={() => setMenuOpen((value) => !value)} aria-label="Menu" className="sf-btn sf-btn-ghost size-9 lg:hidden">
-              {menuOpen ? <X className="size-4" /> : <Menu className="size-4" />}
-            </button>
+            {/* Hidden by a wrapper: `.sf-btn` sets `display: inline-flex` and
+                out-specifies Tailwind's `lg:hidden`, so the class on the button
+                itself would leave the hamburger in the desktop header. */}
+            <span className="flex lg:hidden">
+              <button onClick={() => setMenuOpen((value) => !value)} aria-label="Menu" className="sf-btn sf-btn-ghost size-9">
+                {menuOpen ? <X className="size-4" /> : <Menu className="size-4" />}
+              </button>
+            </span>
           </div>
         </div>
 
@@ -254,6 +286,20 @@ function Chrome({
           setBasketOpen(false)
           setPlaced(order)
         }}
+      />
+
+      {/* The saved-pieces drawer, so the bottom bar's Saved tab has somewhere to
+          open on every page — not only on the landing page. */}
+      <SavedDrawer open={savedOpen} onClose={() => setSavedOpen(false)} products={products} />
+
+      {/* The same bottom navigation the storefront carries, so a customer who has
+          wandered onto the search or a policy page still has the five places to
+          go within thumb reach. */}
+      <MobileBar
+        active={activeTab}
+        onNavigate={goToTab}
+        onOpenSaved={() => setSavedOpen(true)}
+        onOpenBasket={() => setBasketOpen(true)}
       />
 
       {placed && <OrderSuccess order={placed} shop={shop} onClose={() => setPlaced(null)} />}

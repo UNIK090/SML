@@ -89,7 +89,15 @@ export default function ProductCard({
       </div>
 
       <div className="flex flex-1 flex-col p-2.5 sm:p-3">
-        <p className="text-[9px] font-semibold tracking-[0.16em] uppercase" style={{ color: 'var(--sf-gold-deep)' }}>
+        {/**
+          * The collection label.
+          *
+          * Amazon and Flipkart lead a tile with a small brand/kicker line above
+          * the name. On a phone the old 9px uppercase label was on the edge of
+          * legible, so it steps up a notch below `sm` while keeping its wide
+          * tracking — the same label, readable.
+          */}
+        <p className="text-[10px] font-semibold tracking-[0.14em] uppercase sm:text-[9px] sm:tracking-[0.16em]" style={{ color: 'var(--sf-gold-deep)' }}>
           {product.collection}
         </p>
         {/*
@@ -135,6 +143,16 @@ export default function ProductCard({
               <span className="truncate">{inBasket ? 'In basket' : 'Add'}</span>
             </button>
 
+            {/*
+              The enquiry link.
+
+              On a desktop grid card the two controls sit side by side, which is
+              fine where a card is wide. On the two-column phone grid there is
+              barely room for "Add" once the WhatsApp mark takes its 36px, so
+              below `sm` the circle rides inside the buy row only while the label
+              is short, and the whole row gets a taller tap target (h-9) that a
+              thumb can hit — the marketplaces' rule for a buy control.
+            */}
             {enquiry && (
               <a
                 href={enquiry}

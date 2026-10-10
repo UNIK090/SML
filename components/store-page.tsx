@@ -24,7 +24,7 @@
 // chosen). No admin endpoint is touched from this page.
 // ===========================================================================
 
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import {
   ArrowRight,
@@ -49,6 +49,7 @@ import CartDrawer, { type PlacedOrder } from '@/components/store/cart-drawer'
 import OrderSuccess from '@/components/store/order-success'
 import OfferPopup from '@/components/store/offer-popup'
 import ProductCard from '@/components/store/product-card'
+import MobileBar, { type MobileTab } from '@/components/store/mobile-bar'
 import { BackToTop, SavedDrawer } from '@/components/store/store-extras'
 import { StoreFooter } from '@/components/store/store-shell'
 import {
@@ -93,6 +94,16 @@ function ShopWindow() {
   const [category, setCategory] = useState('All')
   const [band, setBand] = useState<PriceBand | null>(null)
   const [menuOpen, setMenuOpen] = useState(false)
+  /**
+   * Which bottom-bar tab reads as current.
+   *
+   * The storefront is a single page, so this is not a route — it is derived
+   * from where the reader is on the page. Home is the top; Offers, Collections
+   * and the Shop grid each claim the tab once their section is on screen. A
+   * short-lived flag stops the observer from fighting a tap that is mid-scroll.
+   */
+  const [activeTab, setActiveTab] = useState<MobileTab>('home')
+  const tabLock = useRef(false)
 
   const shop = data?.shop ?? null
   const products = data?.products ?? []
@@ -172,6 +183,40 @@ function ShopWindow() {
     document.getElementById('store')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
 
+  /**
+   * Which bottom-bar tab is lit.
+   *
+   * Driven by scroll position rather than by the last thing tapped: the shop is
+   * one long page, so the honest answer to "where am I?" is what is on screen.
+   * A small lock suppresses the observer for a beat after a tap, so a deliberate
+   * jump does not get its highlight yanked back by the sections it scrolls past.
+   */
+  useEffect(() => {
+    const onScroll = () => {
+      if (tabLock.current) return
+      const storeTop = document.getElementById('store')?.offsetTop ?? Number.POSITIVE_INFINITY
+      const offersTop = document.getElementById('offers')?.offsetTop ?? Number.POSITIVE_INFINITY
+      const anchor = window.scrollY + window.innerHeight * 0.4
+      if (anchor >= storeTop) setActiveTab('shop')
+      else if (anchor >= offersTop) setActiveTab('offers')
+      else setActiveTab('home')
+    }
+    onScroll()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [data])
+
+  /** A bottom-bar jump: scroll to a section and hold the highlight while it moves. */
+  const goToTab = (tab: 'home' | 'shop' | 'offers') => {
+    setActiveTab(tab)
+    tabLock.current = true
+    window.setTimeout(() => {
+      tabLock.current = false
+    }, 700)
+    if (tab === 'home') window.scrollTo({ top: 0, behavior: 'smooth' })
+    else document.getElementById(tab === 'shop' ? 'store' : 'offers')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+
   return (
     <div className="sf-canvas min-h-screen">
       {/* How far through the catalogue the reader is. */}
@@ -197,29 +242,58 @@ function ShopWindow() {
       {/* ------------------------------- Header ------------------------------- */}
       <header className="sf-header sticky top-0 z-40">
         <div className="mx-auto flex w-full max-w-[68rem] items-center gap-3 px-4 py-3 sm:px-7">
-          <Link href="/" className="flex min-w-0 items-center gap-3">
+          {/*
+            The shop's lockup: logo + name.
+
+            This is the one thing in the header that must never be squeezed. On
+            a phone the old row let the four action buttons on the right take
+            whatever width they liked, and the name — the shop's whole identity —
+            was the first thing to truncate to "SRI MAHA …". So the name is
+            given priority now: on mobile it takes the space it needs and the
+            action cluster is the part that shrinks.
+
+            On a phone the lockup is the only thing in the row's flex flow that
+            should grow (`flex-1`), so it claims the free room left by the icon
+            buttons. From `lg` up the header's own nav sits in the same row, and
+            there `flex-1` is wrong: with a 0 flex-basis the lockup would yield
+            every pixel to the nav and collapse to a sliver. So the growth is
+            cancelled at `lg` and the lockup keeps its natural width instead.
+          */}
+          <Link
+            href="/"
+            className="sf-lockup flex min-w-0 flex-1 items-center gap-2.5 lg:flex-none"
+          >
             {data?.shop ? (
               <img
                 src={`/api/brand?kind=logo&v=${encodeURIComponent(data.updatedAt)}`}
-                alt=""
-                className="size-11 shrink-0 rounded-lg border border-line bg-cream object-contain p-1"
+                alt={`${shop?.name ?? 'Shop'} logo`}
+                className="sf-lockup-logo"
                 onError={(event) => {
                   // A shop without a logo falls back to the mark, not a broken icon.
                   event.currentTarget.style.display = 'none'
                 }}
               />
             ) : null}
-            <span className="min-w-0">
-              <span className="block truncate text-base font-semibold sm:text-lg" style={{ color: 'var(--ap-ink)', letterSpacing: '-0.015em' }}>
+            <span className="flex min-w-0 flex-col justify-center">
+              <span className="sf-lockup-name" title={shop?.name ?? 'Sri Maha Laxmi Jewellers'}>
                 {shop?.name ?? 'Sri Maha Laxmi Jewellers'}
               </span>
-              <span className="block truncate text-[11px]" style={{ color: 'var(--ap-grey)' }}>
-                Affordable jewellery
-              </span>
+              <span className="sf-lockup-tagline">Affordable jewellery</span>
             </span>
           </Link>
 
-            <nav className="ml-auto hidden items-center gap-1 lg:flex" aria-label="Sections">
+            {/*
+              The desktop section nav.
+
+              The row is three parts: brand (left), nav (middle), actions
+              (right). The nav is the part that absorbs the free space and
+              right-aligns itself (`flex-1` + `justify-end`) — NOT the actions,
+              which are `shrink-0` and would otherwise be pushed past the
+              container's right edge when the row ran out of room. Giving the
+              nav the growth is what keeps the right-hand buttons flush inside
+              the header instead of hanging off it.
+            */}
+            <nav className="hidden min-w-0 flex-1 items-center justify-end gap-1 lg:flex" aria-label="Sections">
             {[
               { label: 'Collections', id: 'collections' },
               // Offers is placed second: during a festival it is the reason most
@@ -266,18 +340,38 @@ function ShopWindow() {
             </Link>
           </nav>
 
-          <div className="ml-auto flex items-center gap-2 lg:ml-3">
+          <div className="flex shrink-0 items-center gap-2 lg:ml-2">
+            {/*
+              The "Affordable styles" pill.
+
+              Purely decorative — every word of it is already said in the hero
+              underneath. At `xl` (1280px) it took 133px and was the last straw
+              that pushed the action buttons past the header's right edge, so it
+              now waits for `2xl` (1536px), where the row has room to spare.
+            */}
             <span
-              className="hidden items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-medium whitespace-nowrap xl:flex"
+              className="hidden items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-medium whitespace-nowrap 2xl:flex"
               style={{ background: 'var(--ap-panel)', color: 'var(--ap-grey)' }}
             >
               <BadgeCheck className="size-3.5" style={{ color: 'var(--ap-accent)' }} /> Affordable styles
             </span>
 
+            {/*
+              Call the shop.
+
+              Wrapped in a span rather than hidden on the button itself: the
+              `.sf-btn` class carries `display: inline-flex`, whose specificity
+              beats Tailwind's `hidden` utility — so `hidden sm:flex` on the
+              button silently failed and the icon stayed on a phone, eating the
+              40px the shop's name needed. Hiding the wrapper sidesteps that
+              entirely.
+            */}
             {call && (
-              <a href={call} aria-label="Call the shop" className="sf-btn sf-btn-ghost hidden size-10 sm:flex">
-                <Phone className="size-4" />
-              </a>
+              <span className="hidden sm:flex">
+                <a href={call} aria-label="Call the shop" className="sf-btn sf-btn-ghost size-10">
+                  <Phone className="size-4" />
+                </a>
+              </span>
             )}
 
             {/*
@@ -287,8 +381,14 @@ function ShopWindow() {
               aside, and the heart carries its own count the way the basket does
               — so a customer who saved four pieces on the way down knows that
               before they reach the bottom.
+
+              Hidden on a phone, where the bottom bar already carries a Saved tab
+              with this exact count. Showing the same control twice in the same
+              viewport spent header width the shop's name needed, and taught the
+              customer to look in two places for one thing. It returns from `sm`
+              up, where that bar is not drawn.
             */}
-            <div className="relative shrink-0">
+            <div className="relative hidden shrink-0 sm:block">
               <button
                 onClick={() => setSavedOpen(true)}
                 className="sf-btn sf-btn-ghost size-10"
@@ -327,13 +427,24 @@ function ShopWindow() {
               )}
             </div>
 
-            <button
-              onClick={() => setMenuOpen((value) => !value)}
-              aria-label="Menu"
-              className="sf-btn sf-btn-ghost size-10 lg:hidden"
-            >
-              {menuOpen ? <X className="size-4" /> : <Menu className="size-4" />}
-            </button>
+            {/*
+              The hamburger, phones and tablets only.
+
+              Hidden by a wrapper, not on the button: `.sf-btn` sets
+              `display: inline-flex` and out-specifies Tailwind's `lg:hidden`
+              (`display: none`), so the class on the button silently did nothing
+              and the menu icon sat in the desktop header taking 40px the nav
+              needed.
+            */}
+            <span className="flex lg:hidden">
+              <button
+                onClick={() => setMenuOpen((value) => !value)}
+                aria-label="Menu"
+                className="sf-btn sf-btn-ghost size-10"
+              >
+                {menuOpen ? <X className="size-4" /> : <Menu className="size-4" />}
+              </button>
+            </span>
           </div>
         </div>
 
@@ -433,6 +544,69 @@ function ShopWindow() {
             My orders
           </Link>
         </nav>
+
+        {/*
+          The search box, on phones only.
+
+          Amazon and Flipkart both lead their phone layout with a full-width
+          search field — it is the single most-used control on the page, and on
+          a small screen it must be reachable without opening a menu. The
+          desktop header keeps its own compact search (see store-shell.tsx);
+          this one is `sm:hidden` so the two never appear together.
+        */}
+        <form action="/search" className="sf-mobile-search-wrap px-4 pb-2 sm:hidden">
+          <label className="sf-mobile-search">
+            <span className="sf-mobile-search-icon">
+              <Search className="size-4" />
+            </span>
+            <input
+              name="q"
+              type="search"
+              placeholder="Search jewellery, collections, code…"
+              aria-label="Search products"
+              enterKeyHint="search"
+            />
+            <button type="submit" className="sf-mobile-search-go" aria-label="Search">
+              <ArrowRight className="size-4" />
+            </button>
+          </label>
+        </form>
+
+        {/*
+          The quick-category rail, on phones only.
+
+          A horizontally scrolling row of round trays under the search, the
+          "top categories" strip Flipkart leads with. It only renders once the
+          catalogue has arrived and the shop keeps more than one kind of piece —
+          a rail of one is not a choice.
+        */}
+        {data && data.categoryRails.length > 1 && (
+          <nav aria-label="Shop by category" className="sf-mobile-cat-wrap px-4 pb-1 sm:hidden">
+            <div className="sf-mobile-cats">
+              {data.categoryRails.slice(0, 10).map((entry) => (
+                <button
+                  key={entry.name}
+                  onClick={() => openStore({ category: entry.name })}
+                  className="sf-mobile-cat"
+                >
+                  <span className="sf-mobile-cat-ring">
+                    {entry.imageCode ? (
+                      <img
+                        src={`/api/store/image?id=${entry.imageCode}`}
+                        alt=""
+                        loading="lazy"
+                        className="size-full object-cover"
+                      />
+                    ) : (
+                      <Gem className="size-5" style={{ color: 'var(--sf-gold-deep)' }} strokeWidth={1.3} />
+                    )}
+                  </span>
+                  <span className="sf-mobile-cat-label">{entry.name}</span>
+                </button>
+              ))}
+            </div>
+          </nav>
+        )}
       </header>
 
       {/* -------------------------------- Banner -------------------------------- */}
@@ -1002,6 +1176,20 @@ function ShopWindow() {
 
       {/* The saved-pieces drawer, the same idea as the basket one shelf over. */}
       <SavedDrawer open={savedOpen} onClose={() => setSavedOpen(false)} products={products} />
+
+      {/*
+        The bottom bar, on phones and tablets.
+
+        The signature piece of a marketplace app: the five places a customer
+        goes, within thumb reach. It opens the same drawers the header buttons
+        do, so there is one basket and one saved list however they are reached.
+      */}
+      <MobileBar
+        active={activeTab}
+        onNavigate={goToTab}
+        onOpenSaved={() => setSavedOpen(true)}
+        onOpenBasket={() => setBasketOpen(true)}
+      />
 
       {/* A long catalogue needs a way back up that is not a fast flick. */}
       <BackToTop />

@@ -3851,3 +3851,375 @@ html {
 
 /* With uploaded artwork, keep the flat scrim so the copy stays legible. */
 .sf-offer-coupon-art .sf-offer-coupon-stub { background: oklch(0.985 0.02 88 / 95%); }
+
+/* ===========================================================================
+ * Mobile marketplace layer
+ * ===========================================================================
+ *
+ * What Amazon and Flipkart do differently on a phone, and this storefront did
+ * not: a persistent bottom navigation bar, an always-visible full-width search
+ * box, and comfortable thumb-sized controls.
+ *
+ * Everything here is scoped behind the mobile breakpoint (`max-width: 1023px`)
+ * unless noted, so the desktop layout is untouched. This block is last in the
+ * file on purpose — it must win over the Apple-skin rules above at equal
+ * specificity.
+ */
+
+/* ---------- The bottom navigation bar ----------
+ * A fixed, five-tab bar pinned to the bottom of the screen. It carries a frosted
+ * backdrop so content sliding under it stays faintly visible rather than being
+ * cut off by a hard edge, which is exactly how the two marketplaces draw it. */
+.sf-mobile-bar {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 45;
+  display: none;
+  /* The home indicator on a modern phone sits in the bottom inset; padding the
+     bar by it keeps the tabs tappable rather than half-swallowed by the OS. */
+  padding-bottom: env(safe-area-inset-bottom);
+  border-top: 1px solid rgb(0 0 0 / 8%);
+  background: rgb(255 255 255 / 92%);
+  backdrop-filter: saturate(180%) blur(18px);
+  -webkit-backdrop-filter: saturate(180%) blur(18px);
+  box-shadow: 0 -2px 16px rgb(0 0 0 / 6%);
+}
+
+/* Shown on phones and tablets only. From `lg` up the header nav does this work. */
+@media (max-width: 1023px) {
+  .sf-mobile-bar {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+  }
+}
+
+.sf-mobile-tab {
+  position: relative;
+  display: flex;
+  min-height: 3.25rem;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.15rem;
+  padding: 0.4rem 0.25rem 0.45rem;
+  color: var(--ap-grey, #6e6e73);
+  transition: color 180ms ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* The pressed state: a soft rounded wash, the way a tab responds in a native
+   app, rather than a full-width highlight bar. */
+.sf-mobile-tab:active {
+  background: rgb(0 0 0 / 4%);
+}
+
+.sf-mobile-tab[data-active='true'] {
+  color: var(--ap-accent, var(--sf-maroon));
+}
+
+.sf-mobile-tab-icon {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
+}
+
+.sf-mobile-tab-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  line-height: 1.1;
+}
+
+/* The count pill on Saved / Basket, sat at the icon's top-right corner. It is
+   self-contained (its own ring, its own fill) so it reads on the frosted bar
+   the same way it reads on the header buttons. */
+.sf-mobile-tab-count {
+  position: absolute;
+  top: -0.5rem;
+  right: -0.75rem;
+  display: inline-flex;
+  min-width: 1.1rem;
+  height: 1.1rem;
+  align-items: center;
+  justify-content: center;
+  padding-inline: 0.25rem;
+  border-radius: 999px;
+  background: var(--ap-accent, var(--sf-maroon));
+  color: #fff;
+  font-size: 0.62rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  box-shadow: 0 0 0 2px #fff;
+  pointer-events: none;
+}
+
+.sf-mobile-tab-count.sf-count-many {
+  font-size: 0.58rem;
+}
+
+/* ---------- Keep the page clear of the fixed bar ----------
+ * The bar is ~52px plus the home inset. The footer and the back-to-top button
+ * both need to sit above it rather than behind it. */
+@media (max-width: 1023px) {
+  .sf-canvas {
+    padding-bottom: calc(3.5rem + env(safe-area-inset-bottom));
+  }
+
+  .sf-to-top {
+    /* Lift the button clear of the bar so it never covers the Basket tab. */
+    bottom: calc(4rem + env(safe-area-inset-bottom));
+  }
+}
+
+/* ---------- Header alignment ----------
+ * One row, three parts: brand · nav · actions.
+ *
+ * The rule that keeps it honest: the row never overflows its container. The
+ * brand and the actions keep their natural width; the nav is the only part
+ * that yields. If a shop with a long name and a full nav ever pushes past the
+ * available room anyway, the nav scrolls sideways inside its own track rather
+ * than shoving the basket button off the edge of the header — which is exactly
+ * what used to happen, and what made the row look broken. */
+.sf-header > div {
+  align-items: center;
+}
+
+.sf-header nav[aria-label='Sections'] {
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.sf-header nav[aria-label='Sections']::-webkit-scrollbar {
+  display: none;
+}
+
+/* ---------- The shop's lockup: logo + name ----------
+ * The identity block in the header. Its job is to be read: the shop's name is
+ * the brand, and a truncated "SRI MAHA …" is worse than no logo at all.
+ *
+ * The logo keeps a fixed square so a wide or odd-shaped upload cannot stretch
+ * the row, and the name is given the room it needs — the action buttons beside
+ * it shrink first (see the header markup), following the rule the marketplaces
+ * use: brand, then controls. */
+.sf-lockup-logo {
+  width: 2.25rem;
+  height: 2.25rem;
+  flex-shrink: 0;
+  border: 1px solid var(--sf-line);
+  border-radius: 0.6rem;
+  background: var(--sf-cream);
+  object-fit: contain;
+  padding: 0.15rem;
+}
+
+@media (min-width: 640px) {
+  .sf-lockup-logo {
+    width: 2.75rem;
+    height: 2.75rem;
+  }
+}
+
+.sf-lockup-name {
+  display: block;
+  /*
+   * A shop name is never truncated.
+   *
+   * On a phone it wraps to at most two lines rather than running off with an
+   * ellipsis: "SRI MAHA LAXMI J…" tells a customer nothing, and a name is the
+   * one string on the page that has to be read in full. From `sm` up there is
+   * room for one line, so the clamp lifts and the type steps up.
+   */
+  overflow: hidden;
+  font-size: 0.9rem;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  line-height: 1.12;
+  color: var(--ap-ink, #1d1d1f);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow-wrap: anywhere;
+}
+
+@media (min-width: 640px) {
+  .sf-lockup-name {
+    /* Plenty of room here: one line, full size. */
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 1.125rem;
+  }
+}
+
+.sf-lockup-tagline {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.68rem;
+  line-height: 1.2;
+  color: var(--ap-grey, #6e6e73);
+}
+
+/* On a phone the tagline is the first thing to go if space runs short: the name
+   is the identity, the tagline is decoration. */
+@media (max-width: 420px) {
+  .sf-lockup-tagline {
+    display: none;
+  }
+}
+
+/* ---------- The mobile search bar ----------
+ * Amazon and Flipkart both lead with a full-width search field on a phone. This
+ * one lives in the header and only appears below `sm`, where the header's own
+ * compact search is hidden. */
+.sf-mobile-search-wrap,
+.sf-mobile-cat-wrap {
+  /* Both strips live inside the sticky header, so they scroll away with it is
+     NOT wanted — they stick, and the header's own shadow separates them from
+     the page below. */
+  background: var(--ap-surface, #fff);
+}
+
+.sf-mobile-search {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  height: 2.75rem;
+  width: 100%;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  background: var(--ap-panel, #f5f5f7);
+  padding-inline: 0.35rem 0.35rem;
+}
+
+.sf-mobile-search input {
+  min-width: 0;
+  flex: 1;
+  height: 100%;
+  border: 0;
+  background: transparent;
+  padding-inline: 0.4rem 0;
+  font-size: 0.9rem;
+  color: var(--ap-ink, #1d1d1f);
+  box-shadow: none !important;
+}
+
+.sf-mobile-search input::placeholder {
+  color: var(--ap-grey, #6e6e73);
+}
+
+.sf-mobile-search input:focus {
+  outline: none;
+}
+
+.sf-mobile-search-go {
+  display: inline-flex;
+  height: 2.25rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: var(--ap-accent, var(--sf-maroon));
+  padding-inline: 0.9rem;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.sf-mobile-search-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding-left: 0.5rem;
+  color: var(--ap-grey, #6e6e73);
+  flex-shrink: 0;
+}
+
+/* ---------- The mobile quick-category rail ----------
+ * A horizontally scrolling row of round category shortcuts directly under the
+ * header — the "top categories" strip Flipkart leads with. Snap-scrolled so a
+ * thumb-flick lands squarely on one tray. */
+.sf-mobile-cats {
+  display: flex;
+  gap: 0.85rem;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  padding: 0.7rem 0.25rem 0.5rem;
+}
+
+.sf-mobile-cats::-webkit-scrollbar {
+  display: none;
+}
+
+.sf-mobile-cat {
+  display: flex;
+  flex: 0 0 auto;
+  width: 4rem;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  scroll-snap-align: start;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.sf-mobile-cat-ring {
+  display: flex;
+  width: 3.5rem;
+  height: 3.5rem;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 999px;
+  border: 1px solid rgb(0 0 0 / 6%);
+  background: var(--ap-panel, #f5f5f7);
+  transition: transform 180ms ease, box-shadow 180ms ease;
+}
+
+.sf-mobile-cat:active .sf-mobile-cat-ring {
+  transform: scale(0.94);
+}
+
+.sf-mobile-cat-label {
+  width: 100%;
+  text-align: center;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--ap-ink, #1d1d1f);
+  /* Two lines maximum: a long category name must not stretch the whole rail. */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* ---------- Thumb-sized controls on a phone ----------
+ * The desktop card actions are tuned small (28px) to keep a dense grid dense.
+ * On a touch screen that is below the ~44px a fingertip needs, so the primary
+ * buy controls get padded out — which is what both marketplaces do too. */
+@media (max-width: 639px) {
+  .sf-btn {
+    min-height: 2.5rem;
+  }
+
+  /* The friendly overflow guard: nothing on a phone may widen the page. */
+  .sf-canvas {
+    overflow-x: clip;
+  }
+}
+
+/* ---------- Reduced motion ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .sf-mobile-cat-ring,
+  .sf-mobile-tab {
+    transition: none;
+  }
+}
