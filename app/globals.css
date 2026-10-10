@@ -2928,9 +2928,13 @@
   text-transform: none;
   letter-spacing: -0.005em;
 }
-/* ---------- Rhythm: a real container and real section spacing ---------- */
+/* ---------- Rhythm: a real container and real section spacing ----------
+ * The vertical section air applies to in-flow sections only. The basket and
+ * saved-pieces drawers are rendered as direct children of `.sf-canvas` but are
+ * `position: fixed` overlays — without the `:not(.fixed)` guard this rule gave
+ * them 120px of top padding, which pushed the whole drawer down the screen. */
 .sf-canvas > section,
-.sf-canvas > div {
+.sf-canvas > div:not(.fixed) {
   padding-block: var(--ap-section);
 }
 
