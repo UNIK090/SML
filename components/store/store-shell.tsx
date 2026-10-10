@@ -20,6 +20,7 @@ import { useEffect, useState, type ReactNode } from 'react'
 import Link from 'next/link'
 import { ArrowLeft, Menu, Phone, Search, ShoppingBag, Store as StoreIcon, X } from 'lucide-react'
 import { CartProvider, useCart } from '@/components/store/cart'
+import { WishlistProvider } from '@/components/store/wishlist'
 import CartDrawer, { type PlacedOrder } from '@/components/store/cart-drawer'
 import OrderSuccess from '@/components/store/order-success'
 import { useApi } from '@/lib/use-api'
@@ -61,9 +62,14 @@ export default function StoreShell({
 }) {
   return (
     <CartProvider>
-      <Chrome title={title} eyebrow={eyebrow} lead={lead} back={back} bare={bare}>
-        {children}
-      </Chrome>
+      {/* The saved-pieces context every page's product cards read. The search
+          page in particular renders the same `ProductCard` as the storefront,
+          so it needs the provider the storefront gives it. */}
+      <WishlistProvider>
+        <Chrome title={title} eyebrow={eyebrow} lead={lead} back={back} bare={bare}>
+          {children}
+        </Chrome>
+      </WishlistProvider>
     </CartProvider>
   )
 }

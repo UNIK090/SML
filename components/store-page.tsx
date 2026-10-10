@@ -31,6 +31,7 @@ import {
   BadgeCheck,
   Clock3,
   Gem,
+  Heart,
   MapPin,
   Menu,
   Package,
@@ -43,10 +44,12 @@ import {
   X,
 } from 'lucide-react'
 import { CartProvider, useCart } from '@/components/store/cart'
+import { WishlistProvider, useWishlist } from '@/components/store/wishlist'
 import CartDrawer, { type PlacedOrder } from '@/components/store/cart-drawer'
 import OrderSuccess from '@/components/store/order-success'
 import OfferPopup from '@/components/store/offer-popup'
 import ProductCard from '@/components/store/product-card'
+import { BackToTop, SavedDrawer } from '@/components/store/store-extras'
 import { StoreFooter } from '@/components/store/store-shell'
 import {
   BestSellersRail,
@@ -69,7 +72,9 @@ const HERO_LINES = ['Style that looks', 'like gold, priced', 'for you.']
 export default function StorePage() {
   return (
     <CartProvider>
-      <ShopWindow />
+      <WishlistProvider>
+        <ShopWindow />
+      </WishlistProvider>
     </CartProvider>
   )
 }
@@ -77,9 +82,11 @@ export default function StorePage() {
 function ShopWindow() {
   const { data, isLoading, error } = useApi<StoreCatalogue>('/api/store/catalogue', { refreshInterval: 60_000 })
   const cart = useCart()
+  const saved = useWishlist()
   useRevealOnScroll()
 
   const [basketOpen, setBasketOpen] = useState(false)
+  const [savedOpen, setSavedOpen] = useState(false)
   const [placed, setPlaced] = useState<PlacedOrder | null>(null)
   const [query, setQuery] = useState('')
   const [collection, setCollection] = useState('All')
@@ -273,6 +280,29 @@ function ShopWindow() {
               </a>
             )}
 
+            {/*
+              Saved pieces, beside the basket.
+
+              Amazon trains customers to look here for a shortlist they set
+              aside, and the heart carries its own count the way the basket does
+              — so a customer who saved four pieces on the way down knows that
+              before they reach the bottom.
+            */}
+            <div className="relative shrink-0">
+              <button
+                onClick={() => setSavedOpen(true)}
+                className="sf-btn sf-btn-ghost size-10"
+                aria-label={`Open saved pieces, ${saved.count} items`}
+              >
+                <Heart className="size-4" />
+              </button>
+              {saved.ready && saved.count > 0 && (
+                <span key={saved.count} className={`sf-count sf-pop${saved.count > 9 ? ' sf-count-many' : ''}`}>
+                  {saved.count > 99 ? '99+' : saved.count}
+                </span>
+              )}
+            </div>
+
             {/* The wrapper is the anchoring box for the count. It sits outside the
                 button because `.sf-btn-gold` sets overflow:hidden for its sheen,
                 which would otherwise clip a badge hanging off the corner. */}
@@ -358,6 +388,51 @@ function ShopWindow() {
             </Link>
           </nav>
         )}
+
+        {/*
+          The section strip, on phones only.
+
+          On a desktop the header's own nav already carries these links, so this
+          row is hidden and there is exactly one bar. On a phone the nav is
+          inside the hamburger, and a customer three shelves down has no way to
+          reach another section without scrolling back to the top — so the
+          sections get their own thin row *inside the same header*, which sticks
+          with it. One header, not two.
+        */}
+        <nav
+          aria-label="Sections"
+          className="sf-header-strip flex items-center gap-1 overflow-x-auto border-t border-line px-3 py-1.5 lg:hidden"
+        >
+          {[
+            { label: 'Collections', id: 'collections' },
+            { label: 'Offers', id: 'offers' },
+            { label: 'Shop', id: 'store' },
+            { label: 'Boutique', id: 'boutique' },
+          ].map((item) => (
+            <button
+              key={item.id}
+              onClick={() => jumpTo(item.id)}
+              className="shrink-0 rounded-full px-3 py-1.5 text-xs font-medium whitespace-nowrap transition hover:bg-black/5"
+              style={{ color: 'var(--sf-heading)' }}
+            >
+              {item.label}
+            </button>
+          ))}
+          <Link
+            href="/search"
+            className="shrink-0 rounded-full px-3 py-1.5 text-xs font-medium whitespace-nowrap transition hover:bg-black/5"
+            style={{ color: 'var(--sf-heading)' }}
+          >
+            Search
+          </Link>
+          <Link
+            href="/orders"
+            className="shrink-0 rounded-full px-3 py-1.5 text-xs font-medium whitespace-nowrap transition hover:bg-black/5"
+            style={{ color: 'var(--sf-heading)' }}
+          >
+            My orders
+          </Link>
+        </nav>
       </header>
 
       {/* -------------------------------- Banner -------------------------------- */}
@@ -924,6 +999,12 @@ function ShopWindow() {
           setPlaced(order)
         }}
       />
+
+      {/* The saved-pieces drawer, the same idea as the basket one shelf over. */}
+      <SavedDrawer open={savedOpen} onClose={() => setSavedOpen(false)} products={products} />
+
+      {/* A long catalogue needs a way back up that is not a fast flick. */}
+      <BackToTop />
 
       {placed && <OrderSuccess order={placed} shop={shop} onClose={() => setPlaced(null)} />}
     </div>

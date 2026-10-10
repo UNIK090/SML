@@ -10,6 +10,7 @@ import { Check, Gem, MessageCircle, Plus } from 'lucide-react'
 import type { StoreProduct } from '@/lib/types'
 import { rupees, whatsappLink } from '@/lib/store'
 import { useCart } from '@/components/store/cart'
+import { SaveButton } from '@/components/store/store-extras'
 import ProductImageSlider from '@/components/store/product-image-slider'
 
 export function ProductMedia({ product, className = '' }: { product: StoreProduct; className?: string }) {
@@ -78,6 +79,9 @@ export default function ProductCard({
                 >
                   #{product.code}
                 </span>
+
+                {/* Save for later — the heart every marketplace card carries. */}
+                <SaveButton code={product.code} name={product.name} price={product.price} imageVersion={product.imageVersion} />
               </>
             }
           />

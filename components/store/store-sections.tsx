@@ -22,8 +22,11 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import {
   ArrowRight,
   BadgeCheck,
+  Check,
   ChevronLeft,
   ChevronRight,
+  Clock3,
+  Copy,
   Flame,
   Gem,
   IndianRupee,
@@ -35,6 +38,7 @@ import {
   Tag,
 } from 'lucide-react'
 import ProductImageSlider from '@/components/store/product-image-slider'
+import { SaveButton } from '@/components/store/store-extras'
 import { useCart } from '@/components/store/cart'
 import { rupees, telLink } from '@/lib/store'
 import { offerBannerUrl, offerDate } from '@/lib/offers'
@@ -256,7 +260,9 @@ export function OfferBanner({ offer, onShop }: { offer: PublicOffer; onShop: () 
 
           {offer.code && (
             <p className="sf-offer-code-line">
-              Quote <span className="sf-offer-code tnum">{offer.code}</span> at the counter.
+              Quote{' '}
+              <CouponCode code={offer.code} variant="dark" />
+              {' '}at the counter.
             </p>
           )}
         </div>
@@ -292,17 +298,16 @@ export function OfferBanner({ offer, onShop }: { offer: PublicOffer; onShop: () 
    --------------------------------------------------------------------------- */
 
 /**
- * The Offers section: a row of bold festival cards.
+ * The Offers section: a featured deal spotlight over a board of cards.
  *
- * This is the section a jewellery site is expected to have during a festival —
- * big, loud, coloured cards a customer can scan in one pass and tap. Each card
- * carries the three things that decide whether an offer is worth acting on: the
- * size of the saving, the name of the festival, and how long is left.
- *
- * The banner above stays as it is: the banner is one line of shop news, this is
- * the shop's offer board. They read from the same data, so a shop that runs a
- * single offer simply sees it twice the way a real counter would — once in the
- * strip and once on the board.
+ * This is the section a jewellery site is expected to have during a festival.
+ * The old layout was a flat row of identical cards, which made every offer look
+ * equally important — so nothing looked important. The redesign gives the shop
+ * one hero offer (the lead one, shown large with its artwork, saving, minimum
+ * spend and countdown) and places the rest as a tidy board underneath. It is the
+ * shape Amazon and every large marketplace uses for a deals page, and it maps
+ * honestly onto the data: the server already sorts the offers best-first, so the
+ * first one genuinely is the lead.
  *
  * The section renders nothing when no offer belongs in it. An empty "no offers"
  * row would advertise that the shop is not running anything, and a permanent
@@ -318,36 +323,117 @@ export function OfferCards({
 }) {
   if (offers.length === 0) return null
 
+  const [lead, ...rest] = offers
+
   return (
-    <section id="offers" className="scroll-mt-28 border-t border-line px-4 py-14 sm:px-7 sm:py-16">
+    <section id="offers" className="sf-offers-section scroll-mt-28 px-4 py-14 sm:px-7 sm:py-16">
       <div className="mx-auto w-full max-w-[1400px]">
-        <header className="mb-8 text-center" data-reveal="up">
-          <p className="sf-eyebrow">Festival offers</p>
-          <h2 className="mt-3 text-2xl font-semibold tracking-tight sm:text-3xl">Celebrate for less</h2>
-          <p className="mx-auto mt-3 max-w-xl text-sm leading-7" style={{ color: 'var(--sf-muted)' }}>
-            Limited-time savings on the pieces you have been looking at. Tap an offer to see what is included.
-          </p>
+        <header className="mb-8 flex flex-wrap items-end justify-between gap-4" data-reveal="up">
+          <div className="max-w-2xl">
+            <p className="sf-eyebrow">Festival offers</p>
+            <h2 className="mt-3 text-2xl font-semibold tracking-tight sm:text-[2rem]">Today&apos;s deals &amp; festival savings</h2>
+            <p className="mt-3 text-sm leading-7" style={{ color: 'var(--sf-muted)' }}>
+              Limited-time savings, live from the counter. Tap any offer to see the pieces it applies to.
+            </p>
+          </div>
         </header>
 
-        {/*
-          One, two or three cards per row — never more.
+        {/* The lead deal, given the whole width so its number reads from across a room. */}
+        <FeaturedOffer offer={lead} onSelect={() => onSelect(lead)} />
 
-          These cards are large on purpose: the percentage has to be readable at
-          a glance from across a room, the way a printed festival board is. Four
-          across would shrink the number that is the whole point.
-        */}
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {offers.map((offer, index) => (
-            <OfferCard key={offer.id} offer={offer} index={index} onSelect={() => onSelect(offer)} />
-          ))}
-        </div>
+        {/* The rest of the board, in a responsive grid under the lead. */}
+        {rest.length > 0 && (
+          <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {rest.map((offer, index) => (
+              <OfferCard key={offer.id} offer={offer} index={index} onSelect={() => onSelect(offer)} />
+            ))}
+          </div>
+        )}
       </div>
     </section>
   )
 }
 
+/** The deadline line, phrased so it can never overstate — computed the same way everywhere. */
+function offerTiming(offer: PublicOffer): string {
+  if (offer.state === 'UPCOMING') return `Starts ${offerDate(offer.startsOn)}`
+  if (offer.daysLeft === 0) return offer.startsOn === offer.endsOn ? 'Today only' : 'Last day today'
+  if (offer.daysLeft === 1) return 'Ends tomorrow'
+  return `Ends in ${offer.daysLeft} days`
+}
+
+/** The saving figure split from its unit, e.g. "20" + "%" or "₹500" + "OFF". */
+function offerAmount(offer: PublicOffer): { value: string; unit: string } {
+  if (offer.discountType === 'flat') return { value: rupees(offer.discountValue), unit: 'OFF' }
+  return { value: `${Math.round(offer.discountValue * 100) / 100}`, unit: '% OFF' }
+}
+
 /**
- * One festival offer card.
+ * The lead deal — the one offer the shop is pushing today.
+ *
+ * Given a whole band rather than a cell in a row: a large saving, the artwork if
+ * the shop uploaded any, the minimum spend when there is one, and a countdown,
+ * with the coupon code shown as something the customer can copy and keep.
+ */
+function FeaturedOffer({ offer, onSelect }: { offer: PublicOffer; onSelect: () => void }) {
+  const banner = offer.hasBanner ? offerBannerUrl(offer.id, offer.bannerVersion) : null
+  const { value, unit } = offerAmount(offer)
+
+  return (
+    <article className="sf-feature-offer" data-accent={offer.accent} data-reveal="up">
+      {banner && <img src={banner} alt="" className="sf-feature-offer-art" />}
+      <span className="sf-feature-offer-scrim" aria-hidden />
+
+      <div className="sf-feature-offer-grid">
+        <div className="sf-feature-offer-main">
+          <span className="sf-feature-offer-badge">
+            <Flame className="size-3.5" strokeWidth={2} />
+            {offer.state === 'ACTIVE' ? 'Live now' : 'Coming up'}
+          </span>
+
+          <h3 className="sf-feature-offer-title">{offer.title}</h3>
+          {offer.description && <p className="sf-feature-offer-desc">{offer.description}</p>}
+
+          <dl className="sf-feature-offer-meta">
+            {/* The minimum-spend condition, when the shop set one. */}
+            {offer.minSpend > 0 && (
+              <div>
+                <dt>Minimum spend</dt>
+                <dd className="tnum">{rupees(offer.minSpend)}</dd>
+              </div>
+            )}
+            <div>
+              <dt>Valid till</dt>
+              <dd>{offerDate(offer.endsOn)}</dd>
+            </div>
+          </dl>
+
+          <div className="sf-feature-offer-actions">
+            <button onClick={onSelect} className="sf-feature-offer-cta">
+              Shop this offer <ArrowRight className="size-4" />
+            </button>
+            {offer.code && <CouponCode code={offer.code} variant="dark" />}
+          </div>
+        </div>
+
+        {/* The saving, as the largest thing on the page. */}
+        <div className="sf-feature-offer-saving">
+          <p className="sf-feature-offer-saving-value tnum">
+            <span>{value}</span>
+            <span className="sf-feature-offer-saving-unit">{unit}</span>
+          </p>
+          <p className="sf-feature-offer-timer">
+            <Clock3 className="size-3.5" />
+            {offerTiming(offer)}
+          </p>
+        </div>
+      </div>
+    </article>
+  )
+}
+
+/**
+ * One festival offer card, in the redesigned board.
  *
  * The saving is the largest element and the festival name sits above it, which
  * is the reading order a banner of this kind uses: "DIWALI OFFER — 20% OFF".
@@ -365,34 +451,7 @@ function OfferCard({
   onSelect: () => void
 }) {
   const banner = offer.hasBanner ? offerBannerUrl(offer.id, offer.bannerVersion) : null
-
-  /**
-   * The saving, split so the unit can be set smaller.
-   *
-   * "20%" next to a small "OFF" reads far better at this size than "20% off"
-   * set as one line, and it is the pattern every festival board already uses.
-   */
-  const amount = offer.discountType === 'flat' ? rupees(offer.discountValue) : `${Math.round(offer.discountValue * 100) / 100}%`
-
-  /**
-   * The deadline line, phrased so it can never overstate.
-   *
-   * "Last day" appears only on the actual last day, and an offer ending tomorrow
-   * says so rather than claiming hours remain when a full day does. An offer that
-   * has not started yet says when it starts — `daysLeft` is null for it, so the
-   * UPCOMING case is handled first rather than falling through to "Ends in null
-   * days".
-   */
-  const timing =
-    offer.state === 'UPCOMING'
-      ? `Starts ${offerDate(offer.startsOn)}`
-      : offer.daysLeft === 0
-        ? offer.startsOn === offer.endsOn
-          ? 'Today only'
-          : 'Last day today'
-        : offer.daysLeft === 1
-          ? 'Ends tomorrow'
-          : `Ends in ${offer.daysLeft} days`
+  const { value, unit } = offerAmount(offer)
 
   return (
     <article
@@ -405,28 +464,69 @@ function OfferCard({
       {banner && <img src={banner} alt="" loading="lazy" className="sf-offer-card-art" />}
 
       <div className="sf-offer-card-body">
-        <p className="sf-offer-card-label">{offer.title}</p>
+        <div className="sf-offer-card-head">
+          <p className="sf-offer-card-label">{offer.title}</p>
+          <span className="sf-offer-card-state">
+            {offer.state === 'ACTIVE' ? 'Live' : 'Soon'}
+          </span>
+        </div>
 
         <p className="sf-offer-card-amount">
-          <span className="tnum">{amount}</span>{' '}
-          <span className="sf-offer-card-unit">OFF</span>
+          <span className="tnum">{value}</span>{' '}
+          <span className="sf-offer-card-unit">{unit}</span>
         </p>
 
         {offer.description && <p className="sf-offer-card-desc">{offer.description}</p>}
 
-        <p className="sf-offer-card-timing">{timing}</p>
+        <p className="sf-offer-card-timing">
+          <Clock3 className="size-3" /> {offerTiming(offer)}
+        </p>
 
         <div className="sf-offer-card-foot">
           <button onClick={onSelect} className="sf-offer-card-btn">
             Shop Now <ArrowRight className="size-3.5" />
           </button>
 
-          {offer.code && (
-            <span className="sf-offer-card-code tnum">CODE: {offer.code}</span>
-          )}
+          {offer.code && <CouponCode code={offer.code} variant="light" />}
         </div>
       </div>
     </article>
+  )
+}
+
+/**
+ * The coupon code, as something the customer can actually take away.
+ *
+ * Tapping copies it — a code a customer has to retype from a screenshot is a
+ * code they will not use. The copy state resets after a moment so the label
+ * returns to "Copy" without the customer having to do anything.
+ */
+function CouponCode({ code, variant }: { code: string; variant: 'dark' | 'light' }) {
+  const [copied, setCopied] = useState(false)
+
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(code)
+      setCopied(true)
+      window.setTimeout(() => setCopied(false), 1800)
+    } catch {
+      // Clipboard refused (old browser or insecure context): the code is still
+      // on screen to read, so there is nothing to recover.
+    }
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={copy}
+      className="sf-coupon-code"
+      data-variant={variant}
+      aria-label={copied ? `Copied coupon code ${code}` : `Copy coupon code ${code}`}
+    >
+      <span className="sf-coupon-code-label">Code</span>
+      <span className="sf-coupon-code-value tnum">{code}</span>
+      {copied ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
+    </button>
   )
 }
 
@@ -1016,6 +1116,7 @@ export function CompactCard({
                     {sold > 1 ? `${sold} sold` : 'Popular'}
                   </span>
                 )}
+                <SaveButton code={product.code} name={product.name} price={product.price} imageVersion={product.imageVersion} />
               </>
             }
           />

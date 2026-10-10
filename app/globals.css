@@ -1291,8 +1291,8 @@
 .sf-popup-backdrop {
   position: absolute;
   inset: 0;
-  background: oklch(0.2 0.02 60 / 62%);
-  backdrop-filter: blur(3px);
+  /* A plain dim, no blur — the storefront is kept free of any backdrop blur. */
+  background: oklch(0.2 0.02 60 / 66%);
   animation: sf-popup-fade 320ms ease both;
 }
 
@@ -1421,9 +1421,8 @@
   width: 2.1rem;
   height: 2.1rem;
   border-radius: 999px;
-  background: oklch(0.2 0.02 60 / 45%);
+  background: oklch(0.2 0.02 60 / 55%);
   color: #fff;
-  backdrop-filter: blur(4px);
   transition: background 160ms ease, transform 320ms cubic-bezier(0.34, 1.56, 0.64, 1);
   animation: sf-popup-close-in 600ms cubic-bezier(0.34, 1.56, 0.64, 1) 700ms both;
 }
@@ -1599,7 +1598,7 @@
 .sf-popup-root[data-state='closing'] .sf-popup { animation: sf-popup-out 300ms cubic-bezier(0.55, 0, 0.8, 0.4) both; }
 .sf-popup-root[data-state='closing'] .sf-popup-backdrop { animation: sf-popup-fade-out 300ms ease both; }
 
-@keyframes sf-popup-fade { from { opacity: 0; backdrop-filter: blur(0); } to { opacity: 1; backdrop-filter: blur(3px); } }
+@keyframes sf-popup-fade { from { opacity: 0; } to { opacity: 1; } }
 @keyframes sf-popup-fade-out { from { opacity: 1; } to { opacity: 0; } }
 
 @keyframes sf-popup-pop {
@@ -2019,7 +2018,7 @@
 @keyframes sf-fade { from { opacity: 0; } to { opacity: 1; } }
 
 .sf-drawer { animation: sf-slide-right 180ms ease-out both; }
-.sf-scrim { animation: sf-fade 160ms ease both; backdrop-filter: blur(4px); }
+.sf-scrim { animation: sf-fade 160ms ease both; }
 
 /* ---------- Admin: realtime order toasts ---------- */
 @keyframes sf-toast-in {
@@ -2403,8 +2402,8 @@
 
 /* ---------- 1. Page entrance ---------- */
 @keyframes sf-page-in {
-  from { opacity: 0; filter: blur(6px); }
-  to { opacity: 1; filter: blur(0); }
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 .sf-page-in { animation: sf-page-in 700ms cubic-bezier(0.22, 1, 0.36, 1) both; }
 
@@ -2690,13 +2689,15 @@
   to { transform: translateX(-50%); }
 }
 
-/* ---------- 12. Header: shrinks and gains a soft shadow after scrolling ----------
-   The hook sets data-scrolled="true" on `.sf-header`. */
-.sf-header { transition: box-shadow 300ms ease, padding 300ms ease, background 300ms ease; }
+/* ---------- 12. Header: gains a soft shadow after scrolling ----------
+   No backdrop blur is applied here: the header is sticky, so blurring it meant
+   that whatever the reader scrolled underneath came through permanently smeared
+   behind the logo and nav. A solid header that simply lifts off the page with a
+   shadow reads cleaner and costs the browser no compositing on every frame. */
+.sf-header { transition: box-shadow 300ms ease, background 300ms ease; }
 .sf-header[data-scrolled='true'] {
-  background: oklch(1 0 0 / 88%);
-  backdrop-filter: blur(14px) saturate(1.2);
-  box-shadow: 0 1px 0 var(--sf-gold-line), 0 10px 30px oklch(0.4 0.05 70 / 10%);
+  background: var(--sf-surface);
+  box-shadow: 0 1px 0 var(--sf-line), 0 10px 30px oklch(0.4 0.05 70 / 12%);
 }
 
 /* ---------- 13. Cart, wishlist and badge micro-interactions ---------- */
@@ -3082,8 +3083,7 @@
 .sf-rail-arrow,
 .sf-gallery-arrow {
   border-color: transparent;
-  background: rgb(255 255 255 / 86%);
-  backdrop-filter: saturate(180%) blur(20px);
+  background: #fff;
   box-shadow: var(--ap-shadow-card);
 }
 
@@ -3122,26 +3122,32 @@
   background: var(--ap-link);
 }
 
-/* ---------- The masthead: frosted glass ---------- */
+/* ---------- The masthead: solid, not frosted ---------- */
 .sf-topbar {
   background: var(--ap-ink);
   color: rgb(255 255 255 / 80%);
   border: 0;
 }
 
+/*
+ * The header is a solid bar.
+ *
+ * It used to be a frosted-glass strip — translucent white with a 20px backdrop
+ * blur, and MORE translucent once scrolled — which put a permanent smear of
+ * whatever was scrolling underneath across the logo and nav, exactly the effect
+ * this storefront was asked to remove. Solid white with a hairline is calmer,
+ * keeps the type crisp, and costs no compositing per frame.
+ */
 .sf-header {
-  background: rgb(251 251 253 / 72%);
-  -webkit-backdrop-filter: saturate(180%) blur(20px);
-  backdrop-filter: saturate(180%) blur(20px);
+  background: var(--sf-surface);
   box-shadow: 0 1px 0 rgb(0 0 0 / 6%);
   transition: background 320ms cubic-bezier(0.28, 0.11, 0.32, 1), box-shadow 320ms cubic-bezier(0.28, 0.11, 0.32, 1);
 }
 
-/* Once the page has moved, the bar condenses: a shorter bar, a hairline, and
-   the site's own background rather than a translucent one. */
+/* Once the page has moved, the bar lifts off the page with a soft shadow. */
 .sf-header[data-scrolled='true'] {
-  background: rgb(251 251 253 / 86%);
-  box-shadow: 0 1px 0 rgb(0 0 0 / 8%), 0 4px 20px rgb(0 0 0 / 4%);
+  background: var(--sf-surface);
+  box-shadow: 0 1px 0 rgb(0 0 0 / 8%), 0 4px 20px rgb(0 0 0 / 6%);
 }
 
 /* ---------- The hero ---------- */
@@ -3218,30 +3224,33 @@ html {
    One shared easing curve for every entrance on the page. Apple's transitions
    are slow to start and settle gently, which is what this curve imitates. */
 
-/* Headline lines and the hero children rise from a slight blur, so they read
-   as coming into focus rather than sliding in. */
+/* Headline lines and the hero children rise in without any blur, so the copy
+   is legible the instant it appears. */
 @keyframes ap-rise-in {
   from {
     opacity: 0;
     transform: translateY(22px);
-    filter: blur(10px);
   }
   to {
     opacity: 1;
     transform: translateY(0);
-    filter: blur(0);
   }
 }
 
-/* The reveal pass, retimed for the Apple feel. */.sf-reveal-ready [data-reveal] {
+/* The reveal pass, retimed for the Apple feel.
+ *
+ * Sections rise and fade in as they enter the viewport — but with NO blur.
+ * The blur here used to soften every block that scrolled into view, and on a
+ * long catalogue it read as the whole page being permanently out of focus while
+ * the reader moved through it. A plain fade-and-lift is quieter and lets the
+ * photographs stay sharp, which is the whole point of a jewellery shop. */
+.sf-reveal-ready [data-reveal] {
   opacity: 0;
   transform: translateY(26px);
-  filter: blur(8px);
   transition:
-    opacity 1000ms cubic-bezier(0.28, 0.11, 0.32, 1),
-    transform 1000ms cubic-bezier(0.28, 0.11, 0.32, 1),
-    filter 1000ms cubic-bezier(0.28, 0.11, 0.32, 1);
-  will-change: opacity, transform, filter;
+    opacity 800ms cubic-bezier(0.28, 0.11, 0.32, 1),
+    transform 800ms cubic-bezier(0.28, 0.11, 0.32, 1);
+  will-change: opacity, transform;
 }
 
 .sf-reveal-ready [data-reveal='scale'] {
@@ -3256,11 +3265,10 @@ html {
   transform: translateX(26px);
 }
 
-/* Settled: no residual transform, blur or clip. */
+/* Settled: no residual transform or clip. */
 .sf-reveal-ready [data-reveal].sf-in {
   opacity: 1;
   transform: none;
-  filter: blur(0);
   clip-path: inset(0 0 0 0);
 }
 
@@ -3326,7 +3334,9 @@ html {
 }
 
 .sf-scrim {
-  backdrop-filter: saturate(120%) blur(10px);
+  /* Kept as a plain dim: the previous blur smeared the whole page behind the
+     basket drawer as the customer scrolled it. */
+  background: oklch(0.2 0.02 60 / 52%);
 }
 
 /* ---------- Reduced motion: everything above holds still ---------- */
@@ -3347,3 +3357,493 @@ html {
     display: none;
   }
 }
+
+/* ===========================================================================
+ * Amazon-style storefront furniture
+ * ===========================================================================
+ *
+ * Three controls the marketplaces all share and this shop was missing:
+ * the sticky department bar, the save-for-later heart, and the back-to-top
+ * button. Kept together so the whole "shop the way you already know how" layer
+ * is in one place.
+ */
+
+/* ---------- The section strip inside the header ----------
+ * A thin, horizontally scrolling row of the page's sections. It lives inside
+ * `.sf-header`, not in a second fixed bar under it — so there is exactly one
+ * header at every scroll position. It is hidden on desktop, where the header's
+ * own nav already carries the same links. */
+.sf-header-strip {
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.sf-header-strip::-webkit-scrollbar { display: none; }
+
+/* ---------- The save-for-later heart ---------- */
+.sf-save-heart {
+  position: absolute;
+  right: 0.5rem;
+  bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 999px;
+  background: oklch(1 0 0 / 90%);
+  color: var(--sf-heading);
+  box-shadow: 0 1px 4px oklch(0.3 0.03 60 / 18%);
+  transition: transform 220ms cubic-bezier(0.34, 1.56, 0.64, 1), color 180ms ease, background 180ms ease;
+}
+
+.sf-save-heart:hover {
+  transform: scale(1.12);
+  background: #fff;
+}
+
+.sf-save-heart[data-on='true'] {
+  color: var(--sf-maroon);
+  background: #fff;
+}
+.sf-save-heart[data-on='true'] svg {
+  animation: sf-pop 480ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* ---------- The saved-pieces drawer rows ---------- */
+.sf-saved-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem;
+  border: 1px solid var(--sf-line);
+  border-radius: 0.75rem;
+  background: var(--sf-surface);
+}
+
+.sf-saved-thumb {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 3.25rem;
+  height: 3.25rem;
+  overflow: hidden;
+  border-radius: 0.5rem;
+  background: var(--sf-cream-soft);
+}
+
+/* ---------- Back to top ---------- */
+.sf-to-top {
+  position: fixed;
+  right: 1rem;
+  bottom: max(1rem, env(safe-area-inset-bottom));
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.6rem 0.9rem;
+  border-radius: 999px;
+  background: var(--sf-maroon);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  box-shadow: 0 12px 28px oklch(0.3 0.12 22 / 32%);
+  opacity: 0;
+  transform: translateY(1rem);
+  pointer-events: none;
+  transition: opacity 240ms ease, transform 240ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.sf-to-top[data-visible='true'] {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+.sf-to-top:hover { background: var(--sf-maroon-deep); }
+
+@media (prefers-reduced-motion: reduce) {
+  .sf-to-top { transition: none; }
+}
+
+/* ===========================================================================
+ * The redesigned Offers section
+ * ===========================================================================
+ *
+ * A featured deal spotlight over a board of cards, replacing the flat row of
+ * identical cards. The spotlight is the one offer the shop is pushing today;
+ * the board holds the rest. Every colour here is the shop's own maroon / gold,
+ * and the lead card's accent follows the offer so a shop running a green offer
+ * sees a green spotlight.
+ */
+.sf-offers-section {
+  background: linear-gradient(180deg, var(--sf-gold-wash), var(--sf-cream) 40%, var(--sf-cream));
+  border-top: 1px solid var(--sf-line);
+}
+
+/* ---------- The featured deal spotlight ---------- */
+.sf-feature-offer {
+  --offer-field: linear-gradient(135deg, var(--sf-maroon-deep), var(--sf-maroon) 62%, oklch(0.26 0.11 22));
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border-radius: 20px;
+  background: var(--offer-field);
+  box-shadow: 0 24px 50px oklch(0.3 0.1 22 / 26%);
+}
+
+.sf-feature-offer[data-accent='red'] {
+  --offer-field: linear-gradient(135deg, oklch(0.4 0.17 27), var(--sf-offer-red) 62%, oklch(0.36 0.15 27));
+}
+.sf-feature-offer[data-accent='gold'] {
+  --offer-field: linear-gradient(135deg, oklch(0.42 0.1 66), var(--sf-offer-gold) 62%, oklch(0.4 0.09 66));
+}
+.sf-feature-offer[data-accent='green'] {
+  --offer-field: linear-gradient(135deg, oklch(0.34 0.09 152), var(--sf-offer-green) 62%, oklch(0.32 0.08 152));
+}
+
+/* Uploaded artwork behind the lead offer, with a scrim so the copy stays legible. */
+.sf-feature-offer-art {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.sf-feature-offer-scrim {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(100deg, oklch(0.16 0.04 25 / 88%) 0%, oklch(0.16 0.04 25 / 62%) 60%, oklch(0.16 0.04 25 / 40%) 100%);
+}
+
+.sf-feature-offer-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  padding: 1.75rem;
+}
+
+@media (min-width: 768px) {
+  .sf-feature-offer-grid {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 2.5rem;
+    padding: 2.5rem 3rem;
+  }
+}
+
+.sf-feature-offer-main {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.sf-feature-offer-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.8rem;
+  border-radius: 999px;
+  background: linear-gradient(135deg, oklch(0.93 0.09 88), oklch(0.78 0.12 80));
+  color: var(--sf-maroon-deep);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.sf-feature-offer-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.015em;
+  color: oklch(0.98 0.02 85);
+}
+@media (min-width: 768px) {
+  .sf-feature-offer-title { font-size: 2rem; }
+}
+
+.sf-feature-offer-desc {
+  max-width: 34rem;
+  font-size: 0.85rem;
+  line-height: 1.7;
+  color: oklch(0.94 0.02 85 / 84%);
+}
+
+.sf-feature-offer-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  margin-top: 0.25rem;
+}
+.sf-feature-offer-meta dt {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: oklch(0.9 0.04 84 / 62%);
+}
+.sf-feature-offer-meta dd {
+  margin-top: 0.15rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: oklch(0.97 0.02 85);
+}
+
+.sf-feature-offer-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.sf-feature-offer-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  height: 2.75rem;
+  padding-inline: 1.5rem;
+  border-radius: 999px;
+  background: var(--sf-surface);
+  color: var(--sf-heading);
+  font-size: 0.82rem;
+  font-weight: 700;
+  transition: transform 180ms ease, box-shadow 180ms ease;
+}
+.sf-feature-offer-cta:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 22px oklch(0.2 0.03 60 / 28%);
+}
+
+.sf-feature-offer-saving {
+  flex-shrink: 0;
+  text-align: left;
+}
+@media (min-width: 768px) {
+  .sf-feature-offer-saving { text-align: right; }
+}
+
+.sf-feature-offer-saving-value {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  font-size: 3.5rem;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  color: oklch(0.98 0.02 85);
+}
+@media (min-width: 768px) {
+  .sf-feature-offer-saving-value { font-size: 5rem; justify-content: flex-end; }
+}
+
+.sf-feature-offer-saving-unit {
+  font-size: 1.3rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: oklch(0.9 0.09 86);
+}
+
+.sf-feature-offer-timer {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: 0.6rem;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: oklch(0.95 0.03 85 / 88%);
+}
+@media (min-width: 768px) {
+  .sf-feature-offer-timer { justify-content: flex-end; }
+}
+
+/* ---------- The copyable coupon code ---------- */
+.sf-coupon-code {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.85rem;
+  border-radius: 10px;
+  border: 1px dashed oklch(1 0 0 / 45%);
+  background: oklch(1 0 0 / 10%);
+  color: inherit;
+  font-size: 0.75rem;
+  transition: background 160ms ease, transform 160ms ease;
+}
+.sf-coupon-code:hover { transform: translateY(-1px); }
+.sf-coupon-code[data-variant='dark'] { color: oklch(0.97 0.02 85); background: oklch(1 0 0 / 12%); }
+.sf-coupon-code[data-variant='light'] { color: oklch(1 0 0 / 92%); border-color: oklch(1 0 0 / 55%); }
+
+.sf-coupon-code-label {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  opacity: 0.7;
+}
+
+.sf-coupon-code-value {
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+/* ---------- The offer card: refreshed head, timing and foot ---------- */
+.sf-offer-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.sf-offer-card-state {
+  flex-shrink: 0;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  background: oklch(1 0 0 / 18%);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.sf-offer-card-timing {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+/* The code inside a card sits on a light pill so it reads against any accent. */
+.sf-offer-card-foot .sf-coupon-code {
+  background: oklch(1 0 0 / 92%);
+  color: var(--sf-heading);
+  border-color: var(--sf-gold-line);
+  border-style: solid;
+}
+.sf-offer-card-foot .sf-coupon-code-label { color: var(--sf-muted); opacity: 1; }
+
+/* ===========================================================================
+ * The coupon, redesigned — a clean modern ticket
+ * ===========================================================================
+ *
+ * The previous coupon was a heavily "gilded" voucher: a rotating conic foil
+ * edge, a travelling sheen, a diamond-lattice texture and an animated text
+ * shine — four competing animations on one small card. At a glance it read as
+ * busy rather than premium, and the foil edge fought the offer copy.
+ *
+ * The redesign keeps the thing that made it a coupon — the stub, the dashed
+ * perforation and the two notches — and drops everything else. What is left is
+ * a crisp, flat ticket: a solid tinted field, one hairline gold frame, generous
+ * spacing and one strong accent (the saving). It is the shape of a discount
+ * coupon in a modern app, and the offer copy is now the loudest element instead
+ * of the animation.
+ *
+ * These rules come last, so they win over the earlier coupon block by source
+ * order without that block having to be torn out.
+ */
+
+/* One flat tinted field, no texture layers, no sheen animation. */
+.sf-offer-coupon {
+  --coupon-bg: linear-gradient(120deg, var(--sf-maroon-deep), var(--sf-maroon) 70%);
+  border-radius: 18px;
+  box-shadow: 0 20px 44px oklch(0.3 0.12 22 / 22%);
+  animation: sf-coupon-ticket-in 620ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.sf-offer-coupon[data-accent='red'] {
+  --coupon-bg: linear-gradient(120deg, oklch(0.42 0.16 27), var(--sf-offer-red) 70%);
+}
+.sf-offer-coupon[data-accent='gold'] {
+  --coupon-bg: linear-gradient(120deg, oklch(0.44 0.1 66), var(--sf-offer-gold) 70%);
+}
+.sf-offer-coupon[data-accent='green'] {
+  --coupon-bg: linear-gradient(120deg, oklch(0.36 0.09 152), var(--sf-offer-green) 70%);
+}
+
+/* The texture / sheen pseudo-element is switched off, not removed from the
+   markup, so the element still exists for any future layer. */
+.sf-offer-coupon::before {
+  background: none;
+  animation: none;
+}
+
+/* The rotating conic foil edge becomes a single static hairline frame. */
+.sf-offer-coupon::after {
+  padding: 1px;
+  background: linear-gradient(120deg, oklch(0.9 0.1 86 / 70%), oklch(0.7 0.09 78 / 30%) 60%, oklch(0.9 0.1 86 / 55%));
+  animation: none;
+}
+
+@keyframes sf-coupon-ticket-in {
+  from { opacity: 0; transform: translateY(18px) scale(0.985); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* The reading half: a little more air, no dash texture behind it. */
+.sf-offer-coupon-main {
+  gap: 0.85rem;
+  padding: 1.75rem;
+}
+
+/* A flat badge rather than a gradient pill — one accent, not two. */
+.sf-offer-coupon .sf-offer-badge {
+  background: oklch(1 0 0 / 14%);
+  color: oklch(0.97 0.02 85);
+  box-shadow: none;
+  border: 1px solid oklch(1 0 0 / 22%);
+}
+.sf-offer-coupon .sf-offer-badge svg { color: oklch(0.9 0.1 86); }
+
+/* The code reads as a chip the customer can copy and keep. */
+.sf-offer-coupon .sf-offer-code {
+  border-style: solid;
+  border-color: oklch(1 0 0 / 28%);
+  background: oklch(1 0 0 / 12%);
+  color: oklch(0.98 0.02 85);
+  backdrop-filter: none;
+}
+
+/* The perforation: a clean dashed rule, notches a touch smaller. */
+.sf-offer-coupon-perf { border-color: oklch(1 0 0 / 28%); }
+@media (min-width: 768px) {
+  .sf-offer-coupon-perf { border-left-color: oklch(1 0 0 / 28%); }
+}
+.sf-offer-coupon-perf::before,
+.sf-offer-coupon-perf::after {
+  width: 14px;
+  height: 14px;
+  background: var(--sf-cream);
+  box-shadow: none;
+}
+
+/* The stub: a plain light panel, no rotating seal, no text-shine animation. */
+.sf-offer-coupon-stub {
+  background: var(--sf-cream);
+  padding: 1.5rem 1.75rem;
+}
+.sf-offer-coupon-stub::before { display: none; }
+
+/* The saving: solid maroon, no animated gradient. One strong accent. */
+.sf-offer-coupon .sf-offer-saving {
+  font-family: ui-serif, Georgia, Cambria, 'Times New Roman', serif;
+  font-size: 2rem;
+  font-weight: 800;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  background: none;
+  -webkit-text-fill-color: currentColor;
+  color: var(--sf-maroon);
+  animation: none;
+}
+
+.sf-offer-timing { color: var(--sf-gold-deep); }
+
+/* With uploaded artwork, keep the flat scrim so the copy stays legible. */
+.sf-offer-coupon-art .sf-offer-coupon-stub { background: oklch(0.985 0.02 88 / 95%); }
