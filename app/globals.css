@@ -3999,6 +3999,31 @@ html {
   display: none;
 }
 
+/* The nav links themselves. A little tighter than the default pill so all of
+   them fit inside the middle of the row at 1280px without the first one being
+   pushed out of view. */
+.sf-nav {
+  gap: 0.1rem;
+}
+
+.sf-nav-link {
+  display: inline-flex;
+  align-items: center;
+  height: 2.25rem;
+  padding-inline: 0.85rem;
+  border-radius: 999px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+  color: var(--ap-ink, #1d1d1f);
+  transition: background 160ms ease;
+}
+
+.sf-nav-link:hover {
+  background: rgb(0 0 0 / 5%);
+}
+
 /* ---------- The shop's lockup: logo + name ----------
  * The identity block in the header. Its job is to be read: the shop's name is
  * the brand, and a truncated "SRI MAHA …" is worse than no logo at all.

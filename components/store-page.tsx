@@ -293,52 +293,38 @@ function ShopWindow() {
               nav the growth is what keeps the right-hand buttons flush inside
               the header instead of hanging off it.
             */}
-            <nav className="hidden min-w-0 flex-1 items-center justify-end gap-1 lg:flex" aria-label="Sections">
-            {[
-              { label: 'Collections', id: 'collections' },
-              // Offers is placed second: during a festival it is the reason most
-              // customers came, and it is the section that changes fastest.
-              { label: 'Offers', id: 'offers' },
-              { label: 'Shop', id: 'store' },
-              { label: 'Boutique', id: 'boutique' },
-            ].map((item) => (
-              <button
-                key={item.id}
-                onClick={() => jumpTo(item.id)}
-                className="rounded-full px-3.5 py-2 text-sm font-medium whitespace-nowrap transition hover:bg-black/5"
-                style={{ color: 'var(--ap-ink)' }}
-              >
-                {item.label}
-              </button>
-            ))}
-            {/*
-              The three doors the counter sites all run beside the sections:
-              a search, the customer's own orders, and order tracking. They open
-              real pages rather than filtering in place, so a search can be
-              bookmarked and shared and the back button behaves as expected.
-            */}
-            <Link
-              href="/search"
-              className="rounded-full px-3.5 py-2 text-sm font-medium whitespace-nowrap transition hover:bg-black/5"
-              style={{ color: 'var(--ap-ink)' }}
-            >
-              Search
-            </Link>
-            <Link
-              href="/orders"
-              className="rounded-full px-3.5 py-2 text-sm font-medium whitespace-nowrap transition hover:bg-black/5"
-              style={{ color: 'var(--ap-ink)' }}
-            >
-              My orders
-            </Link>
-            <Link
-              href="/track"
-              className="rounded-full px-3.5 py-2 text-sm font-medium whitespace-nowrap transition hover:bg-black/5"
-              style={{ color: 'var(--ap-ink)' }}
-            >
-              Track order
-            </Link>
-          </nav>
+            <nav className="sf-nav hidden min-w-0 flex-1 items-center justify-end lg:flex" aria-label="Sections">
+              {[
+                { label: 'Collections', id: 'collections' },
+                // Offers is placed second: during a festival it is the reason most
+                // customers came, and it is the section that changes fastest.
+                { label: 'Offers', id: 'offers' },
+                { label: 'Shop', id: 'store' },
+                { label: 'Boutique', id: 'boutique' },
+              ].map((item) => (
+                <button key={item.id} onClick={() => jumpTo(item.id)} className="sf-nav-link">
+                  {item.label}
+                </button>
+              ))}
+              {/*
+                The doors beside the sections: a search and the customer's own
+                orders. Both open real pages rather than filtering in place, so
+                a search can be bookmarked and shared and the back button behaves
+                as expected.
+
+                "Track order" used to sit here too and is deliberately gone: it
+                is already in the utility bar directly above this header, on the
+                same screen — two copies of one link 40px apart. Removing the
+                duplicate is what frees the room for "Collections", which was
+                otherwise scrolled out of sight in the header at 1280px.
+              */}
+              <Link href="/search" className="sf-nav-link">
+                Search
+              </Link>
+              <Link href="/orders" className="sf-nav-link">
+                My orders
+              </Link>
+            </nav>
 
           <div className="flex shrink-0 items-center gap-2 lg:ml-2">
             {/*
