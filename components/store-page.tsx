@@ -24,8 +24,9 @@
 // chosen). No admin endpoint is touched from this page.
 // ===========================================================================
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import {
   ArrowRight,
   BadgeCheck,
@@ -39,7 +40,6 @@ import {
   Search,
   ShieldCheck,
   ShoppingBag,
-  Store as StoreIcon,
   Truck,
   X,
 } from 'lucide-react'
@@ -48,7 +48,7 @@ import { WishlistProvider, useWishlist } from '@/components/store/wishlist'
 import CartDrawer, { type PlacedOrder } from '@/components/store/cart-drawer'
 import OrderSuccess from '@/components/store/order-success'
 import OfferPopup from '@/components/store/offer-popup'
-import ProductCard from '@/components/store/product-card'
+import FreeGiftBot from '@/components/store/free-gift-bot'
 import MobileBar, { type MobileTab } from '@/components/store/mobile-bar'
 import { BackToTop, SavedDrawer } from '@/components/store/store-extras'
 import { StoreFooter } from '@/components/store/store-shell'
@@ -58,8 +58,6 @@ import {
   CategoryRail,
   CollectionStories,
   CounterNotice,
-  OfferBanner,
-  OfferCards,
   OrderSteps,
   PromiseBand,
 } from '@/components/store/store-sections'
@@ -81,6 +79,7 @@ export default function StorePage() {
 }
 
 function ShopWindow() {
+  const router = useRouter()
   const { data, isLoading, error } = useApi<StoreCatalogue>('/api/store/catalogue', { refreshInterval: 60_000 })
   const cart = useCart()
   const saved = useWishlist()
@@ -89,42 +88,19 @@ function ShopWindow() {
   const [basketOpen, setBasketOpen] = useState(false)
   const [savedOpen, setSavedOpen] = useState(false)
   const [placed, setPlaced] = useState<PlacedOrder | null>(null)
-  const [query, setQuery] = useState('')
-  const [collection, setCollection] = useState('All')
-  const [category, setCategory] = useState('All')
-  const [band, setBand] = useState<PriceBand | null>(null)
   const [menuOpen, setMenuOpen] = useState(false)
-  /**
-   * Which bottom-bar tab reads as current.
-   *
-   * The storefront is a single page, so this is not a route — it is derived
-   * from where the reader is on the page. Home is the top; Offers, Collections
-   * and the Shop grid each claim the tab once their section is on screen. A
-   * short-lived flag stops the observer from fighting a tap that is mid-scroll.
+
+  /*
+   * The landing page is always the Home tab. Every other destination — Shop,
+   * Offers, Collections, Boutique — is now its own route, so the tab there is
+   * decided by the store shell from the pathname, not here.
    */
-  const [activeTab, setActiveTab] = useState<MobileTab>('home')
-  const tabLock = useRef(false)
+  const activeTab: MobileTab = 'home'
 
   const shop = data?.shop ?? null
   const products = data?.products ?? []
 
   const findProduct = useCallback((code: number) => products.find((product) => product.code === code), [products])
-
-  const visible = useMemo(() => {
-    const term = query.trim().toLowerCase()
-    return products.filter((product) => {
-      if (collection !== 'All' && product.collection !== collection) return false
-      if (category !== 'All' && product.category !== category) return false
-      if (band && !(product.price >= band.from && product.price < band.to)) return false
-      if (!term) return true
-      return (
-        product.name.toLowerCase().includes(term) ||
-        product.category.toLowerCase().includes(term) ||
-        product.collection.toLowerCase().includes(term) ||
-        String(product.code).includes(term)
-      )
-    })
-  }, [products, collection, category, band, query])
 
   const priceFrom = products.length > 0 ? Math.min(...products.map((product) => product.price)) : 0
   const categoryCount = new Set(products.map((product) => product.category)).size
@@ -144,16 +120,6 @@ function ShopWindow() {
   const offer = data?.offer ?? null
 
   /**
-   * The offers that belong on the card board.
-   *
-   * Served separately from the banner offer because a shop can keep a small
-   * announcement out of the card grid, and only one of these is used as the
-   * leading strip. Tapping a card opens the full collection filtered to what
-   * the shop sells — no offer can link to a shelf that does not exist.
-   */
-  const offerCards = data?.offers ?? []
-
-  /**
    * The shelf of pieces the page leads with.
    *
    * When the shop has genuinely sold something the rail is its best sellers and
@@ -168,53 +134,41 @@ function ShopWindow() {
   const shelfProducts = hasSalesData ? bestSellers : products.slice(0, 8)
   const showShelf = products.length >= 2 && shelfProducts.length >= 2
 
-  const jumpTo = (id: string, filter?: string) => {
-    if (filter) setCollection(filter)
-    setMenuOpen(false)
-    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  /**
+   * Where each section lives.
+   *
+   * The sections used to be anchors on this one page, reached by scrolling. Each
+   * is now a page of its own, so a shelf can be linked, bookmarked and shared and
+   * the back button behaves — so every "go to a section" call routes instead of
+   * scrolling.
+   */
+  const SECTION_HREF: Record<string, string> = {
+    collections: '/collections',
+    offers: '/offers',
+    store: '/shop',
+    boutique: '/boutique',
   }
 
-  /** Clears every filter and opens the full grid. */
+  /** Opens the Shop page, optionally pre-filtered by a collection, category or budget band. */
   const openStore = (patch?: { collection?: string; category?: string; band?: PriceBand | null }) => {
-    setQuery('')
-    setCollection(patch?.collection ?? 'All')
-    setCategory(patch?.category ?? 'All')
-    setBand(patch?.band ?? null)
-    document.getElementById('store')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    const params = new URLSearchParams()
+    if (patch?.collection && patch.collection !== 'All') params.set('collection', patch.collection)
+    if (patch?.category && patch.category !== 'All') params.set('category', patch.category)
+    const query = params.toString()
+    router.push(query ? `/shop?${query}` : '/shop')
   }
 
   /**
    * Which bottom-bar tab is lit.
    *
-   * Driven by scroll position rather than by the last thing tapped: the shop is
-   * one long page, so the honest answer to "where am I?" is what is on screen.
-   * A small lock suppresses the observer for a beat after a tap, so a deliberate
-   * jump does not get its highlight yanked back by the sections it scrolls past.
+   * The storefront is now a landing page whose sections are their own routes, so
+   * the only tab this page owns is Home — every other destination is a navigation
+   * away, handled by the store shell on the page it lands on.
    */
-  useEffect(() => {
-    const onScroll = () => {
-      if (tabLock.current) return
-      const storeTop = document.getElementById('store')?.offsetTop ?? Number.POSITIVE_INFINITY
-      const offersTop = document.getElementById('offers')?.offsetTop ?? Number.POSITIVE_INFINITY
-      const anchor = window.scrollY + window.innerHeight * 0.4
-      if (anchor >= storeTop) setActiveTab('shop')
-      else if (anchor >= offersTop) setActiveTab('offers')
-      else setActiveTab('home')
-    }
-    onScroll()
-    window.addEventListener('scroll', onScroll, { passive: true })
-    return () => window.removeEventListener('scroll', onScroll)
-  }, [data])
-
-  /** A bottom-bar jump: scroll to a section and hold the highlight while it moves. */
   const goToTab = (tab: 'home' | 'shop' | 'offers') => {
-    setActiveTab(tab)
-    tabLock.current = true
-    window.setTimeout(() => {
-      tabLock.current = false
-    }, 700)
-    if (tab === 'home') window.scrollTo({ top: 0, behavior: 'smooth' })
-    else document.getElementById(tab === 'shop' ? 'store' : 'offers')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    if (tab === 'home') router.push('/')
+    else if (tab === 'shop') router.push('/shop')
+    else router.push('/offers')
   }
 
   return (
@@ -302,9 +256,9 @@ function ShopWindow() {
                 { label: 'Shop', id: 'store' },
                 { label: 'Boutique', id: 'boutique' },
               ].map((item) => (
-                <button key={item.id} onClick={() => jumpTo(item.id)} className="sf-nav-link">
+                <Link key={item.id} href={SECTION_HREF[item.id]} className="sf-nav-link">
                   {item.label}
-                </button>
+                </Link>
               ))}
               {/*
                 The doors beside the sections: a search and the customer's own
@@ -442,14 +396,15 @@ function ShopWindow() {
               { label: 'Shop the collection', id: 'store' },
               { label: 'Visit the boutique', id: 'boutique' },
             ].map((item) => (
-              <button
+              <Link
                 key={item.id}
-                onClick={() => jumpTo(item.id)}
+                href={SECTION_HREF[item.id]}
+                onClick={() => setMenuOpen(false)}
                 className="block w-full rounded-lg px-3 py-2.5 text-left text-sm transition hover:bg-cream"
                 style={{ color: 'var(--sf-heading)' }}
               >
                 {item.label}
-              </button>
+              </Link>
             ))}
             <Link
               href="/track"
@@ -506,14 +461,14 @@ function ShopWindow() {
             { label: 'Shop', id: 'store' },
             { label: 'Boutique', id: 'boutique' },
           ].map((item) => (
-            <button
+            <Link
               key={item.id}
-              onClick={() => jumpTo(item.id)}
+              href={SECTION_HREF[item.id]}
               className="shrink-0 rounded-full px-3 py-1.5 text-xs font-medium whitespace-nowrap transition hover:bg-black/5"
               style={{ color: 'var(--sf-heading)' }}
             >
               {item.label}
-            </button>
+            </Link>
           ))}
           <Link
             href="/search"
@@ -644,9 +599,9 @@ function ShopWindow() {
             </p>
 
             <div className="sf-fade-up mt-8 flex flex-wrap items-center gap-3" style={{ animationDelay: '640ms' }}>
-              <button onClick={() => jumpTo('store')} className="sf-btn sf-btn-gold h-12 px-6 text-sm">
+              <Link href={SECTION_HREF.store} className="sf-btn sf-btn-gold h-12 px-6 text-sm">
                 Explore the collection <ArrowRight className="size-4" />
-              </button>
+              </Link>
               {whatsapp && (
                 <a href={whatsapp} target="_blank" rel="noreferrer" className="sf-btn sf-btn-ghost h-12 px-6 text-sm">
                   Ask on WhatsApp
@@ -681,9 +636,6 @@ function ShopWindow() {
         </div>
       </section>
 
-      {/* --------------------------- Festival offer --------------------------- */}
-      {offer && <OfferBanner offer={offer} onShop={() => openStore()} />}
-
       {/*
         The same offer, as a pop-up.
 
@@ -693,12 +645,10 @@ function ShopWindow() {
         sale is the one case where this dialog would be in the way.
       */}
       <OfferPopup
-        offer={query || collection !== 'All' || category !== 'All' || band ? null : offer}
+        offer={offer}
         shopName={shop?.name}
         onShop={() => openStore()}
       />
-      {/* ---------------------------- Offer board ---------------------------- */}
-      <OfferCards offers={offerCards} onSelect={() => openStore()} />
 
       {/* ------------------------------ Trust strip ------------------------------ */}
       <div className="sf-trust-strip px-4 py-4 sm:px-7">
@@ -735,7 +685,7 @@ function ShopWindow() {
               {data.collections.slice(0, 8).map((entry) => {
                 const preview = products.find((product) => product.collection === entry.name)
                 return (
-                  <button key={entry.name} onClick={() => jumpTo('store', entry.name)} className="sf-circle w-24">
+                  <button key={entry.name} onClick={() => openStore({ collection: entry.name })} className="sf-circle w-24">
                     <span className="sf-circle-ring">
                       {preview?.image ? (
                         <img
@@ -779,288 +729,12 @@ function ShopWindow() {
       )}
 
       {/* ---------------------------- Shop in budget ---------------------------- */}
-      {data && <BudgetRail bands={data.priceBands} activeBand={band} onSelect={(next) => openStore({ band: next })} />}
+      {data && <BudgetRail bands={data.priceBands} activeBand={null} onSelect={(next) => openStore({ band: next })} />}
 
       {/* ------------------------- The collection story ------------------------- */}
       {data && (
         <CollectionStories collections={data.collections} onSelect={(name) => openStore({ collection: name })} />
       )}
-
-      {/* ---------------------------- Collections ---------------------------- */}
-      <section id="collections" className="sf-band scroll-mt-28 border-t border-line px-4 py-16 sm:px-7">
-        <div className="mx-auto w-full max-w-[68rem]">
-          <header className="mb-10 flex flex-wrap items-end justify-between gap-5" data-reveal="up">
-            <div className="max-w-2xl">
-              <p className="sf-eyebrow">The collections</p>
-              <h2 className="mt-3 text-2xl font-semibold tracking-tight sm:text-[2rem]">Find your design, within your budget.</h2>
-              <p className="mt-3 text-sm leading-7">
-                Explore one-gram gold, panchaloha and silver designs for daily wear, gifting and celebrations. Every shelf is updated
-                by the shop, so you see what is available at the counter today.
-              </p>
-            </div>
-            <button onClick={() => jumpTo('store')} className="sf-btn sf-btn-ghost h-10 px-5 text-xs">
-              See everything <ArrowRight className="size-3.5" />
-            </button>
-          </header>
-
-          {isLoading && (
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {Array.from({ length: 3 }).map((_, index) => (
-                <div key={index} className="h-40 animate-pulse rounded-xl border border-line bg-white" />
-              ))}
-            </div>
-          )}
-
-          {error && (
-            <p className="rounded-xl border border-red-300 bg-red-50 px-5 py-4 text-sm text-red-700">
-              {error} — the collection could not be loaded. Please refresh in a moment.
-            </p>
-          )}
-
-          {!isLoading && !error && data && data.collections.length === 0 && (
-            <div className="rounded-xl border border-line bg-white px-6 py-12 text-center">
-              <span className="mx-auto mb-4 flex size-14 items-center justify-center rounded-full bg-cream" style={{ color: 'var(--sf-gold-deep)' }}>
-                <Gem className="size-6" strokeWidth={1.4} />
-              </span>
-              <p className="text-sm font-semibold" style={{ color: 'var(--sf-heading)' }}>
-                The store is being prepared
-              </p>
-              <p className="mx-auto mt-2 max-w-md text-xs leading-6">
-                Pieces appear here the moment the shop publishes them. Call or WhatsApp in the meantime and we will show you what is
-                in the counter.
-              </p>
-              {call && (
-                <a href={call} className="sf-btn sf-btn-gold mt-6 h-11 px-6 text-sm">
-                  <Phone className="size-4" /> Call {shop?.phone}
-                </a>
-              )}
-            </div>
-          )}
-
-          {data && data.collections.length > 0 && (
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {data.collections.map((entry, index) => {
-                const preview = products.find((product) => product.collection === entry.name)
-                return (
-                  <button
-                    key={entry.name}
-                    onClick={() => jumpTo('store', entry.name)}
-                    data-reveal="up"
-                    data-reveal-delay={index * 80}
-                    className="sf-card group flex items-center gap-4 p-5 text-left"
-                  >
-                    <span className="sf-circle-ring" style={{ width: '4rem', height: '4rem', flexShrink: 0 }}>
-                      {preview?.image ? (
-                        <img
-                          src={`/api/store/image?id=${preview.code}&v=${encodeURIComponent(preview.imageVersion)}`}
-                          alt=""
-                          loading="lazy"
-                          className="size-full object-cover"
-                        />
-                      ) : (
-                        <Gem className="size-6" style={{ color: 'var(--sf-gold-deep)' }} strokeWidth={1.3} />
-                      )}
-                    </span>
-                    <span className="min-w-0 flex-1">
-                      <span className="block text-base font-semibold" style={{ color: 'var(--sf-heading)' }}>
-                        {entry.name}
-                      </span>
-                      <span className="mt-1 block text-xs" style={{ color: 'var(--sf-muted)' }}>
-                        {entry.count} pieces · from {rupees(entry.from)}
-                      </span>
-                      <span className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold" style={{ color: 'var(--sf-maroon)' }}>
-                        Browse <ArrowRight className="size-3.5 transition group-hover:translate-x-1" />
-                      </span>
-                    </span>
-                  </button>
-                )
-              })}
-            </div>
-          )}
-        </div>
-      </section>
-
-      {/* ------------------------------- Store ------------------------------- */}
-      <section id="store" className="scroll-mt-28 border-t border-line px-3 py-12 sm:px-7 sm:py-16">
-        <div className="mx-auto w-full max-w-[80rem]">
-          <header className="mb-6 flex flex-wrap items-end justify-between gap-4 sm:mb-10" data-reveal="up">
-            <div className="max-w-2xl">
-              <p className="sf-eyebrow">Shop the collection</p>
-              <h2 className="mt-3 text-xl font-semibold tracking-tight sm:text-[2rem]">Beautiful jewellery at easy prices.</h2>
-            </div>
-            <p className="text-xs" style={{ color: 'var(--sf-muted)' }}>
-              {visible.length} of {products.length} shown
-              {collection !== 'All' && ` in ${collection}`}
-              {category !== 'All' && ` · ${category}`}
-              {band && ` · ${band.label}`}
-            </p>
-          </header>
-
-          {/* Filters */}
-          <div className="mb-6 flex flex-col gap-3" data-reveal="up">
-            <label className="relative block">
-              <Search className="pointer-events-none absolute top-1/2 left-3.5 size-3.5 -translate-y-1/2" style={{ color: 'var(--sf-gold-deep)' }} />
-              <input
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                placeholder="Search by name, category, or code — e.g. one-gram, panchaloha, silver"
-                className="h-11 w-full rounded-lg border border-line bg-white pr-3.5 pl-10 text-[13px] transition focus:border-gold"
-                style={{ color: 'var(--sf-heading)' }}
-              />
-            </label>
-
-            {/*
-              The collection filter. Each chip carries its own count, so a
-              customer can see that a shelf has two pieces in it before tapping
-              it and finding an almost-empty grid.
-            */}
-            {data && data.collections.length > 0 && (
-              <div className="flex flex-wrap items-center gap-1.5">
-                <button
-                  onClick={() => setCollection('All')}
-                  data-active={collection === 'All'}
-                  className="sf-chip"
-                >
-                  All<span className="sf-chip-count">{products.length}</span>
-                </button>
-
-                {data.collections.map((entry) => (
-                  <button
-                    key={entry.name}
-                    onClick={() => setCollection(entry.name)}
-                    data-active={collection === entry.name}
-                    aria-pressed={collection === entry.name}
-                    className="sf-chip"
-                  >
-                    {entry.name}
-                    <span className="sf-chip-count">{entry.count}</span>
-                  </button>
-                ))}
-
-                {collection !== 'All' && (
-                  <button
-                    onClick={() => setCollection('All')}
-                    className="ml-0.5 text-[11px] transition hover:underline"
-                    style={{ color: 'var(--sf-muted)' }}
-                  >
-                    Clear
-                  </button>
-                )}
-              </div>
-            )}
-
-            {/*
-              Category chips sit under the collection chips. They are a second
-              axis — a collection is the shelf the shop arranged, a category is
-              the kind of piece — and a customer may want either, or both. Only
-              categories the shop stocks are listed, and the row is hidden when
-              the shop has just one kind of piece.
-            */}
-            {data && data.categoryRails.length > 1 && (
-              <div className="flex flex-wrap items-center gap-1.5">
-                <span
-                  className="mr-1 text-[10px] font-semibold tracking-[0.14em] uppercase"
-                  style={{ color: 'var(--sf-muted)' }}
-                >
-                  Kind
-                </span>
-                <button onClick={() => setCategory('All')} data-active={category === 'All'} className="sf-chip">
-                  All kinds
-                </button>
-
-                {data.categoryRails.map((entry) => (
-                  <button
-                    key={entry.name}
-                    onClick={() => setCategory(entry.name)}
-                    data-active={category === entry.name}
-                    aria-pressed={category === entry.name}
-                    className="sf-chip"
-                  >
-                    {entry.name}
-                    <span className="sf-chip-count">{entry.count}</span>
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {/* The budget filter, shown only once a band is holding it. */}
-            {band && (
-              <div className="flex flex-wrap items-center gap-2">
-                <span
-                  className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-semibold text-white"
-                  style={{ background: 'var(--sf-maroon)' }}
-                >
-                  {band.label}
-                  <button onClick={() => setBand(null)} aria-label={`Remove the ${band.label} filter`}>
-                    ×
-                  </button>
-                </span>
-              </div>
-            )}
-          </div>
-
-          {isLoading && (
-            <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-3.5 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
-              {Array.from({ length: 8 }).map((_, index) => (
-                <div key={index} className="animate-pulse overflow-hidden rounded-lg border border-line bg-white">
-                  <div className="aspect-square bg-cream-soft" />
-                  <div className="space-y-2 p-3">
-                    <div className="h-2.5 w-12 rounded bg-cream-soft" />
-                    <div className="h-3.5 w-24 rounded bg-cream-soft" />
-                    <div className="h-5 w-16 rounded bg-cream-soft" />
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {!isLoading && products.length > 0 && visible.length === 0 && (
-            <div className="rounded-xl border border-line bg-white px-6 py-14 text-center">
-              <p className="text-sm font-semibold" style={{ color: 'var(--sf-heading)' }}>
-                Nothing matches that search
-              </p>
-              <p className="mt-2 text-xs">Try a different word, or clear the filters to see the whole collection.</p>
-              <button
-                onClick={() => {
-                  setQuery('')
-                  setCollection('All')
-                  setCategory('All')
-                  setBand(null)
-                }}
-                className="sf-btn sf-btn-ghost mt-5 h-10 px-5 text-xs"
-              >
-                Clear filters
-              </button>
-            </div>
-          )}
-
-          {visible.length > 0 && (
-            /*
-              A denser, Amazon-style grid.
-
-              The tiles were nearly double-height before: a 4:5 photo, then a
-              description, a "save" line and two action links stacked inside.
-              On a phone that meant roughly one-and-a-half products per screen.
-
-              The grid now steps up the columns much earlier — 2 on the
-              smallest phones, 3 on a large phone, then 4, 5 and 6 — because a
-              jewellery catalogue is scanned by photo, and more pieces on
-              screen is what makes a shop look stocked.
-            */
-            <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-3.5 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
-              {visible.map((product, index) => (
-                <ProductCard
-                  key={product.code}
-                  product={product}
-                  index={index}
-                  whatsapp={shop?.whatsapp ?? shop?.phone}
-                  shopName={shop?.name}
-                />
-              ))}
-            </div>
-          )}
-        </div>
-      </section>
 
       {/* --------------------------- Counter notice --------------------------- */}
       <CounterNotice
@@ -1068,68 +742,6 @@ function ShopWindow() {
         whatsapp={whatsapp}
         onBrowse={() => openStore()}
       />
-
-      {/* ------------------------------ Boutique ------------------------------ */}
-      <section id="boutique" className="sf-band scroll-mt-28 border-t border-line px-4 py-16 sm:px-7">
-        <div className="mx-auto grid w-full max-w-[68rem] gap-6 lg:grid-cols-[1.15fr_.85fr]">
-          <div className="sf-card p-7 sm:p-9" data-reveal="left">
-            <p className="sf-eyebrow">Visit the boutique</p>
-            <h2 className="mt-3 text-2xl font-semibold tracking-tight sm:text-3xl">
-              {shop?.name ?? 'Sri Maha Laxmi Jewellers'}
-            </h2>
-            <p className="mt-4 flex items-start gap-3 text-sm leading-7">
-              <MapPin className="mt-1 size-4 shrink-0" style={{ color: 'var(--sf-gold-deep)' }} />
-              {shop?.address ?? 'Visit us at the shop — address will appear here once the profile is filled in.'}
-            </p>
-
-            <div className="mt-7 flex flex-wrap gap-3">
-              {call && (
-                <a href={call} className="sf-btn sf-btn-gold h-11 px-5 text-sm">
-                  <Phone className="size-4" /> {shop?.phone}
-                </a>
-              )}
-              {whatsapp && (
-                <a href={whatsapp} target="_blank" rel="noreferrer" className="sf-btn sf-btn-ghost h-11 px-5 text-sm">
-                  WhatsApp us
-                </a>
-              )}
-              <Link href="/track" className="sf-btn sf-btn-ghost h-11 px-5 text-sm">
-                <Package className="size-4" /> Track an order
-              </Link>
-            </div>
-          </div>
-
-          <div className="flex flex-col gap-6">
-            <div className="sf-card p-7" data-reveal="right">
-              <p
-                className="flex items-center gap-2 text-[10px] font-semibold tracking-[0.2em] uppercase"
-                style={{ color: 'var(--sf-heading)' }}
-              >
-                <Clock3 className="size-3.5" style={{ color: 'var(--sf-gold-deep)' }} /> Shop hours
-              </p>
-              <p className="mt-3 text-sm leading-6">{shop?.storeHours ?? 'Call the shop for today timings.'}</p>
-              <p className="mt-4 border-t border-line pt-4 text-xs leading-6" style={{ color: 'var(--sf-muted)' }}>
-                Orders placed online are confirmed by phone. Nothing is charged on the website — payment is settled at the shop or on
-                delivery, whichever you prefer.
-              </p>
-            </div>
-
-            <div className="sf-card p-7" data-reveal="right" data-reveal-delay={120}>
-              <p
-                className="flex items-center gap-2 text-[10px] font-semibold tracking-[0.2em] uppercase"
-                style={{ color: 'var(--sf-heading)' }}
-              >
-                <ShieldCheck className="size-3.5" style={{ color: 'var(--sf-gold-deep)' }} /> Buying with confidence
-              </p>
-              <ul className="mt-3 flex flex-col gap-2.5 text-xs leading-6">
-                <li>· One-gram gold, panchaloha and silver options</li>
-                <li>· Prices shown clearly before you order</li>
-                <li>· Speak with our team for product care and exchange details</li>
-              </ul>
-            </div>
-          </div>
-        </div>
-      </section>
 
       {/* ---------------------------- How ordering works ---------------------------- */}
       <OrderSteps shop={shop as (Shop & { storeHours?: string | null }) | null} />
@@ -1179,6 +791,9 @@ function ShopWindow() {
 
       {/* A long catalogue needs a way back up that is not a fast flick. */}
       <BackToTop />
+
+      {/* The free-gift bot: the standing offer, said out loud. */}
+      <FreeGiftBot onShop={() => openStore()} />
 
       {placed && <OrderSuccess order={placed} shop={shop} onClose={() => setPlaced(null)} />}
     </div>

@@ -41,8 +41,10 @@ import type { Shop, StoreCatalogue } from '@/lib/types'
  */
 const NAV = [
   { label: 'Home', href: '/' },
-  { label: 'Shop', href: '/#store' },
-  { label: 'Offers', href: '/#offers' },
+  { label: 'Collections', href: '/collections' },
+  { label: 'Offers', href: '/offers' },
+  { label: 'Shop', href: '/shop' },
+  { label: 'Boutique', href: '/boutique' },
   { label: 'Track order', href: '/track' },
 ]
 
@@ -116,12 +118,16 @@ function Chrome({
    * with the basket opening in place because it is the same drawer everywhere.
    */
   const activeTab: MobileTab =
-    pathname === '/search' || pathname?.startsWith('/product') ? 'shop' : pathname?.startsWith('/orders') ? 'home' : 'home'
+    pathname?.startsWith('/shop') || pathname === '/search' || pathname?.startsWith('/product')
+      ? 'shop'
+      : pathname?.startsWith('/offers')
+        ? 'offers'
+        : 'home'
 
   const goToTab = (tab: 'home' | 'shop' | 'offers') => {
     if (tab === 'home') router.push('/')
-    else if (tab === 'shop') router.push('/#store')
-    else router.push('/#offers')
+    else if (tab === 'shop') router.push('/shop')
+    else router.push('/offers')
   }
 
   // The header should say what the page is — it is the only title a shared link

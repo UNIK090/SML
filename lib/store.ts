@@ -9,6 +9,20 @@ export const FREE_DELIVERY_ABOVE = 5000
 export const MAX_ORDER_LINES = 40
 export const MAX_LINE_QUANTITY = 20
 
+/**
+ * Free-gift rule: any bill above this amount earns the customer a free gift.
+ *
+ * A flat threshold rather than a per-offer field because this is a standing
+ * counter practice, not a dated festival — the shop gives the gift on the bill,
+ * all year, and it should read the same on the website as it does at the till.
+ */
+export const FREE_GIFT_ABOVE = 500
+
+/** Whether a basket subtotal has reached the free-gift threshold. */
+export function earnsFreeGift(subtotal: number): boolean {
+  return Number.isFinite(subtotal) && subtotal > FREE_GIFT_ABOVE
+}
+
 /** Selling price of an item: the website price when set, else the reference price. */
 export function sellingPrice(item: { storePrice: string | number | null; price: string | number }): number {
   const raw = item.storePrice ?? item.price

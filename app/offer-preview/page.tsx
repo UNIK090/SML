@@ -4,7 +4,8 @@
 
 import { useState } from 'react'
 import OfferPopup from '@/components/store/offer-popup'
-import { OfferBanner, OfferCards } from '@/components/store/store-sections'
+import FreeGiftBot from '@/components/store/free-gift-bot'
+import { OfferCards } from '@/components/store/store-sections'
 import type { PublicOffer } from '@/lib/types'
 
 const OFFER: PublicOffer = {
@@ -33,9 +34,9 @@ export default function OfferPreviewPage() {
       <p id="probe" className="text-sm">
         harness mounted · onShop fired: {log || 'no'}
       </p>
-      <OfferBanner offer={OFFER} onShop={() => setLog('banner')} />
       <OfferCards offers={[OFFER]} onSelect={() => setLog('card')} />
       <OfferPopup offer={OFFER} shopName="SRI MAHA LAXMI JEWELLERS" onShop={() => setLog('popup')} />
+      <FreeGiftBot onShop={() => setLog('gift')} />
     </div>
   )
 }

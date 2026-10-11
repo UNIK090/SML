@@ -713,363 +713,6 @@
   box-shadow: 0 1px 0 var(--sf-line), 0 4px 14px oklch(0.3 0.03 60 / 5%);
 }
 
-/* ---------- Festival offer band ---------- */
-/*
- * A thin cream shelf that holds the coupon. It keeps the gradient and hairline
- * so the coupon sits on branded ground rather than on a bare white gap.
- */
-.sf-offer-band {
-  position: relative;
-  background: linear-gradient(100deg, var(--sf-gold-wash), var(--sf-cream) 60%, var(--sf-hero-base));
-  border-bottom: 1px solid var(--sf-gold-line);
-}
-
-.sf-offer-badge {
-  display: inline-flex;
-  flex-shrink: 0;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.45rem 0.85rem;
-  border-radius: 999px;
-  background: var(--sf-maroon);
-  color: #fff;
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-}
-
-.sf-offer-badge svg {
-  color: var(--sf-gold-ink);
-}
-
-/* The saving is the largest thing in the row, it is the reason to look. */
-.sf-offer-saving {
-  font-size: 1.35rem;
-  font-weight: 700;
-  line-height: 1.1;
-  letter-spacing: -0.01em;
-  color: var(--sf-maroon);
-}
-
-.sf-offer-code {
-  display: inline-block;
-  margin-inline: 0.15rem;
-  padding: 0.1rem 0.45rem;
-  border: 1px dashed var(--sf-gold-line);
-  border-radius: 4px;
-  background: var(--sf-surface);
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  color: var(--sf-heading);
-}
-
-/* ---------------------------------------------------------------------------
- * The offer coupon · gilded gift voucher
- * ---------------------------------------------------------------------------
- *
- * A deep maroon (or antique gold / green) voucher with a slowly travelling gold
- * foil edge, a diagonal sheen, a fine diamond-lattice texture and a pale gold
- * stub carrying the saving beside a rotating seal.
- *
- *   .sf-offer-coupon        the card; data-accent = maroon | red | gold | green
- *   .sf-offer-coupon-main   the reading half: badge, name, description, code
- *   .sf-offer-coupon-perf   the dashed perforation with its two notches
- *   .sf-offer-coupon-stub   the gold stub: the saving, the deadline, the button
- *   .sf-offer-coupon-art    added when the shop uploaded artwork
- */
-@property --sf-ang {
-  syntax: '<angle>';
-  inherits: false;
-  initial-value: 0deg;
-}
-
-.sf-offer-coupon {
-  --coupon-bg: linear-gradient(135deg, var(--sf-maroon-deep), var(--sf-maroon) 58%, oklch(0.26 0.11 22));
-  position: relative;
-  isolation: isolate;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  margin-inline: auto;
-  max-width: 50rem;
-  border-radius: 22px;
-  background: var(--coupon-bg);
-  box-shadow:
-    0 28px 56px oklch(0.3 0.12 22 / 30%),
-    0 2px 6px oklch(0.3 0.1 22 / 20%),
-    inset 0 1px 0 oklch(1 0 0 / 12%);
-  animation: sf-coupon-in 900ms cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-
-@media (min-width: 768px) {
-  .sf-offer-coupon {
-    flex-direction: row;
-    align-items: stretch;
-  }
-}
-
-.sf-offer-coupon[data-accent='red'] {
-  --coupon-bg: linear-gradient(135deg, oklch(0.4 0.17 27), var(--sf-offer-red) 58%, oklch(0.36 0.15 27));
-}
-.sf-offer-coupon[data-accent='gold'] {
-  --coupon-bg: linear-gradient(135deg, oklch(0.42 0.1 66), var(--sf-offer-gold) 58%, oklch(0.4 0.09 66));
-}
-.sf-offer-coupon[data-accent='green'] {
-  --coupon-bg: linear-gradient(135deg, oklch(0.34 0.09 152), var(--sf-offer-green) 58%, oklch(0.32 0.08 152));
-}
-
-/* Texture + travelling sheen. */
-.sf-offer-coupon::before {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  background:
-    linear-gradient(105deg, transparent 38%, oklch(1 0 0 / 15%) 50%, transparent 62%) 0 0 / 260% 100% no-repeat,
-    repeating-linear-gradient(45deg, oklch(1 0 0 / 3.5%) 0 1px, transparent 1px 15px),
-    repeating-linear-gradient(-45deg, oklch(1 0 0 / 3.5%) 0 1px, transparent 1px 15px);
-  background-position: 130% 0, 0 0, 0 0;
-  animation: sf-coupon-sheen 5.5s ease-in-out 1.2s infinite;
-  content: '';
-  pointer-events: none;
-}
-
-/* The gold foil edge: a conic gradient clipped to a 1.5px ring that slowly rotates. */
-.sf-offer-coupon::after {
-  position: absolute;
-  inset: 0;
-  z-index: 4;
-  padding: 1.5px;
-  border-radius: inherit;
-  background: conic-gradient(
-    from var(--sf-ang),
-    oklch(0.86 0.12 85),
-    oklch(0.6 0.1 70),
-    oklch(0.96 0.08 90),
-    oklch(0.62 0.1 70),
-    oklch(0.86 0.12 85)
-  );
-  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
-  mask-composite: exclude;
-  animation: sf-foil-spin 7s linear infinite;
-  content: '';
-  pointer-events: none;
-}
-
-@keyframes sf-coupon-in {
-  0% { opacity: 0; transform: translateY(26px) scale(0.95) rotateX(8deg); }
-  60% { opacity: 1; transform: translateY(-3px) scale(1.01) rotateX(0); }
-  100% { opacity: 1; transform: translateY(0) scale(1); }
-}
-
-@keyframes sf-coupon-sheen {
-  0% { background-position: 130% 0, 0 0, 0 0; }
-  45%, 100% { background-position: -130% 0, 0 0, 0 0; }
-}
-
-@keyframes sf-foil-spin {
-  to { --sf-ang: 360deg; }
-}
-
-/* ---- The reading half ---- */
-.sf-offer-coupon-main {
-  position: relative;
-  z-index: 2;
-  display: flex;
-  flex: 1 1 auto;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0.65rem;
-  min-width: 0;
-  padding: 1.5rem 1.5rem 1.5rem 1.75rem;
-}
-
-/* Gold pill badge on the dark field. */
-.sf-offer-coupon .sf-offer-badge {
-  background: linear-gradient(135deg, oklch(0.93 0.09 88), oklch(0.78 0.12 80));
-  color: var(--sf-maroon-deep);
-  box-shadow: 0 4px 12px oklch(0.2 0.05 40 / 25%);
-}
-.sf-offer-coupon .sf-offer-badge svg { color: var(--sf-maroon-deep); }
-
-/* Inline colours from the component are forced light, so the copy always reads on the dark field. */
-.sf-offer-coupon .sf-offer-copy h2 {
-  color: oklch(0.98 0.02 85) !important;
-  text-shadow: 0 1px 14px oklch(0.12 0.03 30 / 45%);
-}
-.sf-offer-coupon .sf-offer-copy p,
-.sf-offer-coupon .sf-offer-code-line {
-  color: oklch(0.94 0.02 85 / 86%) !important;
-}
-
-.sf-offer-code-line {
-  margin: 0;
-  font-size: 11px;
-  color: var(--sf-muted);
-}
-
-.sf-offer-coupon .sf-offer-code {
-  border-color: oklch(0.86 0.1 85 / 70%);
-  background: oklch(1 0 0 / 10%);
-  color: var(--sf-gold-ink);
-  backdrop-filter: blur(4px);
-}
-
-.sf-offer-copy { min-width: 0; }
-
-/* ---- The perforation ---- */
-.sf-offer-coupon-perf {
-  position: relative;
-  z-index: 2;
-  flex: 0 0 auto;
-  border-top: 1.5px dashed oklch(0.86 0.1 85 / 55%);
-}
-
-@media (min-width: 768px) {
-  .sf-offer-coupon-perf {
-    border-top: 0;
-    border-left: 1.5px dashed oklch(0.86 0.1 85 / 55%);
-  }
-}
-
-.sf-offer-coupon-perf::before,
-.sf-offer-coupon-perf::after {
-  position: absolute;
-  left: -8px;
-  width: 15px;
-  height: 15px;
-  border-radius: 50%;
-  background: var(--sf-cream-soft);
-  box-shadow: inset 0 1px 3px oklch(0.2 0.05 30 / 35%);
-  content: '';
-}
-.sf-offer-coupon-perf::before { top: -8px; }
-.sf-offer-coupon-perf::after { bottom: -8px; }
-
-@media (min-width: 768px) {
-  .sf-offer-coupon-perf::before { top: -8px; left: -8px; }
-  .sf-offer-coupon-perf::after { top: auto; bottom: -8px; left: -8px; }
-}
-
-/* ---- The gold stub ---- */
-.sf-offer-coupon-stub {
-  position: relative;
-  z-index: 2;
-  display: flex;
-  flex: 0 0 auto;
-  flex-direction: column;
-  align-items: stretch;
-  justify-content: center;
-  gap: 0.8rem;
-  overflow: hidden;
-  padding: 1.5rem 1.75rem 1.5rem 1.5rem;
-  background: linear-gradient(160deg, oklch(0.985 0.03 88), oklch(0.93 0.065 86));
-}
-
-@media (min-width: 768px) {
-  .sf-offer-coupon-stub { min-width: 14rem; }
-}
-
-/* A slowly turning dashed seal in the corner of the stub. */
-.sf-offer-coupon-stub::before {
-  position: absolute;
-  top: -2rem;
-  right: -2rem;
-  width: 7rem;
-  height: 7rem;
-  border: 1px dashed oklch(0.6 0.1 72 / 70%);
-  border-radius: 50%;
-  box-shadow: inset 0 0 0 10px oklch(0.6 0.1 72 / 7%), inset 0 0 0 11px oklch(0.6 0.1 72 / 30%);
-  animation: sf-spin 26s linear infinite;
-  content: '';
-  pointer-events: none;
-}
-
-.sf-offer-coupon-saving { text-align: left; }
-@media (min-width: 768px) {
-  .sf-offer-coupon-saving { text-align: center; }
-}
-
-/* The saving: large serif, with the gold shimmer running through the maroon. */
-.sf-offer-coupon .sf-offer-saving {
-  font-family: ui-serif, Georgia, Cambria, 'Times New Roman', serif;
-  font-size: 2.15rem;
-  font-weight: 800;
-  line-height: 1.05;
-  letter-spacing: -0.02em;
-  background: linear-gradient(
-    100deg,
-    var(--sf-maroon) 0%,
-    var(--sf-maroon) 38%,
-    oklch(0.7 0.13 76) 48%,
-    oklch(0.88 0.1 86) 50%,
-    oklch(0.7 0.13 76) 52%,
-    var(--sf-maroon) 62%,
-    var(--sf-maroon) 100%
-  );
-  background-size: 250% 100%;
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  color: transparent;
-  animation: sf-text-shine 5s ease-in-out infinite;
-}
-
-.sf-offer-timing {
-  margin-top: 0.25rem;
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--sf-gold-deep);
-}
-
-/* ---- With uploaded artwork behind the card ---- */
-.sf-offer-band-bg {
-  position: absolute;
-  inset: 0;
-  z-index: -2;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: center;
-}
-
-.sf-offer-band-scrim {
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  background: linear-gradient(
-    95deg,
-    oklch(0.16 0.04 25 / 82%) 0%,
-    oklch(0.16 0.04 25 / 68%) 55%,
-    oklch(0.16 0.04 25 / 52%) 100%
-  );
-}
-
-.sf-offer-coupon-art::before { opacity: 0.6; }
-.sf-offer-coupon-art .sf-offer-coupon-stub { background: oklch(0.985 0.03 88 / 94%); }
-.sf-offer-coupon-art .sf-offer-coupon-perf { border-color: oklch(1 0 0 / 42%); }
-
-.sf-offer-band-photo { padding-block: 1.75rem; }
-
-@media (prefers-reduced-motion: reduce) {
-  .sf-offer-coupon,
-  .sf-offer-coupon::before,
-  .sf-offer-coupon::after,
-  .sf-offer-coupon-stub::before,
-  .sf-offer-coupon .sf-offer-saving {
-    animation: none !important;
-  }
-  .sf-offer-coupon .sf-offer-saving {
-    background: none;
-    -webkit-text-fill-color: currentColor;
-    color: var(--sf-maroon);
-  }
-}
-
 /* ---------- Offers section: the festival card board ---------- */
 .sf-offer-card {
   position: relative;
@@ -1261,14 +904,12 @@
 }
 
 .sf-offer-card-code {
-  padding: 0.3rem 0.6rem;
-  border: 1px dashed oklch(1 0 0 / 55%);
-  border-radius: 6px;
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  color: oklch(1 0 0 / 92%);
+  margin: 0;
+  font-size: 11px;
+  color: oklch(1 0 0 / 82%);
 }
+
+.sf-offer-card-code .tnum { font-weight: 800; letter-spacing: 0.06em; }
 
 /* ---------- The pop-up festival offer ---------- */
 /*
@@ -1667,6 +1308,282 @@
   }
   .sf-popup-body::before,
   .sf-popup-confetti { display: none; }
+}
+
+/* ===========================================================================
+ * The free-gift bot
+ * ===========================================================================
+ *
+ * A small animated helper pinned to the bottom-left corner that slides up and
+ * holds a speech bubble with the rolling free-gift offer. It replaces the
+ * passive free-gift strip: the promise is now said out loud, on any scroll
+ * position, and can be tapped away.
+ *
+ * Left, because the back-to-top button already owns the right, and lifted above
+ * the phone bottom bar by the same safe-area inset that bar uses.
+ */
+.sf-bot {
+  position: fixed;
+  left: max(1rem, env(safe-area-inset-left));
+  bottom: max(1rem, env(safe-area-inset-bottom));
+  z-index: 44;
+  display: flex;
+  align-items: flex-end;
+  gap: 0.5rem;
+  pointer-events: none;
+  /* Slides up once mounted; the entrance is the animation below. */
+  animation: sf-bot-in 620ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.sf-bot-avatar,
+.sf-bot-bubble {
+  pointer-events: auto;
+}
+
+/* ---- The bot itself ---- */
+.sf-bot-avatar {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 3.5rem;
+  padding: 0;
+  background: none;
+  animation: sf-bot-bob 2.8s ease-in-out infinite;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* The antenna, with its little glowing tip. */
+.sf-bot-antenna {
+  position: relative;
+  width: 2px;
+  height: 0.55rem;
+  border-radius: 2px;
+  background: oklch(0.62 0.03 60);
+}
+
+.sf-bot-antenna-tip {
+  position: absolute;
+  top: -0.35rem;
+  left: 50%;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 999px;
+  background: var(--sf-gold);
+  box-shadow: 0 0 0 3px oklch(0.9 0.11 88 / 30%);
+  transform: translateX(-50%);
+  animation: sf-bot-tip 1.8s ease-in-out infinite;
+}
+
+/* The head: a rounded screen with two eyes and a mouth. */
+.sf-bot-head {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.34rem;
+  width: 3.1rem;
+  height: 2.1rem;
+  margin-top: 0.15rem;
+  border-radius: 0.9rem 0.9rem 0.7rem 0.7rem;
+  background: linear-gradient(160deg, oklch(0.32 0.03 60), oklch(0.22 0.02 60));
+  box-shadow: inset 0 1px 0 oklch(1 0 0 / 18%);
+}
+
+.sf-bot-eye {
+  width: 0.42rem;
+  height: 0.42rem;
+  border-radius: 999px;
+  background: oklch(0.95 0.09 88);
+  box-shadow: 0 0 6px oklch(0.9 0.11 88 / 85%);
+  animation: sf-bot-blink 4.2s ease-in-out infinite;
+}
+
+.sf-bot-mouth {
+  position: absolute;
+  bottom: 0.4rem;
+  left: 50%;
+  width: 0.9rem;
+  height: 0.28rem;
+  border-radius: 0 0 0.4rem 0.4rem;
+  background: oklch(0.95 0.09 88 / 75%);
+  transform: translateX(-50%);
+}
+
+/* The body: a maroon pod holding the gift. */
+.sf-bot-body {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 1.9rem;
+  margin-top: -0.2rem;
+  border-radius: 0.6rem 0.6rem 0.9rem 0.9rem;
+  background: linear-gradient(160deg, var(--sf-maroon), var(--sf-maroon-deep));
+  box-shadow: 0 10px 22px oklch(0.3 0.12 22 / 38%);
+}
+
+.sf-bot-gift {
+  width: 1.05rem;
+  height: 1.05rem;
+  color: var(--sf-gold-ink);
+}
+
+/* ---- The speech bubble ---- */
+.sf-bot-bubble {
+  position: relative;
+  width: min(17rem, calc(100vw - 6rem));
+  padding: 0.9rem 1rem 0.95rem;
+  border-radius: 1rem 1rem 1rem 0.3rem;
+  background: var(--sf-surface);
+  box-shadow:
+    0 18px 40px oklch(0.3 0.12 22 / 26%),
+    0 0 0 1px var(--sf-gold-line);
+  transform-origin: 0% 100%;
+  animation: sf-bot-bubble-in 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* The tail that ties the bubble to the bot. */
+.sf-bot-bubble::after {
+  position: absolute;
+  bottom: 0;
+  left: -0.45rem;
+  width: 0.9rem;
+  height: 0.9rem;
+  background: var(--sf-surface);
+  box-shadow: -1px 1px 0 0 var(--sf-gold-line);
+  transform: rotate(45deg) translateY(0.45rem);
+  content: '';
+}
+
+.sf-bot-bubble-close {
+  position: absolute;
+  top: 0.45rem;
+  right: 0.45rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 999px;
+  color: var(--sf-muted);
+  transition: background 160ms ease, color 160ms ease;
+}
+
+.sf-bot-bubble-close:hover { background: var(--sf-cream); color: var(--sf-heading); }
+
+.sf-bot-bubble-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--sf-gold-deep);
+}
+
+.sf-bot-bubble-title {
+  margin-top: 0.3rem;
+  padding-right: 1.2rem;
+  font-size: 0.92rem;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--sf-heading);
+}
+
+.sf-bot-bubble-title .tnum { color: var(--sf-maroon); }
+
+.sf-bot-bubble-desc {
+  margin-top: 0.3rem;
+  font-size: 0.72rem;
+  line-height: 1.55;
+  color: var(--sf-muted);
+}
+
+.sf-bot-bubble-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.7rem;
+}
+
+.sf-bot-bubble-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  height: 2.1rem;
+  padding-inline: 0.9rem;
+  border-radius: 999px;
+  background: var(--sf-maroon);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  transition: transform 160ms ease, box-shadow 160ms ease;
+}
+
+.sf-bot-bubble-cta:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px oklch(0.3 0.12 22 / 32%);
+}
+
+.sf-bot-bubble-later {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--sf-muted);
+  transition: color 160ms ease;
+}
+
+.sf-bot-bubble-later:hover { color: var(--sf-heading); }
+
+/* ---- Motion ---- */
+@keyframes sf-bot-in {
+  from { opacity: 0; transform: translateY(1.5rem) scale(0.9); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes sf-bot-bubble-in {
+  0%   { opacity: 0; transform: scale(0.7) translateY(0.6rem); }
+  60%  { opacity: 1; transform: scale(1.03) translateY(0); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+@keyframes sf-bot-bob {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-0.28rem); }
+}
+
+@keyframes sf-bot-blink {
+  0%, 92%, 100% { transform: scaleY(1); }
+  95%           { transform: scaleY(0.12); }
+}
+
+@keyframes sf-bot-tip {
+  0%, 100% { opacity: 0.55; transform: translateX(-50%) scale(0.9); }
+  50%      { opacity: 1;    transform: translateX(-50%) scale(1.1); }
+}
+
+/* On phones, lift the bot clear of the fixed bottom navigation bar. */
+@media (max-width: 1023px) {
+  .sf-bot {
+    bottom: calc(4rem + env(safe-area-inset-bottom));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sf-bot,
+  .sf-bot-avatar,
+  .sf-bot-bubble,
+  .sf-bot-antenna-tip,
+  .sf-bot-eye {
+    animation: none !important;
+  }
+  .sf-bot {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 /* ---------- Hero: a short cream banner ---------- */
@@ -3607,6 +3524,15 @@ html {
   margin-top: 0.5rem;
 }
 
+.sf-feature-offer-code {
+  margin: 0;
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  color: oklch(0.95 0.03 85 / 88%);
+}
+
+.sf-feature-offer-code .tnum { font-weight: 800; letter-spacing: 0.06em; }
+
 .sf-feature-offer-cta {
   display: inline-flex;
   align-items: center;
@@ -3669,36 +3595,6 @@ html {
   .sf-feature-offer-timer { justify-content: flex-end; }
 }
 
-/* ---------- The copyable coupon code ---------- */
-.sf-coupon-code {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 0.85rem;
-  border-radius: 10px;
-  border: 1px dashed oklch(1 0 0 / 45%);
-  background: oklch(1 0 0 / 10%);
-  color: inherit;
-  font-size: 0.75rem;
-  transition: background 160ms ease, transform 160ms ease;
-}
-.sf-coupon-code:hover { transform: translateY(-1px); }
-.sf-coupon-code[data-variant='dark'] { color: oklch(0.97 0.02 85); background: oklch(1 0 0 / 12%); }
-.sf-coupon-code[data-variant='light'] { color: oklch(1 0 0 / 92%); border-color: oklch(1 0 0 / 55%); }
-
-.sf-coupon-code-label {
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  opacity: 0.7;
-}
-
-.sf-coupon-code-value {
-  font-weight: 800;
-  letter-spacing: 0.08em;
-}
-
 /* ---------- The offer card: refreshed head, timing and foot ---------- */
 .sf-offer-card-head {
   display: flex;
@@ -3723,134 +3619,6 @@ html {
   align-items: center;
   gap: 0.35rem;
 }
-
-/* The code inside a card sits on a light pill so it reads against any accent. */
-.sf-offer-card-foot .sf-coupon-code {
-  background: oklch(1 0 0 / 92%);
-  color: var(--sf-heading);
-  border-color: var(--sf-gold-line);
-  border-style: solid;
-}
-.sf-offer-card-foot .sf-coupon-code-label { color: var(--sf-muted); opacity: 1; }
-
-/* ===========================================================================
- * The coupon, redesigned — a clean modern ticket
- * ===========================================================================
- *
- * The previous coupon was a heavily "gilded" voucher: a rotating conic foil
- * edge, a travelling sheen, a diamond-lattice texture and an animated text
- * shine — four competing animations on one small card. At a glance it read as
- * busy rather than premium, and the foil edge fought the offer copy.
- *
- * The redesign keeps the thing that made it a coupon — the stub, the dashed
- * perforation and the two notches — and drops everything else. What is left is
- * a crisp, flat ticket: a solid tinted field, one hairline gold frame, generous
- * spacing and one strong accent (the saving). It is the shape of a discount
- * coupon in a modern app, and the offer copy is now the loudest element instead
- * of the animation.
- *
- * These rules come last, so they win over the earlier coupon block by source
- * order without that block having to be torn out.
- */
-
-/* One flat tinted field, no texture layers, no sheen animation. */
-.sf-offer-coupon {
-  --coupon-bg: linear-gradient(120deg, var(--sf-maroon-deep), var(--sf-maroon) 70%);
-  border-radius: 18px;
-  box-shadow: 0 20px 44px oklch(0.3 0.12 22 / 22%);
-  animation: sf-coupon-ticket-in 620ms cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-
-.sf-offer-coupon[data-accent='red'] {
-  --coupon-bg: linear-gradient(120deg, oklch(0.42 0.16 27), var(--sf-offer-red) 70%);
-}
-.sf-offer-coupon[data-accent='gold'] {
-  --coupon-bg: linear-gradient(120deg, oklch(0.44 0.1 66), var(--sf-offer-gold) 70%);
-}
-.sf-offer-coupon[data-accent='green'] {
-  --coupon-bg: linear-gradient(120deg, oklch(0.36 0.09 152), var(--sf-offer-green) 70%);
-}
-
-/* The texture / sheen pseudo-element is switched off, not removed from the
-   markup, so the element still exists for any future layer. */
-.sf-offer-coupon::before {
-  background: none;
-  animation: none;
-}
-
-/* The rotating conic foil edge becomes a single static hairline frame. */
-.sf-offer-coupon::after {
-  padding: 1px;
-  background: linear-gradient(120deg, oklch(0.9 0.1 86 / 70%), oklch(0.7 0.09 78 / 30%) 60%, oklch(0.9 0.1 86 / 55%));
-  animation: none;
-}
-
-@keyframes sf-coupon-ticket-in {
-  from { opacity: 0; transform: translateY(18px) scale(0.985); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
-}
-
-/* The reading half: a little more air, no dash texture behind it. */
-.sf-offer-coupon-main {
-  gap: 0.85rem;
-  padding: 1.75rem;
-}
-
-/* A flat badge rather than a gradient pill — one accent, not two. */
-.sf-offer-coupon .sf-offer-badge {
-  background: oklch(1 0 0 / 14%);
-  color: oklch(0.97 0.02 85);
-  box-shadow: none;
-  border: 1px solid oklch(1 0 0 / 22%);
-}
-.sf-offer-coupon .sf-offer-badge svg { color: oklch(0.9 0.1 86); }
-
-/* The code reads as a chip the customer can copy and keep. */
-.sf-offer-coupon .sf-offer-code {
-  border-style: solid;
-  border-color: oklch(1 0 0 / 28%);
-  background: oklch(1 0 0 / 12%);
-  color: oklch(0.98 0.02 85);
-  backdrop-filter: none;
-}
-
-/* The perforation: a clean dashed rule, notches a touch smaller. */
-.sf-offer-coupon-perf { border-color: oklch(1 0 0 / 28%); }
-@media (min-width: 768px) {
-  .sf-offer-coupon-perf { border-left-color: oklch(1 0 0 / 28%); }
-}
-.sf-offer-coupon-perf::before,
-.sf-offer-coupon-perf::after {
-  width: 14px;
-  height: 14px;
-  background: var(--sf-cream);
-  box-shadow: none;
-}
-
-/* The stub: a plain light panel, no rotating seal, no text-shine animation. */
-.sf-offer-coupon-stub {
-  background: var(--sf-cream);
-  padding: 1.5rem 1.75rem;
-}
-.sf-offer-coupon-stub::before { display: none; }
-
-/* The saving: solid maroon, no animated gradient. One strong accent. */
-.sf-offer-coupon .sf-offer-saving {
-  font-family: ui-serif, Georgia, Cambria, 'Times New Roman', serif;
-  font-size: 2rem;
-  font-weight: 800;
-  line-height: 1.05;
-  letter-spacing: -0.02em;
-  background: none;
-  -webkit-text-fill-color: currentColor;
-  color: var(--sf-maroon);
-  animation: none;
-}
-
-.sf-offer-timing { color: var(--sf-gold-deep); }
-
-/* With uploaded artwork, keep the flat scrim so the copy stays legible. */
-.sf-offer-coupon-art .sf-offer-coupon-stub { background: oklch(0.985 0.02 88 / 95%); }
 
 /* ===========================================================================
  * Mobile marketplace layer

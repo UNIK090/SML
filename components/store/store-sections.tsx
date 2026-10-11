@@ -22,11 +22,9 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import {
   ArrowRight,
   BadgeCheck,
-  Check,
   ChevronLeft,
   ChevronRight,
   Clock3,
-  Copy,
   Flame,
   Gem,
   IndianRupee,
@@ -169,129 +167,12 @@ export function Rail({
   )
 }
 
-/* ---------------------------------------------------------------------------
-   The festival offer
-   --------------------------------------------------------------------------- */
-
-/**
- * The festival offer band.
- *
- * A jewellery shop's year is shaped by its festivals, and an offer is the one
- * message that has to reach the customer today — before it expires. So it is
- * given its own band directly under the banner, in the shop's own maroon, with
- * the saving as the largest thing in the row.
- *
- * It renders nothing at all when there is no offer, which is the common state:
- * an empty "no offers" strip would make the shop look like it is always
- * discounting, or worse, broken. `state` and `daysLeft` are decided on the
- * server against the shop's business day, so a visitor in another timezone
- * cannot be shown a finished sale.
+/*
+ * The festival offer band and the free-gift strip used to live here as static
+ * banners in the page. Both have moved into pop-ups that reach the customer
+ * wherever they are: the festival offer into `OfferPopup`, and the standing
+ * free-gift promise into `FreeGiftBot`. Nothing in this file draws them now.
  */
-export function OfferBanner({ offer, onShop }: { offer: PublicOffer; onShop: () => void }) {
-  const running = offer.state === 'ACTIVE'
-  const startsToday = offer.startsOn === offer.endsOn
-
-  /**
-   * The urgency line, and it is never allowed to overstate.
-   *
-   * "Last day" is said only on the actual last day, and a sale that has not
-   * started yet is framed as coming up rather than running — a shop that cries
-   * wolf about a deadline stops being believed when the deadline is real.
-   */
-  const timing = !running
-    ? `Starts ${offerDate(offer.startsOn)}`
-    : offer.daysLeft === 0
-      ? startsToday
-        ? 'Today only'
-        : 'Last day today'
-      : offer.daysLeft === 1
-        ? 'Ends tomorrow'
-        : `Ends in ${offer.daysLeft} days`
-
-  const banner = offer.hasBanner ? offerBannerUrl(offer.id, offer.bannerVersion) : null
-
-  return (
-    <section
-      className="sf-offer-band px-4 py-6 sm:px-7"
-      aria-label={running ? 'Current offer' : 'Upcoming offer'}
-    >
-      {/*
-        The coupon.
-
-        An offer is a dated promise — a thing you hand over, not a page of the
-        site. So it is drawn as a coupon: a narrow card, centred, with the same
-        width as a column of products rather than the full bleed of the page.
-        A full-width strip reads as another page section; a coupon reads as
-        something the shop is giving you.
-      */}
-      <article className={`sf-offer-coupon ${banner ? 'sf-offer-coupon-art' : ''}`} data-accent={offer.accent}>
-        {/*
-          The uploaded artwork, as the coupon's background.
-
-          A scrim sits over it so the copy stays readable whatever the shop
-          uploads. A festival design can be pale, busy, or full of gold foil, and
-          white type dropped straight onto that becomes unreadable; the scrim is
-          what makes "any image" a safe thing for the shopkeeper to choose.
-        */}
-        {banner && (
-          <>
-            <img src={banner} alt="" className="sf-offer-band-bg" aria-hidden />
-            <span className="sf-offer-band-scrim" aria-hidden />
-          </>
-        )}
-
-        {/* Left: badge, name, description and the code. */}
-        <div className="sf-offer-coupon-main">
-          <span className="sf-offer-badge">
-            <Tag className="size-3.5" strokeWidth={2} />
-            {running ? 'Offer' : 'Coming up'}
-          </span>
-
-          <div className="sf-offer-copy">
-            <h2 className="text-base font-semibold tracking-tight sm:text-lg" style={{ color: 'var(--sf-heading)' }}>
-              {offer.title}
-            </h2>
-            {offer.description && (
-              <p className="mt-1 text-xs leading-6" style={{ color: 'var(--sf-muted)' }}>
-                {offer.description}
-              </p>
-            )}
-          </div>
-
-          {offer.code && (
-            <p className="sf-offer-code-line">
-              Quote{' '}
-              <CouponCode code={offer.code} variant="dark" />
-              {' '}at the counter.
-            </p>
-          )}
-        </div>
-
-        {/*
-          The perforation.
-
-          A dashed rule with a notch cut out at each end is what makes a card
-          read as a coupon rather than a panel. Decorative only — the dashed
-          divider already separates the two halves for a sighted reader, and the
-          heading and saving above and below carry the meaning.
-        */}
-        <span className="sf-offer-coupon-perf" aria-hidden />
-
-        {/* Right: the saving and the way in. */}
-        <div className="sf-offer-coupon-stub">
-          <div className="sf-offer-coupon-saving">
-            <p className="sf-offer-saving tnum">{offer.savingsLabel || offer.title}</p>
-            <p className="sf-offer-timing">{timing}</p>
-          </div>
-
-          <button onClick={onShop} className="sf-btn sf-btn-gold h-10 w-full shrink-0 px-4 text-xs sm:w-auto">
-            Shop the offer <ArrowRight className="size-3.5" />
-          </button>
-        </div>
-      </article>
-    </section>
-  )
-}
 
 /* ---------------------------------------------------------------------------
    The Offers section
@@ -373,7 +254,7 @@ function offerAmount(offer: PublicOffer): { value: string; unit: string } {
  *
  * Given a whole band rather than a cell in a row: a large saving, the artwork if
  * the shop uploaded any, the minimum spend when there is one, and a countdown,
- * with the coupon code shown as something the customer can copy and keep.
+ * with the coupon code quoted as plain text.
  */
 function FeaturedOffer({ offer, onSelect }: { offer: PublicOffer; onSelect: () => void }) {
   const banner = offer.hasBanner ? offerBannerUrl(offer.id, offer.bannerVersion) : null
@@ -412,7 +293,11 @@ function FeaturedOffer({ offer, onSelect }: { offer: PublicOffer; onSelect: () =
             <button onClick={onSelect} className="sf-feature-offer-cta">
               Shop this offer <ArrowRight className="size-4" />
             </button>
-            {offer.code && <CouponCode code={offer.code} variant="dark" />}
+            {offer.code && (
+              <p className="sf-feature-offer-code">
+                Quote <span className="tnum">{offer.code}</span> at the counter
+              </p>
+            )}
           </div>
         </div>
 
@@ -482,51 +367,19 @@ function OfferCard({
           <Clock3 className="size-3" /> {offerTiming(offer)}
         </p>
 
+        {offer.code && (
+          <p className="sf-offer-card-code">
+            Quote <span className="tnum">{offer.code}</span> at the counter
+          </p>
+        )}
+
         <div className="sf-offer-card-foot">
           <button onClick={onSelect} className="sf-offer-card-btn">
             Shop Now <ArrowRight className="size-3.5" />
           </button>
-
-          {offer.code && <CouponCode code={offer.code} variant="light" />}
         </div>
       </div>
     </article>
-  )
-}
-
-/**
- * The coupon code, as something the customer can actually take away.
- *
- * Tapping copies it — a code a customer has to retype from a screenshot is a
- * code they will not use. The copy state resets after a moment so the label
- * returns to "Copy" without the customer having to do anything.
- */
-function CouponCode({ code, variant }: { code: string; variant: 'dark' | 'light' }) {
-  const [copied, setCopied] = useState(false)
-
-  const copy = async () => {
-    try {
-      await navigator.clipboard.writeText(code)
-      setCopied(true)
-      window.setTimeout(() => setCopied(false), 1800)
-    } catch {
-      // Clipboard refused (old browser or insecure context): the code is still
-      // on screen to read, so there is nothing to recover.
-    }
-  }
-
-  return (
-    <button
-      type="button"
-      onClick={copy}
-      className="sf-coupon-code"
-      data-variant={variant}
-      aria-label={copied ? `Copied coupon code ${code}` : `Copy coupon code ${code}`}
-    >
-      <span className="sf-coupon-code-label">Code</span>
-      <span className="sf-coupon-code-value tnum">{code}</span>
-      {copied ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
-    </button>
   )
 }
 

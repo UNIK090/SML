@@ -564,7 +564,11 @@ export default function OffersSection() {
                       <div className="flex flex-wrap items-center gap-2">
                         <Badge tone={STATE_TONE[state]}>{STATE_LABEL[state]}</Badge>
                         {!offer.active && <Badge tone="neutral">Switched off</Badge>}
-                        {offer.code && <Badge tone="gold">{offer.code}</Badge>}
+                        {offer.code && (
+                          <span className="text-[11px] text-muted-foreground">
+                            Code <span className="font-semibold text-foreground">{offer.code}</span>
+                          </span>
+                        )}
                       </div>
                       <p className="mt-1.5 truncate text-sm font-medium">{offer.title}</p>
                       <p className="mt-0.5 text-[11px] text-muted-foreground">

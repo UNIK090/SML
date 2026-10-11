@@ -8,11 +8,11 @@
 // order number to track.
 
 import { useEffect, useState, type ReactNode } from 'react'
-import { ArrowRight, Check, Loader2, Minus, Plus, ShoppingBag, Sparkles, Trash2, X } from 'lucide-react'
+import { ArrowRight, Check, Gift, Loader2, Minus, Plus, ShoppingBag, Sparkles, Trash2, X } from 'lucide-react'
 import { useCart } from '@/components/store/cart'
 import { ProductMedia } from '@/components/store/product-card'
 import ShareMenu, { WhatsAppMark } from '@/components/store/share-menu'
-import { DELIVERY_FEE, FREE_DELIVERY_ABOVE, deliveryFeeFor, rupees, rupeesExact, telLink, whatsappLink } from '@/lib/store'
+import { DELIVERY_FEE, FREE_DELIVERY_ABOVE, FREE_GIFT_ABOVE, deliveryFeeFor, earnsFreeGift, rupees, rupeesExact, telLink, whatsappLink } from '@/lib/store'
 import type { PublicOffer, Shop, StoreProduct } from '@/lib/types'
 
 export type PlacedOrder = { orderNumber: string; token: string; totalAtPlacement: number }
@@ -348,6 +348,22 @@ export default function CartDrawer({
                 </div>
               )}
 
+              {/*
+                The free gift, once the bill has crossed the threshold. Priced
+                at nothing because it is a gift, but shown so the customer knows
+                it is coming — the whole point of the promise is that they can
+                see they have earned it.
+              */}
+              {earnsFreeGift(cart.subtotal) && (
+                <div className="flex justify-between font-medium" style={{ color: 'oklch(0.5 0.13 150)' }}>
+                  <dt className="flex items-center gap-1.5">
+                    <Gift className="size-3" />
+                    Free gift
+                  </dt>
+                  <dd className="tnum">Free</dd>
+                </div>
+              )}
+
               {step === 'details' && (
                 <div className="flex justify-between" style={{ color: 'var(--sf-body)' }}>
                   <dt>Delivery</dt>
@@ -376,6 +392,15 @@ export default function CartDrawer({
                 <p className="text-[11px] leading-5 text-gold-deep">
                   Add <span className="tnum font-semibold">{rupees(shortfall)}</span> more to get{' '}
                   <span className="font-semibold">{offer.savingsLabel}</span> on this order.
+                </p>
+              </div>
+            )}
+
+            {!earnsFreeGift(cart.subtotal) && (
+              <div className="mb-3 rounded-xl border border-dashed border-gold bg-gold-soft px-3 py-2.5">
+                <p className="text-[11px] leading-5 text-gold-deep">
+                  Add <span className="tnum font-semibold">{rupees(Math.ceil(FREE_GIFT_ABOVE - cart.subtotal))}</span> more to get a{' '}
+                  <span className="font-semibold">free gift</span> on this order.
                 </p>
               </div>
             )}
