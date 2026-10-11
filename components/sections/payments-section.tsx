@@ -434,7 +434,7 @@ export default function PaymentsSection({
         taken — sits alongside them as the visual record of the same bill.
       */}
       {(itemsOpen.invoice || itemsOpen.loading !== null || itemsOpen.error) && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-950/60 p-4 py-8 backdrop-blur-sm sm:py-12" role="dialog" aria-modal="true" aria-label="Items on this bill">
+        <div className="admin-scrim fixed inset-0 z-50 flex items-start justify-center overflow-y-auto p-4 py-8 backdrop-blur-sm sm:py-12" role="dialog" aria-modal="true" aria-label="Items on this bill">
           <button className="fixed inset-0 cursor-default" aria-hidden onClick={() => setItemsOpen({ loading: null, invoice: null, error: '' })} />
 
           <div className="animate-rise-in relative z-10 w-full max-w-2xl rounded-3xl border-hairline bg-card p-5 sm:p-6">

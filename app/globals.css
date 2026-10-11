@@ -43,56 +43,91 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
-/* Modern operations workspace: cool, spacious content surfaces with a deep navy rail.
+/* Modern operations workspace, dressed in the shop's own colours.
+
+   The storefront is warm — an ivory canvas, white cards, cream bands, deep
+   maroon and a single bright gold. The desk used to wear a cool navy-and-slate
+   scheme of its own, which made the workspace look like a different product from
+   the shop the customer sees. These tokens now mirror the storefront palette
+   (`--sf-*` below), so every admin surface, card, border and rail inherits the
+   same warm look without a single component having to change.
+
    Light mode only. There is no dark theme anywhere in the app. */
 :root {
   color-scheme: light;
-  --background: oklch(0.975 0.008 247);
-  --foreground: oklch(0.255 0.028 257);
-  --card: oklch(0.998 0.002 250);
-  --card-foreground: oklch(0.255 0.028 257);
-  --popover: oklch(0.998 0.002 250);
-  --popover-foreground: oklch(0.255 0.028 257);
-  --primary: oklch(0.31 0.07 258);
-  --primary-foreground: oklch(0.985 0.005 250);
-  --secondary: oklch(0.945 0.012 247);
-  --secondary-foreground: oklch(0.31 0.07 258);
-  --muted: oklch(0.945 0.012 247);
-  --muted-foreground: oklch(0.53 0.025 255);
-  --accent: oklch(0.92 0.025 85);
+  --background: oklch(0.985 0.006 85);
+  --foreground: oklch(0.26 0.02 60);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.26 0.02 60);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.26 0.02 60);
+  --primary: oklch(0.36 0.14 22);
+  --primary-foreground: oklch(0.99 0.005 85);
+  --secondary: oklch(0.955 0.018 84);
+  --secondary-foreground: oklch(0.36 0.14 22);
+  --muted: oklch(0.955 0.018 84);
+  --muted-foreground: oklch(0.58 0.012 70);
+  --accent: oklch(0.955 0.028 85);
   --accent-foreground: oklch(0.42 0.075 78);
   --destructive: oklch(0.55 0.17 27);
-  --border: oklch(0.885 0.014 250);
-  --input: oklch(0.88 0.014 250);
-  --ring: oklch(0.7 0.11 78);
+  --border: oklch(0.905 0.012 82);
+  --input: oklch(0.9 0.012 82);
+  --ring: oklch(0.7 0.115 72);
   --chart-1: oklch(0.7 0.11 78);
   --chart-2: oklch(0.62 0.1 162);
   --chart-3: oklch(0.55 0.1 255);
   --chart-4: oklch(0.72 0.09 42);
   --chart-5: oklch(0.48 0.05 254);
   --radius: 0.9rem;
-  --sidebar: oklch(0.225 0.048 259);
-  --sidebar-foreground: oklch(0.945 0.012 250);
-  --sidebar-primary: oklch(0.72 0.11 78);
-  --sidebar-primary-foreground: oklch(0.22 0.045 259);
-  --sidebar-accent: oklch(0.3 0.05 258);
-  --sidebar-accent-foreground: oklch(0.95 0.01 250);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.72 0.11 78);
+  /* The rail now wears the shop's deep maroon, the same brand colour the
+     storefront's banners use, instead of a cool navy. */
+  --sidebar: oklch(0.30 0.13 22);
+  --sidebar-foreground: oklch(0.95 0.012 84);
+  --sidebar-primary: oklch(0.86 0.09 84);
+  --sidebar-primary-foreground: oklch(0.30 0.13 22);
+  --sidebar-accent: oklch(0.38 0.14 22);
+  --sidebar-accent-foreground: oklch(0.96 0.012 84);
+  --sidebar-border: oklch(1 0 0 / 12%);
+  --sidebar-ring: oklch(0.86 0.09 84);
+}
+
+/*
+ * Type: the same neutral sans the storefront uses.
+ *
+ * The shop reads in the system UI face (SF Pro on Apple hardware) at a tight
+ * tracking; the desk should read the same way, so the two are one product rather
+ * than a website next to an app. The `--ap-*` stack mirrors the storefront's.
+ */
+:root {
+  --admin-font-sans: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+}
+
+body {
+  font-family: var(--admin-font-sans);
+  letter-spacing: -0.01em;
+}
+
+/* Headings take the storefront's heavy-but-tight treatment. */
+h1,
+h2,
+h3 {
+  letter-spacing: -0.015em;
 }
 
 /* Reusable accents the components lean on. */
 :root {
   --gold: oklch(0.72 0.11 78);
-  --gold-soft: oklch(0.955 0.045 88);
-  --gold-deep: oklch(0.48 0.09 75);
+  --gold-soft: oklch(0.968 0.028 85);
+  --gold-deep: oklch(0.55 0.11 72);
   --success: oklch(0.53 0.12 162);
   --success-soft: oklch(0.945 0.04 162);
   --warn: oklch(0.64 0.13 72);
   --warn-soft: oklch(0.965 0.04 82);
-  --shadow-sm: 0 1px 2px oklch(0.3 0.03 255 / 6%), 0 1px 1px oklch(0.3 0.03 255 / 4%);
-  --shadow-md: 0 8px 24px oklch(0.3 0.03 255 / 7%), 0 2px 5px oklch(0.3 0.03 255 / 4%);
-  --shadow-lg: 0 22px 48px oklch(0.25 0.03 255 / 13%), 0 5px 12px oklch(0.25 0.03 255 / 6%);
+  /* Warm-tinted shadows, so a lifted card sits on ivory the way it does on the
+     storefront rather than casting a cool grey. */
+  --shadow-sm: 0 1px 2px oklch(0.3 0.02 60 / 6%), 0 1px 1px oklch(0.3 0.02 60 / 4%);
+  --shadow-md: 0 8px 24px oklch(0.3 0.02 60 / 7%), 0 2px 5px oklch(0.3 0.02 60 / 4%);
+  --shadow-lg: 0 22px 48px oklch(0.28 0.02 60 / 13%), 0 5px 12px oklch(0.28 0.02 60 / 6%);
 }
 
 @theme inline {
@@ -136,8 +171,8 @@
    These layers play once, in a short sequence, and stay inside the dialog so
    the desk behind it remains readable. */
 @keyframes invoice-backdrop-in {
-  from { background-color: oklch(0.27 0.05 258 / 0%); backdrop-filter: blur(0); }
-  to { background-color: oklch(0.27 0.05 258 / 45%); backdrop-filter: blur(4px); }
+  from { background-color: oklch(0.26 0.06 22 / 0%); backdrop-filter: blur(0); }
+  to { background-color: oklch(0.26 0.06 22 / 45%); backdrop-filter: blur(4px); }
 }
 
 @keyframes invoice-card-arrive {
@@ -421,18 +456,18 @@
   .hairline { border-color: var(--border); }
   .dashboard-canvas {
     background:
-      linear-gradient(oklch(0.975 0.008 247 / 92%), oklch(0.975 0.008 247 / 92%)),
-      linear-gradient(oklch(0.885 0.014 250 / 24%) 1px, transparent 1px),
-      linear-gradient(90deg, oklch(0.885 0.014 250 / 24%) 1px, transparent 1px),
-      radial-gradient(circle at 90% -10%, oklch(0.9 0.04 210 / 50%), transparent 30rem),
+      linear-gradient(oklch(0.985 0.006 85 / 92%), oklch(0.985 0.006 85 / 92%)),
+      linear-gradient(oklch(0.905 0.012 82 / 24%) 1px, transparent 1px),
+      linear-gradient(90deg, oklch(0.905 0.012 82 / 24%) 1px, transparent 1px),
+      radial-gradient(circle at 90% -10%, oklch(0.93 0.04 84 / 50%), transparent 30rem),
       radial-gradient(circle at 30% 0%, oklch(0.97 0.025 85 / 65%), transparent 24rem),
       var(--background);
     background-size: auto, 34px 34px, 34px 34px, auto, auto, auto;
   }
   .app-sidebar {
     background:
-      radial-gradient(circle at 0% 0%, oklch(0.34 0.07 258 / 65%), transparent 26rem),
-      linear-gradient(160deg, var(--sidebar), oklch(0.18 0.04 258));
+      radial-gradient(circle at 0% 0%, oklch(0.4 0.14 22 / 65%), transparent 26rem),
+      linear-gradient(160deg, var(--sidebar), oklch(0.24 0.11 22));
   }
   .business-card {
     position: relative;
@@ -456,9 +491,9 @@
     isolation: isolate;
     background:
       radial-gradient(circle at 92% 14%, oklch(0.74 0.11 78 / 35%), transparent 17rem),
-      radial-gradient(circle at 70% 120%, oklch(0.48 0.1 240 / 54%), transparent 27rem),
-      linear-gradient(135deg, oklch(0.205 0.052 258), oklch(0.275 0.075 257));
-    box-shadow: 0 22px 46px oklch(0.2 0.06 258 / 22%);
+      radial-gradient(circle at 70% 120%, oklch(0.48 0.14 22 / 54%), transparent 27rem),
+      linear-gradient(135deg, oklch(0.3 0.13 22), oklch(0.24 0.11 22));
+    box-shadow: 0 22px 46px oklch(0.3 0.12 22 / 22%);
   }
   .business-hero::before,
   .business-hero::after {
@@ -482,38 +517,47 @@
     background: oklch(1 0 0 / 8%);
     backdrop-filter: blur(12px);
   }
+  /* A list row reads like a storefront card row: no drawn border, a soft
+     shadow, and a gentle lift on hover. */
   .business-list-row {
-    border: 1px solid var(--border);
-    background: color-mix(in oklab, var(--background) 60%, transparent);
-    transition: border-color 180ms ease, background 180ms ease, transform 180ms ease;
+    border: 0;
+    background: var(--card);
+    box-shadow: 0 1px 3px rgb(120 80 40 / 6%);
+    transition: box-shadow 200ms ease, background 200ms ease, transform 200ms ease;
   }
   .business-list-row:hover {
-    border-color: oklch(0.72 0.105 78 / 42%);
-    background: var(--gold-soft);
-    transform: translateY(-1px);
+    border-color: transparent;
+    background: var(--card);
+    box-shadow: 0 10px 26px rgb(120 80 40 / 10%);
+    transform: translateY(-2px);
   }
-  .business-primary-card { border-color: oklch(0.66 0.09 250 / 22%); }
-  .business-invoice { box-shadow: 0 28px 70px oklch(0.18 0.04 258 / 28%), inset 0 1px 0 oklch(1 0 0 / 76%); }
+  .business-primary-card { border-color: oklch(0.86 0.11 82 / 40%); }
+  .business-invoice { box-shadow: 0 28px 70px oklch(0.3 0.12 22 / 24%), inset 0 1px 0 oklch(1 0 0 / 76%); }
   .catalogue-search {
     filter: drop-shadow(0 12px 20px oklch(0.61 0.1 78 / 14%));
   }
   .catalogue-search input {
-    box-shadow: 0 0 0 5px var(--gold-soft), 0 12px 24px oklch(0.45 0.06 250 / 9%);
+    box-shadow: 0 0 0 5px var(--gold-soft), 0 12px 24px oklch(0.45 0.04 60 / 9%);
   }
   .catalogue-search input:focus {
-    box-shadow: 0 0 0 5px oklch(0.81 0.11 82 / 40%), 0 14px 28px oklch(0.45 0.06 250 / 14%);
+    box-shadow: 0 0 0 5px oklch(0.81 0.11 82 / 40%), 0 14px 28px oklch(0.45 0.04 60 / 14%);
   }
+  /* The sign-in screen wears the shop's maroon, the same rail the desk uses. */
   .login-canvas {
     background:
-      radial-gradient(circle at 10% 10%, oklch(0.38 0.09 256 / 84%), transparent 30rem),
+      radial-gradient(circle at 10% 10%, oklch(0.4 0.14 22 / 84%), transparent 30rem),
       radial-gradient(circle at 95% 95%, oklch(0.7 0.1 78 / 16%), transparent 25rem),
-      linear-gradient(135deg, oklch(0.16 0.04 258), oklch(0.23 0.06 258));
+      linear-gradient(135deg, oklch(0.26 0.12 22), oklch(0.34 0.14 22));
   }
   .card-shadow {
     box-shadow: var(--shadow-md);
   }
   .card-shadow-lg {
     box-shadow: var(--shadow-lg);
+  }
+  /* A modal backdrop in the shop's own warm dark tone, not a cold slate. */
+  .admin-scrim {
+    background-color: oklch(0.26 0.06 22 / 58%);
   }
 }
 
@@ -2060,7 +2104,7 @@
   border-color: transparent;
   background: var(--primary);
   color: var(--primary-foreground);
-  box-shadow: 0 8px 18px oklch(0.31 0.07 258 / 22%);
+  box-shadow: 0 8px 18px oklch(0.36 0.14 22 / 22%);
 }
 
 .order-age[data-urgent='true'] {

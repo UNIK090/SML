@@ -80,8 +80,8 @@ export default function RewardSettings({ onClose, onSaved }: { onClose: () => vo
   const example = form ? Math.floor(2500 / (form.referralAmountStep || 1)) * form.pointsPerStep : 0
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-950/55 p-4 backdrop-blur-sm sm:items-center">
-      <div role="dialog" aria-modal="true" aria-label="Reward settings" className="my-auto w-full max-w-xl rounded-3xl border-hairline bg-card shadow-2xl">
+    <div className="admin-scrim fixed inset-0 z-50 flex items-start justify-center overflow-y-auto p-4 backdrop-blur-sm sm:items-center">
+      <div role="dialog" aria-modal="true" aria-label="Reward settings" className="my-auto w-full max-w-xl rounded-3xl bg-card shadow-2xl">
         <header className="flex items-start justify-between gap-4 border-b border-hairline px-5 py-4 sm:px-6">
           <div>
             <p className="text-[10px] font-semibold tracking-[0.16em] text-gold-deep uppercase">Settings</p>

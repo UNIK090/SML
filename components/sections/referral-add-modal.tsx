@@ -176,8 +176,8 @@ export default function AddReferralModal({
   }, [preview, form, amount, saving, onCredited])
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-950/55 p-4 backdrop-blur-sm sm:items-center">
-      <div role="dialog" aria-modal="true" aria-label="Add referral purchase" className="my-auto w-full max-w-2xl rounded-3xl border-hairline bg-card shadow-2xl">
+    <div className="admin-scrim fixed inset-0 z-50 flex items-start justify-center overflow-y-auto p-4 backdrop-blur-sm sm:items-center">
+      <div role="dialog" aria-modal="true" aria-label="Add referral purchase" className="my-auto w-full max-w-2xl rounded-3xl bg-card shadow-2xl">
         <header className="flex items-start justify-between gap-4 border-b border-hairline px-5 py-4 sm:px-6">
           <div>
             <p className="text-[10px] font-semibold tracking-[0.16em] text-gold-deep uppercase">Reward points</p>
@@ -313,8 +313,8 @@ export default function AddReferralModal({
 
       {/* --- The confirmation, restating exactly what will be saved ---------- */}
       {confirming && preview && (
-        <div className="fixed inset-0 z-60 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm">
-          <div role="alertdialog" aria-modal="true" aria-label="Confirm referral credit" className="w-full max-w-md rounded-3xl border-hairline bg-card p-6 shadow-2xl">
+        <div className="admin-scrim fixed inset-0 z-60 flex items-center justify-center p-4 backdrop-blur-sm">
+          <div role="alertdialog" aria-modal="true" aria-label="Confirm referral credit" className="w-full max-w-md rounded-3xl bg-card p-6 shadow-2xl">
             <span className="flex size-11 items-center justify-center rounded-2xl bg-gold-soft text-gold-deep">
               <Gift className="size-5" />
             </span>

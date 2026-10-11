@@ -92,7 +92,7 @@ function NavItem({
         aria-current={active ? 'page' : undefined}
         aria-label={t(labelKey)}
         title={t(labelKey)}
-        className={`relative flex h-11 w-full items-center justify-center rounded-xl transition ${
+        className={`relative flex h-11 w-full items-center justify-center rounded-2xl transition ${
           active ? 'bg-white/14 text-sidebar-foreground shadow-[0_10px_22px_rgb(0_0_0_/_16%)]' : 'text-sidebar-foreground/55 hover:bg-white/8 hover:text-sidebar-foreground'
         }`}
       >
@@ -111,7 +111,7 @@ function NavItem({
     <button
       onClick={onSelect}
       aria-current={active ? 'page' : undefined}
-      className={`relative flex w-full items-center gap-3 rounded-xl px-2.5 py-2.5 text-left transition ${
+      className={`relative flex w-full items-center gap-3 rounded-2xl px-2.5 py-2.5 text-left transition ${
         active ? 'bg-white/14 text-sidebar-foreground shadow-[0_10px_22px_rgb(0_0_0_/_16%)]' : 'text-sidebar-foreground/55 hover:bg-white/8 hover:text-sidebar-foreground'
       }`}
     >
@@ -276,7 +276,9 @@ export default function AppShell({
 
         {/* ---------- Content ---------- */}
         <div className="flex min-w-0 flex-1 flex-col">
-          <header className="sticky top-0 z-30 border-b border-hairline bg-background/82 px-4 pt-[max(0.875rem,env(safe-area-inset-top))] pb-3.5 backdrop-blur-xl sm:px-7 sm:py-4 print:hidden">
+          {/* The same white header the storefront wears: a hairline shadow rather
+              than a drawn border, so the desk and the shop share one chrome. */}
+          <header className="sticky top-0 z-30 bg-card px-4 pt-[max(0.875rem,env(safe-area-inset-top))] pb-3.5 shadow-[0_1px_0_var(--border),0_4px_14px_rgb(120_80_40_/_5%)] sm:px-7 sm:py-4 print:hidden">
             <div className="mx-auto flex max-w-[1540px] items-center justify-between gap-3">
               <div className="flex min-w-0 items-center gap-3">
                 <button
@@ -372,7 +374,7 @@ export default function AppShell({
       {/* ---------- Mobile drawer ---------- */}
       {drawerOpen && (
         <div className="fixed inset-0 z-50 lg:hidden" role="dialog" aria-modal="true">
-          <button className="absolute inset-0 bg-slate-950/60 backdrop-blur-sm" aria-hidden onClick={() => setDrawerOpen(false)} />
+          <button className="admin-scrim absolute inset-0 backdrop-blur-sm" aria-hidden onClick={() => setDrawerOpen(false)} />
           <nav className="app-sidebar animate-slide-in absolute inset-y-0 left-0 flex w-[min(18rem,calc(100vw-2rem))] flex-col overflow-y-auto border-r border-sidebar-border px-4 pt-[max(1.25rem,env(safe-area-inset-top))] pb-[max(1.25rem,env(safe-area-inset-bottom))]">
             <div className="flex items-center gap-3">
               {brand?.logo ? (

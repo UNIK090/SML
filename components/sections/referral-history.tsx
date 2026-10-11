@@ -131,8 +131,8 @@ export default function ReferralHistory({ onClose }: { onClose: () => void }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-950/55 p-4 backdrop-blur-sm sm:items-center">
-      <div role="dialog" aria-modal="true" aria-label="Referral history" className="my-auto w-full max-w-6xl rounded-3xl border-hairline bg-card shadow-2xl">
+    <div className="admin-scrim fixed inset-0 z-50 flex items-start justify-center overflow-y-auto p-4 backdrop-blur-sm sm:items-center">
+      <div role="dialog" aria-modal="true" aria-label="Referral history" className="my-auto w-full max-w-6xl rounded-3xl bg-card shadow-2xl">
         <header className="flex items-start justify-between gap-4 border-b border-hairline px-5 py-4 sm:px-6">
           <div>
             <p className="text-[10px] font-semibold tracking-[0.16em] text-gold-deep uppercase">Audit trail</p>
@@ -295,8 +295,8 @@ export default function ReferralHistory({ onClose }: { onClose: () => void }) {
 
       {/* --- Reversal confirmation ------------------------------------------ */}
       {reversing && (
-        <div className="fixed inset-0 z-60 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm">
-          <div role="alertdialog" aria-modal="true" aria-label="Reverse referral" className="w-full max-w-md rounded-3xl border-hairline bg-card p-6 shadow-2xl">
+        <div className="admin-scrim fixed inset-0 z-60 flex items-center justify-center p-4 backdrop-blur-sm">
+          <div role="alertdialog" aria-modal="true" aria-label="Reverse referral" className="w-full max-w-md rounded-3xl bg-card p-6 shadow-2xl">
             <h3 className="text-lg font-semibold tracking-tight">Reverse this referral?</h3>
             <p className="mt-1 text-sm text-muted-foreground">
               {reversing.pointsEarned} points will be taken back from {reversing.referrerName}. The original record stays in

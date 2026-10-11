@@ -130,7 +130,7 @@ export default function CustomerRewardsPanel({
   const redeemValue = requested // 1 point = ₹1 under the current rule.
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-950/55 p-4 backdrop-blur-sm sm:items-center">
+    <div className="admin-scrim fixed inset-0 z-50 flex items-start justify-center overflow-y-auto p-4 backdrop-blur-sm sm:items-center">
       <div role="dialog" aria-modal="true" aria-label="Customer rewards" className="my-auto w-full max-w-3xl rounded-3xl border-hairline bg-card shadow-2xl">
         <header className="flex items-start justify-between gap-4 border-b border-hairline px-5 py-4 sm:px-6">
           <div className="min-w-0">
@@ -258,8 +258,8 @@ export default function CustomerRewardsPanel({
 
       {/* --- Redeem ------------------------------------------------------- */}
       {dialog === 'redeem' && customer && (
-        <div className="fixed inset-0 z-60 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm">
-          <div role="alertdialog" aria-modal="true" aria-label="Redeem points" className="w-full max-w-md rounded-3xl border-hairline bg-card p-6 shadow-2xl">
+        <div className="admin-scrim fixed inset-0 z-60 flex items-center justify-center p-4 backdrop-blur-sm">
+          <div role="alertdialog" aria-modal="true" aria-label="Redeem points" className="w-full max-w-md rounded-3xl bg-card p-6 shadow-2xl">
             <h3 className="text-lg font-semibold tracking-tight">Redeem reward points</h3>
             <p className="mt-1 text-sm text-muted-foreground">
               {customer.name} has <strong className="tnum">{customer.rewardPoints}</strong> points available. One point is worth ₹1 off a bill.
@@ -318,8 +318,8 @@ export default function CustomerRewardsPanel({
 
       {/* --- Adjust ------------------------------------------------------- */}
       {dialog === 'adjust' && customer && (
-        <div className="fixed inset-0 z-60 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm">
-          <div role="alertdialog" aria-modal="true" aria-label="Adjust points" className="w-full max-w-md rounded-3xl border-hairline bg-card p-6 shadow-2xl">
+        <div className="admin-scrim fixed inset-0 z-60 flex items-center justify-center p-4 backdrop-blur-sm">
+          <div role="alertdialog" aria-modal="true" aria-label="Adjust points" className="w-full max-w-md rounded-3xl bg-card p-6 shadow-2xl">
             <h3 className="text-lg font-semibold tracking-tight">Adjust points</h3>
             <p className="mt-1 text-sm text-muted-foreground">
               Use a negative number to take points away. A reason is required, and your name is recorded against the change.

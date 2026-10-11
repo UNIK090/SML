@@ -61,8 +61,15 @@ export function WorkspaceHero({
   )
 }
 
+/*
+ * A plain surface card.
+ *
+ * Built to match the storefront's `.sf-card`: no border, a generous radius and a
+ * soft, wide shadow rather than a hairline outline. The desk and the shop then
+ * present their cards with the same light, so the two read as one product.
+ */
 export function Card({ children, className = '' }: { children: ReactNode; className?: string }) {
-  return <section className={`business-card card-shadow rounded-3xl border-hairline bg-card/95 p-5 sm:p-6 ${className}`}>{children}</section>
+  return <section className={`business-card rounded-3xl bg-card p-5 shadow-[0_2px_8px_rgb(0_0_0_/_4%)] transition duration-300 hover:shadow-[0_12px_32px_rgb(0_0_0_/_9%)] sm:p-6 ${className}`}>{children}</section>
 }
 
 export function Button({
@@ -75,20 +82,26 @@ export function Button({
   variant?: 'primary' | 'outline' | 'ghost' | 'gold' | 'success' | 'danger'
   type?: 'button' | 'submit'
 } & React.ButtonHTMLAttributes<HTMLButtonElement>) {
+  /*
+   * Pill-shaped, like the storefront's `.sf-btn`. The primary is the shop's
+   * maroon rather than a blue, and the secondary is the same quiet grey pill the
+   * storefront uses for its "learn more" control, so a button looks and behaves
+   * the same on both sides of the product.
+   */
   const styles: Record<string, string> = {
-    primary: 'bg-primary text-primary-foreground shadow-[0_8px_18px_rgb(25_43_75_/_20%)] hover:-translate-y-px hover:opacity-95',
-    gold: 'bg-gold text-slate-950 shadow-[0_8px_18px_rgb(181_136_40_/_24%)] hover:-translate-y-px hover:opacity-95',
-    success: 'bg-success text-white shadow-[0_8px_18px_rgb(22_125_84_/_20%)] hover:-translate-y-px hover:opacity-95',
+    primary: 'bg-primary text-primary-foreground shadow-[0_8px_18px_rgb(120_32_32_/_18%)] hover:opacity-95 active:scale-[0.97]',
+    gold: 'bg-gold text-slate-950 shadow-[0_8px_18px_rgb(181_136_40_/_24%)] hover:opacity-95 active:scale-[0.97]',
+    success: 'bg-success text-white shadow-[0_8px_18px_rgb(22_125_84_/_20%)] hover:opacity-95 active:scale-[0.97]',
     danger: 'border-hairline bg-card text-destructive hover:bg-red-50 dark:hover:bg-red-950/25',
     outline: 'border-hairline bg-card text-foreground hover:bg-secondary',
-    ghost: 'text-muted-foreground hover:bg-secondary hover:text-foreground',
+    ghost: 'bg-black/5 text-foreground hover:bg-black/10',
   }
-  const sizes = variant === 'ghost' ? 'h-9 px-3 text-sm' : 'h-11 px-5 text-sm'
+  const sizes = variant === 'ghost' ? 'h-9 px-4 text-sm' : 'h-11 px-5 text-sm'
   return (
     <button
       type={type}
       {...rest}
-      className={`inline-flex items-center justify-center gap-2 rounded-xl font-medium transition duration-200 disabled:pointer-events-none disabled:opacity-55 ${styles[variant]} ${sizes} ${rest.className ?? ''}`}
+      className={`inline-flex items-center justify-center gap-2 rounded-full font-medium tracking-[-0.01em] transition duration-200 disabled:pointer-events-none disabled:opacity-55 ${styles[variant]} ${sizes} ${rest.className ?? ''}`}
     >
       {children}
     </button>
@@ -162,10 +175,10 @@ export function StatCard({
 
   if (loading) {
     return (
-      <div className="business-card card-shadow rounded-3xl border-hairline bg-card/95 p-5">
+      <div className="business-card rounded-3xl bg-card p-5 shadow-[0_2px_8px_rgb(0_0_0_/_4%)]">
         <div className="mb-4 flex items-center justify-between gap-2">
           <Skeleton className="h-3.5 w-20" />
-          <Skeleton className="size-8 rounded-lg" />
+          <Skeleton className="size-9 rounded-full" />
         </div>
         <Skeleton className="mb-2 h-7 w-28" />
         <Skeleton className="h-3 w-24" />
@@ -174,10 +187,10 @@ export function StatCard({
   }
 
   return (
-    <div className="business-card card-shadow min-w-0 rounded-3xl border-hairline bg-card/95 p-5 transition duration-200 hover:-translate-y-0.5 hover:shadow-[var(--shadow-lg)]">
+    <div className="business-card min-w-0 rounded-3xl bg-card p-5 shadow-[0_2px_8px_rgb(0_0_0_/_4%)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_12px_32px_rgb(0_0_0_/_9%)]">
       <div className="mb-4 flex items-center justify-between gap-2">
         <p className="truncate text-[11px] font-semibold tracking-[0.08em] text-muted-foreground uppercase">{label}</p>
-        <span className={`flex size-9 shrink-0 items-center justify-center rounded-xl ${iconTone[tone]}`}>
+        <span className={`flex size-9 shrink-0 items-center justify-center rounded-full ${iconTone[tone]}`}>
           <Icon className="size-4" />
         </span>
       </div>
@@ -216,9 +229,11 @@ export function Table({ head, children }: { head: string[]; children: ReactNode 
     <div className="-mx-1 overflow-x-auto overscroll-x-contain px-1">
       <table className="w-full text-left text-sm">
         <thead>
-          <tr className="border-b border-hairline text-xs tracking-wider text-muted-foreground uppercase">
+          {/* A quiet caption row, the way the storefront labels a shelf: soft
+              sentence-case grey rather than a shouty uppercase rule. */}
+          <tr className="text-xs text-muted-foreground">
             {head.map((label, index) => (
-              <th key={label} className={`pb-3 font-medium ${index === head.length - 1 ? 'text-right' : ''}`}>{label}</th>
+              <th key={label} className={`pb-3 font-medium tracking-[-0.01em] ${index === head.length - 1 ? 'text-right' : ''}`}>{label}</th>
             ))}
           </tr>
         </thead>
@@ -252,7 +267,7 @@ export function SkeletonStats({ count = 4 }: { count?: number }) {
   return (
     <div className="grid gap-4 sm:grid-cols-2 2xl:grid-cols-4" role="status" aria-label="Loading">
       {Array.from({ length: count }).map((_, index) => (
-        <div key={index} className="business-card card-shadow rounded-3xl border-hairline bg-card/95 p-5">
+        <div key={index} className="business-card rounded-3xl bg-card p-5 shadow-[0_2px_8px_rgb(0_0_0_/_4%)]">
           <div className="mb-4 flex items-center justify-between">
             <Skeleton className="h-3.5 w-20" />
             <Skeleton className="h-8 w-8 rounded-lg" />
