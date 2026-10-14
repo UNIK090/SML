@@ -441,114 +441,69 @@ function ShopWindow() {
           </nav>
         )}
 
-        {/*
-          The section strip, on phones only.
-
-          On a desktop the header's own nav already carries these links, so this
-          row is hidden and there is exactly one bar. On a phone the nav is
-          inside the hamburger, and a customer three shelves down has no way to
-          reach another section without scrolling back to the top — so the
-          sections get their own thin row *inside the same header*, which sticks
-          with it. One header, not two.
-        */}
-        <nav
-          aria-label="Sections"
-          className="sf-header-strip flex items-center gap-1 overflow-x-auto border-t border-line px-3 py-1.5 lg:hidden"
-        >
-          {[
-            { label: 'Collections', id: 'collections' },
-            { label: 'Offers', id: 'offers' },
-            { label: 'Shop', id: 'store' },
-            { label: 'Boutique', id: 'boutique' },
-          ].map((item) => (
-            <Link
-              key={item.id}
-              href={SECTION_HREF[item.id]}
-              className="shrink-0 rounded-full px-3 py-1.5 text-xs font-medium whitespace-nowrap transition hover:bg-black/5"
-              style={{ color: 'var(--sf-heading)' }}
-            >
-              {item.label}
-            </Link>
-          ))}
-          <Link
-            href="/search"
-            className="shrink-0 rounded-full px-3 py-1.5 text-xs font-medium whitespace-nowrap transition hover:bg-black/5"
-            style={{ color: 'var(--sf-heading)' }}
-          >
-            Search
-          </Link>
-          <Link
-            href="/orders"
-            className="shrink-0 rounded-full px-3 py-1.5 text-xs font-medium whitespace-nowrap transition hover:bg-black/5"
-            style={{ color: 'var(--sf-heading)' }}
-          >
-            My orders
-          </Link>
-        </nav>
-
-        {/*
-          The search box, on phones only.
-
-          Amazon and Flipkart both lead their phone layout with a full-width
-          search field — it is the single most-used control on the page, and on
-          a small screen it must be reachable without opening a menu. The
-          desktop header keeps its own compact search (see store-shell.tsx);
-          this one is `sm:hidden` so the two never appear together.
-        */}
-        <form action="/search" className="sf-mobile-search-wrap px-4 pb-2 sm:hidden">
-          <label className="sf-mobile-search">
-            <span className="sf-mobile-search-icon">
-              <Search className="size-4" />
-            </span>
-            <input
-              name="q"
-              type="search"
-              placeholder="Search jewellery, collections, code…"
-              aria-label="Search products"
-              enterKeyHint="search"
-            />
-            <button type="submit" className="sf-mobile-search-go" aria-label="Search">
-              <ArrowRight className="size-4" />
-            </button>
-          </label>
-        </form>
-
-        {/*
-          The quick-category rail, on phones only.
-
-          A horizontally scrolling row of round trays under the search, the
-          "top categories" strip Flipkart leads with. It only renders once the
-          catalogue has arrived and the shop keeps more than one kind of piece —
-          a rail of one is not a choice.
-        */}
-        {data && data.categoryRails.length > 1 && (
-          <nav aria-label="Shop by category" className="sf-mobile-cat-wrap px-4 pb-1 sm:hidden">
-            <div className="sf-mobile-cats">
-              {data.categoryRails.slice(0, 10).map((entry) => (
-                <button
-                  key={entry.name}
-                  onClick={() => openStore({ category: entry.name })}
-                  className="sf-mobile-cat"
-                >
-                  <span className="sf-mobile-cat-ring">
-                    {entry.imageCode ? (
-                      <img
-                        src={`/api/store/image?id=${entry.imageCode}`}
-                        alt=""
-                        loading="lazy"
-                        className="size-full object-cover"
-                      />
-                    ) : (
-                      <Gem className="size-5" style={{ color: 'var(--sf-gold-deep)' }} strokeWidth={1.3} />
-                    )}
-                  </span>
-                  <span className="sf-mobile-cat-label">{entry.name}</span>
-                </button>
-              ))}
-            </div>
-          </nav>
-        )}
       </header>
+
+      {/*
+        The mobile search + category rail.
+
+        These used to live *inside* the sticky header, so on a phone the pinned
+        chrome was the row, the section strip, the search and the rail all at
+        once — ~267px of a 844px screen, a third of the viewport spent on
+        navigation before a single product was visible. That is the clumsiness.
+
+        They keep the same place in the reading order — directly under the bar,
+        above the goods — but now sit in the normal page flow, outside the
+        sticky header, so they scroll away the moment the customer starts
+        browsing and only the compact row stays pinned. The search is still the
+        first thing on the page and still reachable without opening a menu; it
+        simply stops following the customer down the shelves, which is what
+        Amazon does too.
+      */}
+      <form action="/search" className="sf-mobile-search-wrap px-4 pb-2 pt-2 lg:hidden">
+        <label className="sf-mobile-search">
+          <span className="sf-mobile-search-icon">
+            <Search className="size-4" />
+          </span>
+          <input
+            name="q"
+            type="search"
+            placeholder="Search jewellery, collections, code…"
+            aria-label="Search products"
+            enterKeyHint="search"
+          />
+          <button type="submit" className="sf-mobile-search-go" aria-label="Search">
+            <ArrowRight className="size-4" />
+          </button>
+        </label>
+      </form>
+
+      {data && data.categoryRails.length > 1 && (
+        <nav aria-label="Shop by category" className="sf-mobile-cat-wrap px-4 pb-1 lg:hidden">
+          <div className="sf-mobile-cats">
+            {data.categoryRails.slice(0, 10).map((entry) => (
+              <button
+                key={entry.name}
+                onClick={() => openStore({ category: entry.name })}
+                className="sf-mobile-cat"
+              >
+                <span className="sf-mobile-cat-ring">
+                  {entry.imageCode ? (
+                    <img
+                      src={`/api/store/image?id=${entry.imageCode}`}
+                      alt=""
+                      loading="lazy"
+                      className="size-full object-cover"
+                    />
+                  ) : (
+                    <Gem className="size-5" style={{ color: 'var(--sf-gold-deep)' }} strokeWidth={1.3} />
+                  )}
+                </span>
+                <span className="sf-mobile-cat-label">{entry.name}</span>
+              </button>
+            ))}
+          </div>
+        </nav>
+      )}
 
       {/* -------------------------------- Banner -------------------------------- */}
       {/*

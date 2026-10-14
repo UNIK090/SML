@@ -3914,27 +3914,34 @@ html {
 }
 
 /* ---------- The mobile search bar ----------
- * Amazon and Flipkart both lead with a full-width search field on a phone. This
- * one lives in the header and only appears below `sm`, where the header's own
- * compact search is hidden. */
+ * Amazon and Flipkart both lead with a full-width search field on a phone. On
+ * this storefront it sits directly under the compact header — in the normal page
+ * flow, so it scrolls away as the customer starts browsing (see the mobile layer
+ * at the end of this file). It only appears below `lg`, where the desktop
+ * header's own compact search is not drawn. */
 .sf-mobile-search-wrap,
 .sf-mobile-cat-wrap {
-  /* Both strips live inside the sticky header, so they scroll away with it is
-     NOT wanted — they stick, and the header's own shadow separates them from
-     the page below. */
   background: var(--ap-surface, #fff);
 }
 
 .sf-mobile-search {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.25rem;
   height: 2.75rem;
   width: 100%;
   border-radius: 999px;
-  border: 1px solid transparent;
+  border: 1px solid rgb(0 0 0 / 7%);
   background: var(--ap-panel, #f5f5f7);
-  padding-inline: 0.35rem 0.35rem;
+  padding-inline: 0.35rem 0.3rem;
+  /* The field itself is the tap target; the whole pill focuses the input, so a
+     thumb does not have to find the exact caret. */
+  transition: border-color 180ms ease, background 180ms ease;
+}
+
+.sf-mobile-search:focus-within {
+  border-color: color-mix(in oklab, var(--ap-accent, var(--sf-maroon)) 45%, transparent);
+  background: #fff;
 }
 
 .sf-mobile-search input {
@@ -3944,7 +3951,9 @@ html {
   border: 0;
   background: transparent;
   padding-inline: 0.4rem 0;
-  font-size: 0.9rem;
+  /* 16px keeps iOS from zooming the whole page when the field is focused —
+     anything smaller and every tap on the search snaps the layout. */
+  font-size: 16px;
   color: var(--ap-ink, #1d1d1f);
   box-shadow: none !important;
 }
@@ -3957,14 +3966,17 @@ html {
   outline: none;
 }
 
+/* The go button is a quiet circular arrow rather than a labelled pill: the
+   arrow is understood, and it gives the field back the ~40px the label ate on a
+   narrow screen. */
 .sf-mobile-search-go {
   display: inline-flex;
+  width: 2.25rem;
   height: 2.25rem;
   align-items: center;
   justify-content: center;
   border-radius: 999px;
   background: var(--ap-accent, var(--sf-maroon));
-  padding-inline: 0.9rem;
   color: #fff;
   flex-shrink: 0;
 }
@@ -4047,9 +4059,114 @@ html {
     min-height: 2.5rem;
   }
 
-  /* The friendly overflow guard: nothing on a phone may widen the page. */
+  /* The friendly overflow guard: nothing on a phone may widen the page. The
+     base layer already clips `html` and `body` (see line ~379), so nothing
+     extra is needed here. */
+}
+
+/* ---------- A calm, compact mobile masthead ----------
+ *
+ * On a phone the whole header used to be sticky: the row, the section strip,
+ * the full-width search and the category rail all pinned to the top together,
+ * so a 390x844 screen gave ~267px of permanent chrome — a third of the viewport
+ * spent on navigation before a single product was visible. Amazon and Flipkart
+ * do not do this: only a compact bar stays, and the rest scrolls away.
+ *
+ * The search and the category rail now live *below* the header, in the normal
+ * page flow (see store-page.tsx), so the sticky element is just the row. The
+ * section strip — a second copy of the bottom bar's own navigation — is dropped
+ * on a phone. The result is a ~65px bar, and the goods get the rest of the
+ * screen. From `lg` up nothing changes: the desktop header is one row. */
+@media (max-width: 1023px) {
+  /* The section strip is the first thing to go: on a phone the bottom bar
+     already carries Shop, Offers and Home, and My orders and Search are one tap
+     away in the hamburger. A second copy pinned above the goods bought nothing
+     and cost ~34px of the screen. It returns from `lg` up as part of the row. */
+  .sf-header-strip {
+    display: none;
+  }
+
+  /* ---------- A smoother, tighter mobile rhythm ----------
+   * On a phone the desktop's generous section air (4.5rem top and bottom, 7.5rem
+   * from `md` up) reads as dead space: the customer scrolls through gaps rather
+   * than goods. The marketplaces keep a phone tight — the next shelf begins the
+   * moment the last one ends. So the vertical rhythm is roughly halved on a
+   * small screen, which shortens the page and makes each scroll land on content.
+   * The horizontal gutter stays as it is; that one is doing real work. */
   .sf-canvas {
-    overflow-x: clip;
+    --ap-section: 2.25rem;
+  }
+
+  /* The mobile search and category rail sit in the flow, so they need their own
+     breathing room rather than the section rhythm above. A hairline under the
+     rail separates the "where do I go" band from the goods, the way the
+     marketplaces draw it. */
+  .sf-mobile-cat-wrap {
+    border-bottom: 1px solid rgb(0 0 0 / 5%);
+  }
+
+  /* An in-page anchor — a bottom-bar tab scrolling to a section — must land
+     below the pinned bar, not under it. */
+  html {
+    scroll-padding-top: 4.5rem;
+  }
+
+  /* ---------- Horizontal shelves that land cleanly ----------
+   * The product and category rails are snap-scrollers on a phone. Without a
+   * scroll-padding they snap to the *edge of the container*, so the first card
+   * ends up flush against the screen edge and the next one is clipped mid-photo
+   * — the single most common "this feels cheap" tell on a mobile shop. Padding
+   * the snap by the gutter makes a flick land a card squarely in view, exactly
+   * as Amazon and Flipkart do. */
+  .sf-canvas [aria-label='Shop by category'] ul,
+  .sf-canvas ul[aria-label] {
+    scroll-padding-inline: 1.25rem;
+  }
+
+  /* ---------- Hover effects that do not exist on a touch screen ----------
+   * The card sheen, the hover lift and the image zoom are pointer effects. On a
+   * phone there is no hover, so they are dead weight — and worse, the image
+   * zoom can fire on the first tap and leave the photo stuck at 1.045 while the
+   * finger is still down. The marketplaces simply drop them on touch, and so
+   * does this. The card keeps its border and shadow, which is all a touch user
+   * ever sees. */
+  .sf-card-sheen .sf-card-media::after {
+    display: none;
+  }
+
+  .sf-card:hover .sf-card-media img,
+  .sf-card:focus-within .sf-card-media img {
+    transform: none;
+  }
+
+  .sf-card:hover,
+  .sf-card:focus-within {
+    transform: none;
+  }
+
+  /* ---------- The bottom bar, as a native app draws it ----------
+   * A quieter hairline instead of a hard shadow, a slightly shorter bar so it
+   * steals less of the screen, and — the part that was missing — a small pill
+   * behind the active tab so the eye lands on "where am I" without reading the
+   * label. The pill is drawn as a background on the label, the way iOS draws a
+   * selected tab, rather than a coloured bar across the whole cell. */
+  .sf-mobile-bar {
+    border-top: 0;
+    box-shadow: 0 -1px 0 rgb(0 0 0 / 6%);
+  }
+
+  .sf-mobile-tab {
+    min-height: 3rem;
+  }
+
+  .sf-mobile-tab-label {
+    padding: 0.1rem 0.5rem;
+    border-radius: 999px;
+    transition: background 180ms ease, color 180ms ease;
+  }
+
+  .sf-mobile-tab[data-active='true'] .sf-mobile-tab-label {
+    background: color-mix(in oklab, var(--ap-accent, var(--sf-maroon)) 12%, transparent);
   }
 }
 
