@@ -376,6 +376,25 @@ h3 {
 }
 
 @layer base {
+  /*
+   * Viewport height that is honest on a phone.
+   *
+   * `100vh` on a mobile browser is the height of the *layout* viewport, which
+   * includes the space the address bar and toolbar occupy while they are shown.
+   * A page sized to it is therefore taller than the visible area, so the last
+   * strip of every screen sits under the browser chrome — the "half page" a
+   * customer scrolls into. `dvh` tracks the *visible* viewport as the chrome
+   * shows and hides, so a page fits the screen it is actually on. `vh` stays as
+   * the fallback for browsers that do not understand `dvh`.
+   */
+  :root {
+    --app-vh: 100vh;
+  }
+  @supports (height: 100dvh) {
+    :root {
+      --app-vh: 100dvh;
+    }
+  }
   html {
     max-width: 100%;
     overflow-x: clip;
@@ -393,6 +412,11 @@ h3 {
     font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
     -webkit-font-smoothing: antialiased;
   }
+  /*
+   * `min-h-screen` is deliberately NOT overridden in this base layer: Tailwind's
+   * generated `.min-h-screen` lives in the later `utilities` layer and would win.
+   * The visible-viewport rewrite is defined in `@layer utilities` further down.
+   */
   img,
   video,
   canvas {
@@ -452,6 +476,21 @@ h3 {
 }
 
 @layer utilities {
+  /* Visible-viewport helpers: `dvh` where the browser understands it, `vh`
+     otherwise. Used by full-screen surfaces so nothing hides under mobile chrome. */
+  .min-h-dvh { min-height: var(--app-vh); }
+  .h-dvh { height: var(--app-vh); }
+  .max-h-dvh { max-height: var(--app-vh); }
+  /*
+   * Rewrite Tailwind's `min-h-screen` to the visible-viewport unit.
+   *
+   * Every full-height surface in the app uses `min-h-screen`, which Tailwind
+   * resolves to `100vh` — the layout viewport, taller than what a phone actually
+   * shows while its address bar is up. Defining the class here, in the utilities
+   * layer and after the generated rule, keeps the intent (`fill the screen`) while
+   * using the honest unit, so the bottom of the page is not cut off by chrome.
+   */
+  .min-h-screen { min-height: var(--app-vh); }
   /* Soft hairline used instead of heavy borders throughout the app. */
   .hairline { border-color: var(--border); }
   .dashboard-canvas {

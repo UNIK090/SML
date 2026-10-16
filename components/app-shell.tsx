@@ -182,7 +182,7 @@ export default function AppShell({
       <div className="flex min-h-screen">
         {/* ---------- Desktop sidebar ---------- */}
         <aside
-          className={`app-sidebar hidden shrink-0 flex-col border-sidebar-border lg:sticky lg:top-0 lg:flex lg:h-screen lg:self-start lg:border-r lg:py-5 ${
+          className={`app-sidebar hidden shrink-0 flex-col overflow-y-auto border-sidebar-border lg:sticky lg:top-0 lg:flex lg:h-dvh lg:self-start lg:border-r lg:py-5 ${
             sidebarCollapsed ? 'lg:w-[4.5rem] lg:px-3' : 'lg:w-72 lg:px-4'
           } transition-[width,padding] duration-300 ease-out`}
         >
